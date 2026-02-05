@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Application Artifact Structure Schema",
+  "description": "Validates that application artifact directories conform to the standard structure per /specs/platform/001-application-artifact-organization/",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "appName": {
+      "type": "string",
+      "description": "Application name (lowercase, hyphen-separated)",
+      "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+    },
+    "directoryStructure": {
+      "type": "object",
+      "required": ["iac", "modules", "scripts", "pipelines", "docs"],
+      "properties": {
+        "iac": {
+          "type": "object",
+          "description": "Infrastructure-as-Code directory",
+          "properties": {
+            "exists": { "type": "boolean", "const": true },
+            "hasReadme": { "type": "boolean", "const": true },
+            "bicepFiles": {
+              "type": "array",
+              "description": "Bicep files matching naming convention <appname>-<component>.bicep",
+              "items": { "type": "string" }
+            }
+          },
+          "required": ["exists", "hasReadme"]
+        },
+        "modules": {
+          "type": "object",
+          "description": "Reusable IaC modules directory",
+          "properties": {
+            "exists": { "type": "boolean", "const": true },
+            "hasReadme": { "type": "boolean", "const": true },
+            "moduleFiles": {
+              "type": "array",
+              "description": "Module files (*.bicep)",
+              "items": { "type": "string" }
+            }
+          },
+          "required": ["exists", "hasReadme"]
+        },
+        "scripts": {
+          "type": "object",
+          "description": "Deployment and operations scripts directory",
+          "properties": {
+            "exists": { "type": "boolean", "const": true },
+            "hasReadme": { "type": "boolean", "const": true },
+            "scriptFiles": {
+              "type": "array",
+              "description": "Script files (*.ps1, *.py, *.sh)",
+              "items": { "type": "string" }
+            }
+          },
+          "required": ["exists", "hasReadme"]
+        },
+        "pipelines": {
+          "type": "object",
+          "description": "CI/CD pipeline and GitHub Actions workflows directory",
+          "properties": {
+            "exists": { "type": "boolean", "const": true },
+            "hasReadme": { "type": "boolean", "const": true },
+            "workflowFiles": {
+              "type": "array",
+              "description": "Workflow files (*.yml, *.yaml)",
+              "items": { "type": "string" }
+            }
+          },
+          "required": ["exists", "hasReadme"]
+        },
+        "docs": {
+          "type": "object",
+          "description": "Documentation directory",
+          "properties": {
+            "exists": { "type": "boolean", "const": true },
+            "hasReadme": { "type": "boolean", "const": true },
+            "hasApplicationReadme": { "type": "boolean", "const": true },
+            "documentationFiles": {
+              "type": "array",
+              "description": "Documentation files (*.md)",
+              "items": { "type": "string" }
+            }
+          },
+          "required": ["exists", "hasReadme", "hasApplicationReadme"]
+        }
+      }
+    },
+    "rootFiles": {
+      "type": "object",
+      "description": "Required files in application root directory",
+      "properties": {
+        "hasRootReadme": {
+          "type": "boolean",
+          "description": "Application README.md required",
+          "const": true
+        },
+        "hasGitignore": {
+          "type": "boolean",
+          "description": ".gitignore file recommended",
+          "const": true
+        }
+      },
+      "required": ["hasRootReadme"]
+    },
+    "namingCompliance": {
+      "type": "object",
+      "description": "Checks for naming convention compliance",
+      "properties": {
+        "bicepFilesNamed": {
+          "type": "boolean",
+          "description": "Bicep files follow <appname>-<component>.bicep pattern"
+        },
+        "scriptFilesNamed": {
+          "type": "boolean",
+          "description": "Scripts follow <appname>-<purpose>.<ext> pattern"
+        }
+      }
+    }
+  },
+  "required": ["appName", "directoryStructure", "rootFiles"]
+}
