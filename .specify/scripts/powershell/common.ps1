@@ -93,10 +93,18 @@ function Get-FeatureDir {
 }
 
 function Get-FeaturePathsEnv {
+    param(
+        [string]$AppName
+    )
     $repoRoot = Get-RepoRoot
     $currentBranch = Get-CurrentBranch
     $hasGit = Test-HasGit
-    $featureDir = Get-FeatureDir -RepoRoot $repoRoot -Branch $currentBranch
+    $resolvedAppName = if ($AppName) { $AppName } elseif ($env:SPECIFY_APP) { $env:SPECIFY_APP } else { $null }
+    $featureDir = if ($resolvedAppName) {
+        Join-Path $repoRoot "specs/application/$resolvedAppName"
+    } else {
+        Get-FeatureDir -RepoRoot $repoRoot -Branch $currentBranch
+    }
     
     [PSCustomObject]@{
         REPO_ROOT     = $repoRoot

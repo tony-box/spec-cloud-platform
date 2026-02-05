@@ -10,6 +10,11 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Role Continuity
+- Preserve the last declared role for the session unless the user explicitly changes it.
+- If the role is Application, preserve the last declared application target (NEW/EXISTING + app name) unless the user explicitly changes it.
+- If role/app target is unclear, ask for clarification rather than switching implicitly.
+
 ## Goal
 
 Identify inconsistencies, duplications, ambiguities, and underspecified items across the three core artifacts (`spec.md`, `plan.md`, `tasks.md`) before implementation. This command MUST run only after `/speckit.tasks` has successfully produced a complete `tasks.md`.

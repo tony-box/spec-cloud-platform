@@ -18,6 +18,11 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Role Continuity
+- Preserve the last declared role for the session unless the user explicitly changes it.
+- If the role is Application, preserve the last declared application target (NEW/EXISTING + app name) unless the user explicitly changes it.
+- If role/app target is unclear, ask for clarification rather than switching implicitly.
+
 ## Outline
 
 The text the user typed after `/speckit.specify` in the triggering message **is** the feature description. Assume you always have it available in this conversation even if `$ARGUMENTS` appears literally below. Do not ask the user to repeat it unless they provided an empty command.

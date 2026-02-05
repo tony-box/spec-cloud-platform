@@ -30,7 +30,20 @@ When any stakeholder requests a spec update, they MUST declare their role FIRST:
 - **Infrastructure Role**: Designs Azure landing zones, networking, IaC modules (using Azure Verified Modules), pipelines, and observability patterns for application and infrastructure teams. Can have multiple specs per infrastructure domain (e.g., compute-modules, networking-design, observability-platform).
 - **Application Role**: Specifies application features, architecture, performance requirements, and deployment pipelines constrained by infrastructure and security tiers. MUST specify target application:
   - If **NEW application**: Platform MUST create a new application-specific directory (e.g., `/specs/application/[app-name]/`) containing that application's spec files, plans, and tasks (separate from other applications).
-  - If **EXISTING application**: Platform MUST update spec files within that application's existing directory (e.g., update `/specs/application/web-app-001/` files).
+  - If **EXISTING application**: Platform MUST update spec files within that application's existing directory (e.g., update `/specs/application/web-app-001/` files). EXISTING applications are identified by checking if `/specs/application/[app-name]/` or `/artifacts/applications/[app-name]/` already exists; if so, changes are confined to the existing application's directory (no new directories created).
+  - **Application Artifact Organization** (Per `specs/platform/001-application-artifact-organization/spec.md` v1.0.0):
+    - **NEW Applications**: 
+      - Platform MUST automatically execute `./artifacts/.templates/scripts/create-app-directory.ps1 -AppName "[app-name]"` to create compliant directory structure
+      - Creates `/artifacts/applications/[app-name]/` with required subdirectories: `iac/`, `modules/`, `scripts/`, `pipelines/`, `docs/`
+      - Automatically validates structure and provides guidance to team
+    - **EXISTING Applications**:
+      - Platform MUST first CHECK if application directory exists (`/artifacts/applications/[app-name]/` or `/specs/application/[app-name]/`)
+      - If application EXISTS: REUSE existing directories, validate structure, ensure compliance
+      - If application DOES NOT exist: Create new structure using automated script
+      - ALL CHANGES for EXISTING applications are confined to existing directory location; no new directories created
+      - Validate existing structure and provide status/next steps
+    - All artifacts (NEW or EXISTING) MUST follow naming conventions: `<appname>-<component>.bicep` for IaC, `<appname>-<purpose>.<ext>` for scripts
+    - Validation required: Run `./artifacts/.templates/scripts/validate-artifact-structure.ps1 -AppName "[app-name]"` before any deployment
 
 Each role operates independently on its tier but MUST respect cascade constraints from higher tiers.
 

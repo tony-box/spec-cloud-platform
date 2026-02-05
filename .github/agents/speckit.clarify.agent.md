@@ -14,6 +14,11 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Role Continuity
+- Preserve the last declared role for the session unless the user explicitly changes it.
+- If the role is Application, preserve the last declared application target (NEW/EXISTING + app name) unless the user explicitly changes it.
+- If role/app target is unclear, ask for clarification rather than switching implicitly.
+
 ## Outline
 
 Goal: Detect and reduce ambiguity or missing decision points in the active feature specification and record the clarifications directly in the spec file.

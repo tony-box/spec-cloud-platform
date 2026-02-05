@@ -157,6 +157,18 @@ This spec was created via:
 - Performance SLAs (latency, throughput)
 - Deployment strategy (blue-green, canary, etc.)
 - Scaling constraints & limits
+- **ARTIFACT ORGANIZATION** (Required per `specs/platform/001-application-artifact-organization/spec.md`):
+  - **NEW Applications**: 
+    - All artifacts MUST use standardized directory structure: `/artifacts/applications/[app-name]/`
+    - Required subdirectories: `iac/`, `modules/`, `scripts/`, `pipelines/`, `docs/`
+    - Application directory created automatically via `./artifacts/.templates/scripts/create-app-directory.ps1 -AppName "[app-name]"`
+  - **EXISTING Applications**:
+    - Artifacts MUST reuse existing directory: `/artifacts/applications/[app-name]/` (check before creating)
+    - All changes confined to existing application directory (do NOT create new directories)
+    - If directory doesn't exist yet, create using the same script
+    - Validation ensures existing structure is compliant
+  - Naming conventions: `<appname>-<component>.bicep` (IaC), `<appname>-<purpose>.<ext>` (scripts)
+  - Validation: Run `./artifacts/.templates/scripts/validate-artifact-structure.ps1 -AppName "[app-name]"` before deployment
 
 ## Success Criteria *(mandatory)*
 

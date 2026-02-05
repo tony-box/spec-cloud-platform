@@ -4,16 +4,18 @@
 [CmdletBinding()]
 param(
     [switch]$Json,
-    [switch]$Help
+    [switch]$Help,
+    [string]$AppName
 )
 
 $ErrorActionPreference = 'Stop'
 
 # Show help if requested
 if ($Help) {
-    Write-Output "Usage: ./setup-plan.ps1 [-Json] [-Help]"
+    Write-Output "Usage: ./setup-plan.ps1 [-Json] [-Help] [-AppName <name>]"
     Write-Output "  -Json     Output results in JSON format"
     Write-Output "  -Help     Show this help message"
+    Write-Output "  -AppName  Target application directory under specs/application/<name>"
     exit 0
 }
 
@@ -21,7 +23,7 @@ if ($Help) {
 . "$PSScriptRoot/common.ps1"
 
 # Get all paths and variables from common functions
-$paths = Get-FeaturePathsEnv
+$paths = Get-FeaturePathsEnv -AppName $AppName
 
 # Check if we're on a proper feature branch (only for git repos)
 if (-not (Test-FeatureBranch -Branch $paths.CURRENT_BRANCH -HasGit $paths.HAS_GIT)) { 

@@ -14,6 +14,11 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
+## Role Continuity
+- Preserve the last declared role for the session unless the user explicitly changes it.
+- If the role is Application, preserve the last declared application target (NEW/EXISTING + app name) unless the user explicitly changes it.
+- If role/app target is unclear, ask for clarification rather than switching implicitly.
+
 ## Outline
 
 You are updating the project constitution at `.specify/memory/constitution.md`. This file is a TEMPLATE containing placeholder tokens in square brackets (e.g. `[PROJECT_NAME]`, `[PRINCIPLE_1_NAME]`). Your job is to (a) collect/derive concrete values, (b) fill the template precisely, and (c) propagate any amendments across dependent artifacts.
