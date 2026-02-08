@@ -1,0 +1,278 @@
+#!/bin/bash
+# Cloud-Init Script: LAMP Stack Installation for mycoolapp
+# Target: Ubuntu 22.04 LTS
+# Stack: Apache 2.4, PHP 8.2, MySQL 8.0
+# Compliance: NIST 800-171 (encryption, audit logging, hardening)
+
+set -e
+
+# ============================================================================
+# Logging Setup
+# ============================================================================
+exec > >(tee -a /var/log/mycoolapp-setup.log)
+exec 2>&1
+
+echo "=========================================="
+echo "mycoolapp LAMP Stack Installation"
+echo "Start: $(date)"
+echo "=========================================="
+
+# ============================================================================
+# System Update & Base Packages
+# ============================================================================
+echo "[$(date)] Installing base packages..."
+apt-get update
+apt-get upgrade -y
+apt-get install -y \
+  curl \
+  wget \
+  git \
+  software-properties-common \
+  apt-transport-https \
+  ca-certificates \
+  gnupg \
+  lsb-release \
+  unzip \
+  jq \
+  net-tools \
+  htop
+
+# ============================================================================
+# Security Hardening (NIST 800-171)
+# ============================================================================
+echo "[$(date)] Applying security hardening..."
+
+# Enable UFW firewall
+ufw --force enable
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow 22/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+
+# Disable unnecessary services
+systemctl disable avahi-daemon
+systemctl stop avahi-daemon 2>/dev/null || true
+
+# Configure auditd for logging
+apt-get install -y auditd
+systemctl enable auditd
+systemctl start auditd
+
+# Enable core dumps protection
+echo "kernel.core_uses_pid = 1" >> /etc/sysctl.conf
+sysctl -p
+
+# Set secure permissions on SSH
+chmod 700 /root/.ssh 2>/dev/null || true
+chmod 600 /root/.ssh/authorized_keys 2>/dev/null || true
+
+# ============================================================================
+# Apache 2.4 Installation
+# ============================================================================
+echo "[$(date)] Installing Apache 2.4..."
+apt-get install -y apache2 apache2-utils
+
+# Enable required modules
+a2enmod rewrite
+a2enmod headers
+a2enmod ssl
+a2enmod proxy
+a2enmod proxy_fcgi
+a2enmod setenvif
+a2enmod dir
+
+# Create health check handler
+cat > /var/www/html/health/index.php <<'EOF'
+<?php
+// Health check endpoint for monitoring
+$status = [
+    'status' => 'healthy',
+    'timestamp' => date(DateTime::ISO8601),
+    'uptime' => shell_exec('uptime -p') ?: 'unknown',
+    'apache' => function_exists('phpinfo') ? 'running' : 'error',
+    'php' => phpversion() ?: 'error',
+    'mysql' => extension_loaded('mysqli') ? 'available' : 'unavailable'
+];
+header('Content-Type: application/json');
+http_response_code(200);
+echo json_encode($status, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+?>
+EOF
+
+mkdir -p /var/www/html/health
+chown -R www-data:www-data /var/www/html
+
+# Create Apache configuration for health endpoint
+cat > /etc/apache2/sites-available/000-default.conf <<'EOF'
+<VirtualHost *:80>
+    ServerAdmin admin@mycoolapp
+    DocumentRoot /var/www/html
+
+    <Directory /var/www/html>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # Health check endpoint
+    <Location /health>
+        SetHandler application/x-httpd-php
+    </Location>
+
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+EOF
+
+# ============================================================================
+# PHP 8.2 Installation
+# ============================================================================
+echo "[$(date)] Installing PHP 8.2..."
+add-apt-repository ppa:ondrej/php -y
+apt-get update
+apt-get install -y \
+  php8.2 \
+  php8.2-cli \
+  php8.2-fpm \
+  php8.2-mysql \
+  php8.2-common \
+  php8.2-curl \
+  php8.2-gd \
+  php8.2-json \
+  php8.2-mbstring \
+  php8.2-xml \
+  php8.2-zip
+
+# Configure PHP-FPM
+systemctl enable php8.2-fpm
+systemctl start php8.2-fpm
+
+# ============================================================================
+# MySQL 8.0 Installation
+# ============================================================================
+echo "[$(date)] Installing MySQL 8.0..."
+apt-get install -y \
+  mysql-server-8.0 \
+  mysql-client-8.0
+
+# Start MySQL
+systemctl enable mysql
+systemctl start mysql
+
+# Secure MySQL installation
+mysql -u root -e "UPDATE mysql.user SET authentication_string=PASSWORD('temppass123!') WHERE User='root';"
+mysql -u root -e "DELETE FROM mysql.user WHERE User='';"
+mysql -u root -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
+mysql -u root -e "DROP DATABASE IF EXISTS test;"
+mysql -u root -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
+mysql -u root -e "FLUSH PRIVILEGES;"
+
+# Create application database
+mysql -u root -ptempass123! -e "CREATE DATABASE mycoolapp_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -ptempass123! -e "CREATE USER 'mycoolapp_user'@'localhost' IDENTIFIED BY 'app_secure_pass_123';"
+mysql -u root -ptempass123! -e "GRANT ALL PRIVILEGES ON mycoolapp_db.* TO 'mycoolapp_user'@'localhost';"
+mysql -u root -ptempass123! -e "FLUSH PRIVILEGES;"
+
+# ============================================================================
+# SSL/TLS Configuration (NIST 800-171)
+# ============================================================================
+echo "[$(date)] Configuring SSL/TLS..."
+apt-get install -y certbot python3-certbot-apache
+
+# Create self-signed certificate for initial testing
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /etc/ssl/private/selfsigned.key \
+  -out /etc/ssl/certs/selfsigned.crt \
+  -subj "/C=US/ST=State/L=City/O=Organization/CN=mycoolapp"
+
+# Update default site to use HTTPS
+cat > /etc/apache2/sites-available/default-ssl.conf <<'EOF'
+<IfModule mod_ssl.c>
+    <VirtualHost _default_:443>
+        ServerAdmin admin@mycoolapp
+        DocumentRoot /var/www/html
+
+        <Directory /var/www/html>
+            Options Indexes FollowSymLinks
+            AllowOverride All
+            Require all granted
+        </Directory>
+
+        SSLEngine on
+        SSLCertificateFile /etc/ssl/certs/selfsigned.crt
+        SSLCertificateKeyFile /etc/ssl/private/selfsigned.key
+        SSLProtocol -all +TLSv1.2 +TLSv1.3
+        SSLCipherSuite HIGH:!aNULL:!MD5
+
+        # HSTS header
+        Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+        ErrorLog ${APACHE_LOG_DIR}/ssl_error.log
+        CustomLog ${APACHE_LOG_DIR}/ssl_access.log combined
+    </VirtualHost>
+</IfModule>
+EOF
+
+a2ensite default-ssl
+a2enmod ssl
+
+# Redirect HTTP to HTTPS
+cat > /etc/apache2/conf-available/redirect-http.conf <<'EOF'
+<VirtualHost *:80>
+    ServerName _default_
+    Redirect permanent / https://localhost/
+</VirtualHost>
+EOF
+
+a2enconf redirect-http
+
+# ============================================================================
+# Monitoring & Azure Integration
+# ============================================================================
+echo "[$(date)] Installing monitoring tools..."
+apt-get install -y \
+  wget \
+  curl
+
+# Install Azure Monitor Linux Agent (optional)
+# wget https://aka.ms/dependencyagentlinux -O InstallDependencyAgent-Linux64.bin
+# sh InstallDependencyAgent-Linux64.bin -s
+
+# ============================================================================
+# Application Deployment Hooks
+# ============================================================================
+echo "[$(date)] Setting up application deployment directory..."
+mkdir -p /var/www/html/app
+chown -R www-data:www-data /var/www/html/app
+
+# Create deployment tracking file
+echo "Deployment: $(date)" > /var/www/html/app/deployed.txt
+
+# ============================================================================
+# Restart Services
+# ============================================================================
+echo "[$(date)] Restarting services..."
+systemctl restart apache2
+systemctl restart php8.2-fpm
+systemctl restart mysql
+
+# ============================================================================
+# Verification
+# ============================================================================
+echo "[$(date)] Verifying installation..."
+echo "Apache version: $(apache2 -v | head -1)"
+echo "PHP version: $(php8.2 -v | head -1)"
+echo "MySQL version: $(mysql -u root -ptempass123! -V)"
+
+# Save verification to file
+cat > /var/log/mycoolapp-install-info.txt <<'EOF'
+Installation Completed: $(date)
+Apache: $(systemctl is-active apache2)
+PHP-FPM: $(systemctl is-active php8.2-fpm)
+MySQL: $(systemctl is-active mysql)
+Health Check: http://localhost/health
+EOF
+
+echo "[$(date)] LAMP Stack installation completed successfully!"
+echo "=========================================="

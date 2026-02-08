@@ -1,19 +1,63 @@
+---
+# YAML Frontmatter - Category-Based Spec System
+tier: business
+category: cost
+spec-id: cost-001
+version: 1.0.0
+status: published
+created: 2026-02-06
+last-updated: 2026-02-07
+description: "Cost optimization and budget targets - 10% annual reduction"
+
+# Dependencies
+depends-on: []
+
+# Precedence rules
+precedence:
+  loses-to:
+    - tier: security
+      category: data-protection
+      spec-id: dp-001
+      reason: "Security requirements (encryption, HSM) are non-negotiable and override cost optimization"
+    - tier: business
+      category: compliance-framework
+      spec-id: comp-001
+      reason: "Regulatory compliance requirements override cost optimization"
+  
+  applies-to:
+    - tier: infrastructure
+      category: compute
+      spec-id: compute-001
+      reason: "Cost targets constrain infrastructure compute VM SKU selections"
+    - tier: infrastructure
+      category: storage
+      spec-id: stor-001
+      reason: "Cost targets influence storage tier selection within compliance boundaries"
+
+# Relationships
+adhered-by:
+  - app-id: mycoolapp
+    version: "1.0.0"
+    achievement: "49% cost reduction (exceeds 10% target)"
+---
+
 # Specification: Annual Infrastructure Cost Reduction Target
 
 **Tier**: business  
-**Spec ID**: 001-cost-reduction-targets  
+**Category**: cost  
+**Spec ID**: cost-001  
 **Created**: 2026-02-05  
-**Status**: Approved  
+**Status**: Published  
 **Input**: Business stakeholder request: "Reduce infrastructure costs by 10% year-over-year"
 
 ## Spec Source & Hierarchy
 
-**Parent Tier Specs**: None (this is the business tier - top of hierarchy)
+**Parent Tier Specs**: None (business tier - top of hierarchy)
 
 **Derived Downstream Specs**:
-- security/001-cost-constrained-policies (must enforce cost optimization policies)
-- infrastructure/001-cost-optimized-compute-modules (IaC modules must implement cost targets)
-- application/001-cost-optimized-vm-deployment (app deployments must use cost-optimized modules)
+- security/data-protection (must enforce encryption despite cost impact)
+- infrastructure/compute (IaC modules must implement cost targets)
+- application/mycoolapp (app deployments must use cost-optimized modules)
 
 ## User Scenarios & Testing
 

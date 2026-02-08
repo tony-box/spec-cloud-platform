@@ -1,0 +1,130 @@
+---
+# Infrastructure Tier Category Index
+# 
+# This file indexes all categories within the Infrastructure tier
+# Specification: platform/002-category-based-spec-system/spec.md
+# Task: T104 - Create specs/infrastructure/_categories.yaml index
+# Created: 2026-02-07
+# Version: 1.0.0-draft
+
+metadata:
+  tier: infrastructure
+  name: "Infrastructure Categories"
+  description: "All categories at the infrastructure tier level"
+  version: "1.0.0-draft"
+  created: "2026-02-07"
+  category-count: 4
+
+# Infrastructure tier categories (workload-dependent precedence)
+categories:
+  
+  - category: compute
+    spec-id: compute-001
+    version: "1.0.0"
+    file: compute/spec.md
+    name: "Compute"
+    description: "VM SKUs (Standard_B2s/B4ms), autoscaling, reserved instances, CPU/memory allocation"
+    priority: 0
+    status: "published"
+    created: "2026-02-06"
+    precedence:
+      rationale: "Compute requirements drive storage tier and networking; workload determines architecture"
+      wins-over: [storage]
+    depends-on:
+      - tier: business
+        category: cost
+        spec-id: cost-001
+        reason: "Compute SKU selection must satisfy cost targets"
+    affected-by: [business/cost, business/governance]
+    
+  - category: storage
+    spec-id: stor-001
+    version: "1.0.0-draft"
+    file: storage/spec.md
+    name: "Storage"
+    description: "Disk types (SSD/HDD), replication (LRS/GRS), backup retention, snapshots"
+    priority: 1
+    status: "draft"
+    created: "2026-02-07"
+    precedence:
+      rationale: "Storage tier is determined by workload characteristics (compute choice)"
+      loses-to: [compute]
+    depends-on:
+      - tier: infrastructure
+        category: compute
+        spec-id: compute-001
+        reason: "Compute workload determines required storage tier"
+      - tier: business
+        category: compliance-framework
+        spec-id: comp-001
+        reason: "Data residency and retention requirements constrain storage choices"
+    depends-on-applies: "Storage tier is calculated as: Compute Workload -> Required IOPS/Throughput -> Storage SKU"
+    
+  - category: networking
+    spec-id: net-001
+    version: "1.0.0-draft"
+    file: networking/spec.md
+    name: "Networking"
+    description: "VNets, subnets, NSGs (network security groups), load balancing, DNS, connectivity"
+    priority: 2
+    status: "draft"
+    created: "2026-02-07"
+    precedence:
+      rationale: "Networking is independent from compute/storage within SLA constraints"
+      precedence-note: "May become primary for latency-sensitive workloads"
+    depends-on:
+      - tier: business
+        category: governance
+        spec-id: gov-001
+        reason: "Network connectivity and SLA definitions from business governance"
+    depends-on-applies: "Network availability target (from SLA) determines redundancy level"
+    
+  - category: cicd-pipeline
+    spec-id: cicd-001
+    version: "1.0.0-draft"
+    file: cicd-pipeline/spec.md
+    name: "CI/CD Pipeline"
+    description: "Deployment automation, testing, validation, GitHub Actions, approval gates, rollback procedures"
+    priority: 3
+    status: "draft"
+    created: "2026-02-07"
+    precedence:
+      rationale: "CI/CD is orchestration layer; follows governance and infrastructure specifications"
+    depends-on:
+      - tier: business
+        category: governance
+        spec-id: gov-001
+        reason: "Production deployments require approval gates per business governance"
+      - tier: infrastructure
+        category: compute
+        spec-id: compute-001
+        reason: "Deployment targets must exist per compute specifications"
+
+# Category relationships
+relationships:
+  compute-drives-storage:
+    source: compute
+    target: storage
+    type: "drives-tier"
+    description: "Workload (compute) requirements determine storage tier (SSD vs HDD, replication)"
+    
+  workload-contingency:
+    source: compute
+    target: "storage, networking"
+    type: "determines"
+    rationale: |
+      Most workloads: Compute > Storage > Networking
+      Latency-critical workloads: Networking may dominate
+      Storage-intensive workloads: Storage specifications dominate sizing
+    
+  sla-gates-networking:
+    source: business/governance
+    target: networking
+    type: "constrains"
+    description: "Business SLA (availability target) determines network redundancy requirements"
+    
+  governance-gates-cicd:
+    source: business/governance
+    target: cicd-pipeline
+    type: "constrains"
+    description: "Business approval workflows are enforced in CI/CD pipeline (prod vs dev)"

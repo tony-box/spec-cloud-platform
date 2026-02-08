@@ -1,0 +1,122 @@
+---
+# Application Tier Registry
+# 
+# This file indexes all applications using the category-based spec system
+# Specification: platform/002-category-based-spec-system/spec.md
+# Task: T106 - Create specs/application/_index.yaml registry
+# Created: 2026-02-07
+# Version: 1.0.0-draft
+
+metadata:
+  tier: application
+  name: "Application Registry"
+  description: "All applications adopting category-based specifications"
+  version: "1.0.0-draft"
+  created: "2026-02-07"
+  application-count: 1
+
+# Application adopters
+applications:
+  
+  - app-id: mycoolapp
+    app-name: "MyCoolApp LAMP Stack"
+    version: "1.0.0"
+    status: "production"
+    created: "2026-02-06"
+    tier: application
+    file: mycoolapp/spec.md
+    
+    description: "Ubuntu 22.04 LAMP server (Apache, PHP-FPM, MySQL) with cost optimization"
+    
+    # Upstream tier dependencies that this application adopts
+    adheres-to:
+      
+      # Business tier dependencies
+      - tier: business
+        category: cost
+        spec-id: cost-001
+        reason: "Adopts cost optimization targets (10% reduction, reserved instances)"
+        
+      - tier: business
+        category: governance
+        spec-id: gov-001
+        reason: "Follows business SLA definitions (99% availability)"
+        
+      - tier: business
+        category: compliance-framework
+        spec-id: comp-001
+        reason: "Implements NIST 800-171 compliance controls"
+      
+      # Security tier dependencies
+      - tier: security
+        category: data-protection
+        spec-id: dp-001
+        reason: "Implements AES-256 encryption, TLS 1.2+, key secure management"
+        
+      - tier: security
+        category: access-control
+        spec-id: ac-001
+        reason: "Uses SSH keys only (no passwords), Azure RBAC, MFA"
+        
+      - tier: security
+        category: audit-logging
+        spec-id: audit-001
+        reason: "Implements auditd logging and Azure Monitor audit trails"
+      
+      # Infrastructure tier dependencies
+      - tier: infrastructure
+        category: compute
+        spec-id: compute-001
+        reason: "Deployed on Standard_B2s (dev) and Standard_B4ms (prod) per cost targets"
+        
+      - tier: infrastructure
+        category: networking
+        spec-id: net-001
+        reason: "Uses Azure VNet with NSGs, load balancing for HA"
+        
+      - tier: infrastructure
+        category: storage
+        spec-id: stor-001
+        reason: "Uses managed disks (SSD) with GRS replication for backup"
+        
+      - tier: infrastructure
+        category: cicd-pipeline
+        spec-id: cicd-001
+        reason: "Deployed via GitHub Actions with approval gates on production"
+      
+      # Platform tier dependencies
+      - tier: platform
+        category: artifact-org
+        spec-id: artifact-001
+        reason: "Artifacts organized per platform standards (iac/, scripts/, pipelines/)"
+        
+      - tier: platform
+        category: iac-linting
+        spec-id: lint-001
+        reason: "Bicep templates follow linting standards"
+        
+      - tier: platform
+        category: spec-system
+        spec-id: spec-001
+        reason: "Application spec follows category-based system format"
+    
+    # Application relationships to other categories
+    relationships:
+      cost-achieves: 
+        spec-id: cost-001
+        result: "49% cost reduction achieved (vs 10% target)"
+      
+      governance-compliance:
+        spec-id: gov-001
+        result: "99% SLA achieved; all changes tracked in git"
+      
+      security-compliant:
+        spec-id: dp-001
+        result: "All data encrypted with Azure KMS; TLS 1.2+ enforced"
+      
+    # Validation status
+    validation:
+      all-upstream-dependencies-resolved: true
+      no-circular-dependencies: true
+      last-validated: "2026-02-07"
+      expected-at-phase: "Phase 2 specification migration"

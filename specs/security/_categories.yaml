@@ -1,0 +1,91 @@
+---
+# Security Tier Category Index
+# 
+# This file indexes all categories within the Security tier
+# Specification: platform/002-category-based-spec-system/spec.md
+# Task: T103 - Create specs/security/_categories.yaml index
+# Created: 2026-02-07
+# Version: 1.0.0-draft
+
+metadata:
+  tier: security
+  name: "Security Categories"
+  description: "All categories at the security tier level"
+  version: "1.0.0-draft"
+  created: "2026-02-07"
+  category-count: 3
+
+# Security tier categories (ordered by precedence)
+categories:
+  
+  - category: data-protection
+    spec-id: dp-001
+    version: "1.0.0"
+    file: data-protection/spec.md
+    name: "Data Protection"
+    description: "Encryption (AES-256), key management, key rotation (90 days), HSM requirements"
+    priority: 0
+    status: "published"
+    created: "2026-02-06"
+    precedence:
+      rationale: "Encryption is foundational and non-negotiable; overrides cost and other optimization"
+      wins-over: [access-control, audit-logging, business/cost]
+    overrides:
+      - tier: business
+        category: cost
+        spec-id: cost-001
+        reason: "Data protection requirements (HSM, AES-256, key rotation) are non-negotiable and override cost optimization"
+    
+  - category: access-control
+    spec-id: ac-001
+    version: "1.0.0-draft"
+    file: access-control/spec.md
+    name: "Access Control"
+    description: "Authentication, authorization, RBAC, SSH keys only (no passwords), MFA where applicable"
+    priority: 0
+    status: "draft"
+    created: "2026-02-07"
+    precedence:
+      rationale: "Access control is foundational; nearly equal priority with data protection"
+      wins-over: [audit-logging, business/governance]
+      equivalent-to: [data-protection]
+    connection: "Access Control and Data Protection are roughly equal; both precede Audit-Logging"
+    
+  - category: audit-logging
+    spec-id: audit-001
+    version: "1.0.0-draft"
+    file: audit-logging/spec.md
+    name: "Audit Logging"
+    description: "Audit trails (auditd), Azure Monitor logging, retention policies, compliance logging"
+    priority: 1
+    status: "draft"
+    created: "2026-02-07"
+    precedence:
+      rationale: "Audit logging enables detection; lower priority than access control and data protection"
+      loses-to: [data-protection, access-control]
+
+# Category relationships
+relationships:
+  data-protection-core:
+    source: data-protection
+    target: "all"
+    type: "foundational"
+    description: "Data protection requirements apply universally; non-negotiable"
+    
+  access-control-foundation:
+    source: access-control
+    target: audit-logging
+    type: "prerequisite"
+    description: "Access control (who gets in) must be established before audit (what do they do)"
+    
+  audit-extends-ac:
+    source: audit-logging
+    target: access-control
+    type: "extends"
+    description: "Audit logging extends access control by detecting anomalous behavior"
+    
+  dp-cost-tradeoff:
+    source: data-protection
+    target: business/cost
+    type: "constraint"
+    description: "Data protection costs (HSM, KMS) are non-negotiable despite cost targets"

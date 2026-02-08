@@ -1,0 +1,120 @@
+---
+# Platform Tier Category Index
+# 
+# This file indexes all categories within the Platform tier
+# Specification: platform/002-category-based-spec-system/spec.md
+# Task: T105 - Create specs/platform/_categories.yaml index
+# Created: 2026-02-07
+# Version: 1.0.0-draft
+
+metadata:
+  tier: platform
+  name: "Platform Categories"
+  description: "All categories at the platform tier level (meta and standards)"
+  version: "1.0.0-draft"
+  created: "2026-02-07"
+  category-count: 4
+  note: "Platform tier includes both meta-level (Spec-System) and technical standards (IaC-Linting, etc.)"
+
+# Platform tier categories (mostly independent, spec-system is meta)
+categories:
+  
+  - category: spec-system
+    spec-id: spec-001
+    version: "1.0.0-draft"
+    file: spec-system/spec.md
+    name: "Specification System"
+    description: "Meta-specifications defining spec format, versioning, hierarchy, precedence rules, tooling"
+    priority: 0
+    status: "draft"
+    created: "2026-02-07"
+    is-meta: true
+    precedence:
+      rationale: "Spec-System is meta (specs about specs); defines framework for all category specs"
+      note: "Roughly equal priority with IaC-Linting; both foundational for platform"
+    
+  - category: iac-linting
+    spec-id: lint-001
+    version: "1.0.0-draft"
+    file: iac-linting/spec.md
+    name: "IaC Linting & Quality"
+    description: "Code quality standards for Bicep, Terraform, PowerShell, YAML; linting rules and exceptions"
+    priority: 0
+    status: "draft"
+    created: "2026-02-07"
+    precedence:
+      rationale: "Technical standard for code quality; roughly equal with Spec-System as foundation"
+    applies-to: [infrastructure, artifacts]
+    
+  - category: artifact-org
+    spec-id: artifact-001
+    version: "1.0.0"
+    file: artifact-org/spec.md
+    name: "Artifact Organization"
+    description: "Directory structure, naming conventions, versioning for IaC and deployment artifacts"
+    priority: 1
+    status: "published"
+    created: "2026-02-06"
+    precedence:
+      rationale: "Structural standard; depends on Spec-System and IaC-Linting"
+    depends-on:
+      - tier: platform
+        category: spec-system
+        spec-id: spec-001
+        reason: "Artifact organization follows specification system structure"
+      - tier: platform
+        category: iac-linting
+        spec-id: lint-001
+        reason: "Artifacts in repository must follow linting standards"
+    
+  - category: policy-as-code
+    spec-id: pac-001
+    version: "1.0.0-draft"
+    file: policy-as-code/spec.md
+    name: "Policy as Code"
+    description: "Azure Policy definitions, enforcement rules, remediation, compliance automation"
+    priority: 2
+    status: "draft"
+    created: "2026-02-07"
+    precedence:
+      rationale: "Reactive enforcement layer; implements business/security requirements"
+      note: "Lower priority than standards; enforces decisions made by other tiers"
+    depends-on:
+      - tier: business
+        category: compliance-framework
+        spec-id: comp-001
+        reason: "Policies implement business compliance requirements"
+      - tier: security
+        category: access-control
+        spec-id: ac-001
+        reason: "Policies enforce access control decisions"
+
+# Category relationships
+relationships:
+  spec-system-foundational:
+    source: spec-system
+    target: "all"
+    type: "foundational"
+    description: "Spec-System defines the framework; all other platform categories follow its structure"
+    
+  linting-foundational:
+    source: iac-linting
+    target: "artifacts, infrastructure"
+    type: "foundational"
+    description: "Code quality enforced on all artifacts"
+    
+  artifact-org-implements:
+    source: artifact-org
+    target: "spec-system"
+    type: "implements"
+    description: "Artifact organization implements the spec-system structure"
+    
+  policy-enforces:
+    source: policy-as-code
+    target: "business, security"
+    type: "enforces"
+    description: "Policies automatically enforce business and security requirements"
+    
+  tier-ordering:
+    note: "Platform tier is foundational but doesn't override higher tiers (business > security > infrastructure > platform)"
+    precedence: "Platform defines standards that all lower tiers (platform, application) must follow, but cannot override business/security/infrastructure decisions"

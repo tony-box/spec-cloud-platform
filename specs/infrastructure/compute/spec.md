@@ -1,19 +1,57 @@
+---
+# YAML Frontmatter - Category-Based Spec System
+tier: infrastructure
+category: compute
+spec-id: compute-001
+version: 1.0.0
+status: published
+created: 2026-02-06
+last-updated: 2026-02-07
+description: "VM SKUs, autoscaling, reserved instances, CPU/memory allocation"
+
+# Dependencies
+depends-on:
+  - tier: business
+    category: cost
+    spec-id: cost-001
+    reason: "Compute SKU selection must satisfy cost targets"
+  - tier: security
+    category: data-protection
+    spec-id: dp-001
+    reason: "Compute resources must support encryption requirements"
+
+# Precedence rules
+precedence:
+  wins-over:
+    - tier: infrastructure
+      category: storage
+      spec-id: stor-001
+      reason: "Workload characteristics (determined by compute) drive storage tier selection"
+
+# Relationships
+adhered-by:
+  - app-id: mycoolapp
+    version: "1.0.0"
+    sku-used: "Standard_B2s (dev), Standard_B4ms (prod)"
+---
+
 # Specification: Cost-Optimized Compute Modules
 
 **Tier**: infrastructure  
-**Spec ID**: 001-cost-optimized-compute-modules  
+**Category**: compute  
+**Spec ID**: compute-001  
 **Created**: 2026-02-05  
-**Status**: Approved  
-**Derived From**: business/001 (10% cost reduction) + security/001 (cost policies)
+**Status**: Published  
+**Derived From**: business/cost-001 (10% cost reduction) + security/data-protection
 
 ## Spec Source & Hierarchy
 
 **Parent Tier Specs**:
-- **business/001-cost-reduction-targets** (v1.0.0) - 10% cost reduction target
-- **security/001-cost-constrained-policies** (v1.0.0) - Cost-optimization policies, SLA levels, SKU restrictions
+- **business/cost-001** (v1.0.0) - 10% cost reduction target
+- **security/data-protection** (v1.0.0) - Encryption and security requirements
 
 **Derived Downstream Specs**:
-- application/001-cost-optimized-vm-deployment (must use these modules to achieve cost goals)
+- application/mycoolapp (must use these modules to achieve cost goals)
 
 ## User Scenarios & Testing
 
@@ -93,7 +131,7 @@ Infrastructure architect reviews business and security specs: *"I need to design
 - [ ] SLA/redundancy configurable per workload criticality
 - [ ] NIST compliance enforced (encryption, audit logging)
 - [ ] Cost estimation logic accurate and validated
-- [ ] Modules traceable to business/001 + security/001 specs
+- [ ] Modules traceable to business/cost-001 + security/data-protection
 - [ ] All modules tested in test Azure subscription
 
 ## Change Log
@@ -106,5 +144,5 @@ Infrastructure architect reviews business and security specs: *"I need to design
 
 **Spec Version**: 1.0.0  
 **Approved Date**: 2026-02-05  
-**Depends On**: business/001 (v1.0.0), security/001 (v1.0.0)
-**Artifacts Location**: artifacts/bicep/, artifacts/scripts/
+**Depends On**: business/cost-001 (v1.0.0), security/data-protection (v1.0.0)
+**Artifacts Location**: artifacts/applications/mycoolapp/iac/

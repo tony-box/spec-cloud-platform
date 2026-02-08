@@ -1,0 +1,89 @@
+---
+# Business Tier Category Index
+# 
+# This file indexes all categories within the Business tier
+# Specification: platform/002-category-based-spec-system/spec.md
+# Task: T102 - Create specs/business/_categories.yaml index
+# Created: 2026-02-07
+# Version: 1.0.0-draft
+
+metadata:
+  tier: business
+  name: "Business Categories"
+  description: "All categories at the business tier level"
+  version: "1.0.0-draft"
+  created: "2026-02-07"
+  category-count: 3
+
+# Business tier categories (ordered by precedence)
+categories:
+  
+  - category: compliance-framework
+    spec-id: comp-001
+    version: "1.0.0-draft"
+    file: compliance-framework/spec.md
+    name: "Compliance Framework"
+    description: "Regulatory and compliance requirements including NIST 800-171, data residency, retention"
+    priority: 0
+    status: "draft"
+    created: "2026-02-07"
+    precedence:
+      rationale: "Regulatory requirements are binding and override operational optimization"
+      wins-over: [governance, cost]
+    
+  - category: governance
+    spec-id: gov-001
+    version: "1.0.0-draft"
+    file: governance/spec.md
+    name: "Governance"
+    description: "Approval workflows, change management, SLA definitions, decision gates"
+    priority: 1
+    status: "draft"
+    created: "2026-02-07"
+    precedence:
+      rationale: "Governance defines process; overrides cost optimization but subject to security"
+      wins-over: [cost]
+      loses-to: [security/access-control]
+    
+  - category: cost
+    spec-id: cost-001
+    version: "1.0.0"
+    file: cost/spec.md
+    name: "Cost Optimization"
+    description: "Cost reduction targets (10% reduction), budget constraints, resource optimization"
+    priority: 2
+    status: "published"
+    created: "2026-02-06"
+    precedence:
+      rationale: "Cost is subject to security and governance; constrains infrastructure choices"
+      loses-to: [security, governance]
+      applies-to: [infrastructure]
+    dependencies:
+      - tier: security
+        category: data-protection
+        spec-id: dp-001
+        reason: "Security requirements are not subject to cost optimization"
+      - tier: infrastructure
+        category: compute
+        spec-id: compute-001
+        reason: "Cost targets constrain compute VM SKU selections"
+
+# Category relationships
+relationships:
+  compliance-vs-cost:
+    source: compliance-framework
+    target: cost
+    type: constrains
+    description: "Compliance requirements set boundaries on cost optimization"
+    
+  governance-vs-cost:
+    source: governance
+    target: cost
+    type: precedent
+    description: "Governance approval gates may override cost optimization for critical changes"
+    
+  cost-vs-infrastructure:
+    source: cost
+    target: infrastructure/compute
+    type: constrains
+    description: "Cost targets set scope for infrastructure compute decisions"

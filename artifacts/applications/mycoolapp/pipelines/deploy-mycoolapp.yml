@@ -1,0 +1,223 @@
+name: Deploy mycoolapp LAMP Stack
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'artifacts/applications/mycoolapp/iac/**'
+      - 'artifacts/applications/mycoolapp/scripts/**'
+      - '.github/workflows/deploy-mycoolapp.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+      action:
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+          - deploy
+          - validate
+          - destroy
+
+env:
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  BICEP_DIR: ./artifacts/applications/mycoolapp/iac
+  SCRIPTS_DIR: ./artifacts/applications/mycoolapp/scripts
+
+jobs:
+  # Job 1: Validate Prerequisites
+  validate-prerequisites:
+    name: Validate Prerequisites
+    runs-on: ubuntu-latest
+    environment: 'mycoolapp'
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      action: ${{ steps.set-env.outputs.action }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set environment and action
+        id: set-env
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+            echo "action=${{ github.event.inputs.action }}" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "action=deploy" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install Azure CLI
+        uses: azure/setup-azure-cli@v3
+
+      - name: Install Bicep
+        run: |
+          az bicep install
+          az bicep version
+
+      - name: Validate Bicep template
+        run: |
+          az bicep build --file ${{ env.BICEP_DIR }}/main.bicep
+          ls -la ${{ env.BICEP_DIR }}
+
+      - name: Validate PowerShell scripts
+        run: |
+          pwsh -NoProfile -File ${{ env.SCRIPTS_DIR }}/prereqs-check.ps1
+
+  # Job 2: Deploy to Azure
+  deploy-to-azure:
+    name: Deploy to Azure
+    needs: validate-prerequisites
+    runs-on: ubuntu-latest
+    environment: 'mycoolapp'
+    if: needs.validate-prerequisites.outputs.action == 'deploy'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Set environment variable
+        run: |
+          echo "ENVIRONMENT=${{ needs.validate-prerequisites.outputs.environment }}" >> $GITHUB_ENV
+          echo "RESOURCE_GROUP=mycoolapp-${{ needs.validate-prerequisites.outputs.environment }}-rg" >> $GITHUB_ENV
+
+      - name: Create resource group
+        run: |
+          az group create \
+            --name ${{ env.RESOURCE_GROUP }} \
+            --location centralus \
+            --tags "environment=${{ env.ENVIRONMENT }}" "application=mycoolapp" "tier=application"
+
+      - name: Deploy Bicep template
+        run: |
+          az deployment group create \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --template-file ${{ env.BICEP_DIR }}/main.bicep \
+            --parameters ${{ env.BICEP_DIR }}/main.bicepparam \
+            environment=${{ env.ENVIRONMENT }} \
+            --output json > deployment-output.json
+
+      - name: Parse deployment outputs
+        id: deployment
+        run: |
+          echo "vm_id=$(cat deployment-output.json | jq -r '.properties.outputs.vmId.value')" >> $GITHUB_OUTPUT
+          echo "public_ip=$(cat deployment-output.json | jq -r '.properties.outputs.publicIpAddress.value')" >> $GITHUB_OUTPUT
+          echo "ssh_string=$(cat deployment-output.json | jq -r '.properties.outputs.sshConnectionString.value')" >> $GITHUB_OUTPUT
+          echo "health_url=$(cat deployment-output.json | jq -r '.properties.outputs.healthCheckUrl.value')" >> $GITHUB_OUTPUT
+          echo "monthly_cost=$(cat deployment-output.json | jq -r '.properties.outputs.estimatedMonthlyCost.value')" >> $GITHUB_OUTPUT
+
+      - name: Wait for VM initialization
+        run: sleep 60
+
+      - name: Validate deployment
+        run: |
+          echo "VM Public IP: ${{ steps.deployment.outputs.public_ip }}"
+          echo "SSH: ${{ steps.deployment.outputs.ssh_string }}"
+          echo "Health Check: ${{ steps.deployment.outputs.health_url }}"
+          echo "Estimated Monthly Cost: \$${{ steps.deployment.outputs.monthly_cost }}"
+
+      - name: Test health endpoint
+        run: |
+          for i in {1..10}; do
+            if curl -f http://${{ steps.deployment.outputs.public_ip }}/health; then
+              echo "✓ Health endpoint is responding"
+              break
+            fi
+            echo "Attempt $i/10: Waiting for health endpoint..."
+            sleep 10
+          done
+
+      - name: Create deployment summary
+        run: |
+          cat > deployment-summary.md <<EOF
+          # Deployment Summary
+          
+          **Environment:** ${{ env.ENVIRONMENT }}
+          **Timestamp:** $(date)
+          **Resource Group:** ${{ env.RESOURCE_GROUP }}
+          
+          ## Deployment Outputs
+          - VM ID: ${{ steps.deployment.outputs.vm_id }}
+          - Public IP: ${{ steps.deployment.outputs.public_ip }}
+          - SSH: ${{ steps.deployment.outputs.ssh_string }}
+          - Health Check: ${{ steps.deployment.outputs.health_url }}
+          - Estimated Monthly Cost: \$${{ steps.deployment.outputs.monthly_cost }}
+          
+          ## Next Steps
+          1. SSH into VM: \`${{ steps.deployment.outputs.ssh_string }}\`
+          2. Check health: \`curl ${{ steps.deployment.outputs.health_url }}\`
+          3. Review logs: \`/var/log/mycoolapp-setup.log\`
+          EOF
+          cat deployment-summary.md
+
+      - name: Upload deployment artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-${{ env.ENVIRONMENT }}-${{ github.run_id }}
+          path: |
+            deployment-output.json
+            deployment-summary.md
+
+  # Job 3: Validate Deployment
+  validate-deployment:
+    name: Validate Deployment
+    needs: [validate-prerequisites, deploy-to-azure]
+    runs-on: ubuntu-latest
+    environment: 'mycoolapp'
+    if: always() && needs.validate-prerequisites.outputs.action == 'deploy'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download deployment artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: deployment-${{ needs.validate-prerequisites.outputs.environment }}-${{ github.run_id }}
+
+      - name: Parse public IP
+        id: parse-ip
+        run: |
+          PUBLIC_IP=$(cat deployment-output.json | jq -r '.properties.outputs.publicIpAddress.value')
+          echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
+
+      - name: Test health endpoint
+        run: |
+          curl -v http://${{ steps.parse-ip.outputs.public_ip }}/health || true
+
+      - name: Validate HTTP access
+        run: |
+          curl -v http://${{ steps.parse-ip.outputs.public_ip }}/ || true
+
+      - name: Create validation report
+        if: always()
+        run: |
+          cat > validation-report.md <<EOF
+          # Validation Report
+          
+          - Public IP: ${{ steps.parse-ip.outputs.public_ip }}
+          - Timestamp: $(date)
+          - Status: ${{ job.status }}
+          EOF
+
+      - name: Upload validation report
+        uses: actions/upload-artifact@v3
+        with:
+          name: validation-${{ needs.validate-prerequisites.outputs.environment }}-${{ github.run_id }}
+          path: validation-report.md

@@ -1,0 +1,247 @@
+---
+# Root Specification Manifest
+# This file defines the complete category-based spec system structure
+# 
+# Specification: platform/002-category-based-spec-system/spec.md
+# Task: T101 - Create specs.yaml root manifest
+# Created: 2026-02-07
+# Version: 1.0.0-draft
+
+metadata:
+  name: "Category-Based Specification System"
+  version: "1.0.0-draft"
+  description: "Root manifest defining all tiers, categories, and precedence rules for specifications"
+  created: "2026-02-07"
+  owner: "Platform Engineering Team"
+  status: "active"
+
+# Tier definitions (ordered by precedence: top = highest priority)
+tiers:
+  - tier: business
+    name: "Business Tier"
+    description: "Business-level decisions (cost, governance, compliance)"
+    priority: 0
+    categories: 3
+    
+  - tier: security
+    name: "Security Tier"
+    description: "Security-level requirements (access control, data protection, audit)"
+    priority: 1
+    categories: 3
+    
+  - tier: infrastructure
+    name: "Infrastructure Tier"
+    description: "Infrastructure-level standards (compute, networking, storage, CI/CD)"
+    priority: 2
+    categories: 4
+    
+  - tier: platform
+    name: "Platform Tier"
+    description: "Platform-level standards (artifact organization, linting, policy-as-code, spec system)"
+    priority: 3
+    categories: 4
+    
+  - tier: application
+    name: "Application Tier"
+    description: "Application-level specifications (individual applications using upstream specs)"
+    priority: 4
+    categories: null
+
+# Category tree structure
+categories:
+  business:
+    cost:
+      spec-id: cost-001
+      version: "1.0.0"
+      file: business/cost/spec.md
+      description: "Cost optimization and budget targets"
+      
+    governance:
+      spec-id: gov-001
+      version: "1.0.0-draft"
+      file: business/governance/spec.md
+      description: "Approval workflows, SLAs, and governance processes"
+      
+    compliance-framework:
+      spec-id: comp-001
+      version: "1.0.0-draft"
+      file: business/compliance-framework/spec.md
+      description: "Regulatory and compliance requirements (NIST, etc.)"
+      
+  security:
+    access-control:
+      spec-id: ac-001
+      version: "1.0.0-draft"
+      file: security/access-control/spec.md
+      description: "Authentication, authorization, and RBAC"
+      
+    data-protection:
+      spec-id: dp-001
+      version: "1.0.0"
+      file: security/data-protection/spec.md
+      description: "Encryption, keys, and confidentiality"
+      
+    audit-logging:
+      spec-id: audit-001
+      version: "1.0.0-draft"
+      file: security/audit-logging/spec.md
+      description: "Audit trails, monitoring, and logging"
+      
+  infrastructure:
+    compute:
+      spec-id: compute-001
+      version: "1.0.0"
+      file: infrastructure/compute/spec.md
+      description: "VM SKUs, autoscaling, and compute resources"
+      
+    networking:
+      spec-id: net-001
+      version: "1.0.0-draft"
+      file: infrastructure/networking/spec.md
+      description: "VNets, NSGs, load balancing, and connectivity"
+      
+    storage:
+      spec-id: stor-001
+      version: "1.0.0-draft"
+      file: infrastructure/storage/spec.md
+      description: "Disk types, replication, and backup"
+      
+    cicd-pipeline:
+      spec-id: cicd-001
+      version: "1.0.0-draft"
+      file: infrastructure/cicd-pipeline/spec.md
+      description: "Deployment automation, testing, and validation"
+      
+  platform:
+    artifact-org:
+      spec-id: artifact-001
+      version: "1.0.0"
+      file: platform/artifact-org/spec.md
+      description: "Artifact repository organization and structure"
+      
+    iac-linting:
+      spec-id: lint-001
+      version: "1.0.0-draft"
+      file: platform/iac-linting/spec.md
+      description: "IaC code quality and linting standards"
+      
+    policy-as-code:
+      spec-id: pac-001
+      version: "1.0.0-draft"
+      file: platform/policy-as-code/spec.md
+      description: "Azure Policy and governance automation"
+      
+    spec-system:
+      spec-id: spec-001
+      version: "1.0.0-draft"
+      file: platform/spec-system/spec.md
+      description: "Meta-specifications for spec format and system"
+
+# Precedence rules (tier-level primary, category-level secondary)
+precedence:
+  tier-order:
+    - business   # 0
+    - security   # 1
+    - infrastructure  # 2
+    - platform   # 3
+    - application    # 4
+  
+  # Category-level precedence within tiers
+  category-rules:
+    business:
+      order: [compliance-framework, governance, cost]
+      rationale: "Compliance (regulatory) > Governance (approval) > Cost (optimization)"
+      
+    security:
+      order: [data-protection, access-control, audit-logging]
+      rationale: "Data Protection (confidentiality) ≥ Access Control (foundation) > Audit (detection)"
+      connection: "DP and AC roughly equal in priority, both above audit"
+      
+    infrastructure:
+      # Compute and storage precedence depends on workload
+      # Compute usually wins (determines storage tier), but not always
+      order: [compute, storage, networking]
+      rationale: "Compute (workload-driven) > Storage (depends on workload) > Networking (independent)"
+      workload-note: "For latency-sensitive workloads, networking may dominate; tier dynamically"
+      
+    platform:
+      order: [spec-system, iac-linting, artifact-org, policy-as-code]
+      rationale: "Spec-System (meta) ≈ IaC-Linting (technical standard) > Artifact-Org (structural) > Policy-as-Code (reactive)"
+
+# Formalized conflicts and resolution rules
+conflicts:
+  - id: conflict-001
+    name: "Cost vs Compute"
+    description: "Business cost targets vs infrastructure performance preferences"
+    affected-specs: [cost-001, compute-001]
+    winner: cost-001
+    rationale: "Business budget constrains infrastructure design"
+    
+  - id: conflict-002
+    name: "Cost vs Data-Protection"
+    description: "Business cost optimization vs security encryption/HSM requirements"
+    affected-specs: [cost-001, dp-001]
+    winner: dp-001
+    rationale: "Security wins; encryption is non-negotiable"
+    
+  - id: conflict-003
+    name: "Governance vs CI/CD"
+    description: "Business approval gates vs infrastructure automation"
+    affected-specs: [gov-001, cicd-001]
+    winner: gov-001
+    rationale: "Production requires approval gates; dev can auto-deploy"
+    
+  - id: conflict-004
+    name: "Compliance vs Storage Cost"
+    description: "Business compliance vs infrastructure storage costs"
+    affected-specs: [comp-001, stor-001]
+    winner: comp-001
+    rationale: "Regulatory requirements bind infrastructure decisions"
+    
+  - id: conflict-005
+    name: "Access-Control vs Governance"
+    description: "Security access control vs business governance processes"
+    affected-specs: [ac-001, gov-001]
+    winner: ac-001
+    rationale: "Access control is foundational; governance includes break-glass exceptions"
+    
+  - id: conflict-006
+    name: "Compute vs Storage"
+    description: "Infrastructure compute SKUs vs storage tier decisions"
+    affected-specs: [compute-001, stor-001]
+    winner: compute-001
+    rationale: "Workload characteristics determine storage tier"
+    
+  - id: conflict-007
+    name: "Cost vs Networking"
+    description: "Business cost optimization vs infrastructure availability/networking"
+    affected-specs: [cost-001, net-001]
+    winner: "dual-gate: cost + business SLA"
+    rationale: "Availability target (from business SLA) drives network design within cost constraints"
+
+# Validation schema requirements
+validation:
+  required-frontmatter-fields:
+    - tier
+    - category
+    - spec-id
+    - version
+    - description
+    
+  version-format: "semver with -draft|-alpha|-beta|-rc suffixes"
+  
+  dependencies:
+    validation: "Directed acyclic graph; cycles not allowed"
+    resolution: "All upstream dependencies must be satisfied before downstream use"
+    
+  references:
+    all-specs: "Referenced specs must exist in specs.yaml"
+    circular-deps: "Circular dependencies detected and rejected"
+
+# Registry of all application adopters
+applications:
+  - app-id: mycoolapp
+    version: "1.0.0"
+    tier: application
+    depends-on: [cost-001, dp-001, ac-001, compute-001, net-001, artifact-001]
+    file: application/mycoolapp/spec.md
