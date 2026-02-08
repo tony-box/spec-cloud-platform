@@ -1,8 +1,62 @@
-<!-- Sync Impact Report: Constitution v1.0.0 Initial Ratification -->
-<!-- ADDED: Five core governance principles for spec-driven tiered development -->
-<!-- ADDED: Tier-specific role definitions (Business, Security, Infrastructure, Application) -->
-<!-- ADDED: Spec cascading rules ensuring business decisions flow through security → infrastructure → application -->
-<!-- ADDED: AI-generated artifact quality gates and human-in-the-loop governance -->
+<!-- 
+═══════════════════════════════════════════════════════════════════════════════
+SYNC IMPACT REPORT: Constitution v1.1.0 → v1.2.0 (2026-02-07)
+═══════════════════════════════════════════════════════════════════════════════
+
+VERSION CHANGE:
+  Old: v1.1.0 (Role Declaration Protocol & Multi-Spec Tier Organization)
+  New: v1.2.0 (Category-Based Spec System & 5-Tier Precedence Hierarchy)
+  Bump Rationale: MINOR - New category-based organization system, expanded from 
+                  4-tier to 5-tier hierarchy (added Platform tier), 14 granular 
+                  categories replacing numbered specs, non-breaking governance update
+
+MODIFIED SECTIONS:
+  1. Principle I: "Spec-Driven Tiered Development"
+     - Updated from 4-tier to 5-tier hierarchy (business > security > infrastructure > platform > application)
+     - Replaced numbered spec references with category-based references
+     - Added category-based versioning and precedence concepts
+  
+  2. Principle II: "Four-Tier Stakeholder Roles" → "Five-Tier Stakeholder Roles"
+     - Renamed from "Four-Tier" to "Five-Tier" (added Platform tier)
+     - Updated Platform role description (now manages platform-tier specs: spec-system, iac-linting, artifact-org, policy-as-code)
+     - Clarified role-to-tier mapping with category examples
+  
+  3. "Tier Specifications Organization" section: COMPLETE REWRITE
+     - Replaced numbered spec structure (001-cost-reduction-targets) with category structure (cost/spec.md)
+     - Added 14 categories across 4 operational tiers (business: 3, security: 3, infrastructure: 4, platform: 4)
+     - Added YAML frontmatter specification (tier, category, spec-id, version, dependencies, precedence)
+     - Added root manifest (specs.yaml), tier indexes (_categories.yaml), application registry (_index.yaml)
+     - Documented 7 formalized conflict resolution patterns
+     - Added precedence resolution algorithm (tier-level → explicit overrides → category precedence → DAG dependencies)
+
+ADDED SECTIONS:
+  - Category-based directory structure (specs/<tier>/<category>/spec.md)
+  - Root manifest system (specs.yaml with 5 tiers, 14 categories, 7 conflicts)
+  - Tier-specific category indexes (business/_categories.yaml, security/_categories.yaml, etc.)
+  - Application adoption registry (application/_index.yaml)
+  - YAML frontmatter standard (mandatory fields: tier, category, spec-id, version, status)
+  - Precedence override mechanism (precedence.overrides field)
+  - Formalized conflict patterns (cost vs security, governance vs access-control, etc.)
+
+REMOVED SECTIONS: None (all prior governance preserved, structure modernized)
+
+TEMPLATES REQUIRING UPDATES:
+  ✅ .specify/templates/spec-template.md - Already uses category-based frontmatter
+  ✅ .specify/templates/plan-template.md - No changes required (constitution-agnostic)
+  ✅ .specify/templates/tasks-template.md - No changes required (constitution-agnostic)
+  ✅ .specify/templates/commands/*.md - No changes required (mode commands constitution-agnostic)
+
+FOLLOW-UP TODOS: None - all placeholders resolved
+
+PROPAGATION STATUS:
+  ✅ Core spec system operational (14 category specs created)
+  ✅ Manifest system deployed (specs.yaml + 5 tier indexes)
+  ✅ Application adoption tracked (mycoolapp references 14 upstream categories)
+  ✅ Precedence rules documented (7 conflicts formalized)
+  ✅ Constitution updated to reflect reality
+  
+═══════════════════════════════════════════════════════════════════════════════
+-->
 
 # Azure Spec-Driven Cloud Platform Constitution
 
@@ -10,18 +64,26 @@ The Platform Team governs this project as a "platform as a product," delivering 
 
 ## Core Principles
 
-### I. Spec-Driven Tiered Development (NON-NEGOTIABLE)
-All platform outputs MUST originate from and align with the four-tier specification hierarchy: Business Requirements → Security Policies → Infrastructure Templates → Application Architecture. Specs at each tier cascade downward; changes at higher tiers MUST propagate through dependent lower tiers. No infrastructure or application code may exist without corresponding spec alignment. The platform team MUST validate that all generated outputs reflect this hierarchy.
+### I. Spec-Driven Category-Based Development (NON-NEGOTIABLE)
+All platform outputs MUST originate from and align with the five-tier specification hierarchy: Business Requirements → Security Policies → Infrastructure Templates → Platform Standards → Application Architecture. The platform implements a **category-based spec system** where each tier contains multiple independent categories (14 categories total across 4 operational tiers). Specs cascade downward via explicit dependencies; changes at higher tiers MUST propagate through dependent lower tiers following documented precedence rules. No infrastructure or application code may exist without corresponding spec alignment. The platform team MUST validate that all generated outputs reflect this hierarchy.
 
-### II. Four-Tier Stakeholder Roles with Declared Role Protocol
-The platform defines four distinct stakeholder roles, each interfacing via plain-English conversational prompts. ALL spec update requests MUST begin with an explicit role declaration:
+**Categorive-Tier Stakeholder Roles with Declared Role Protocol
+The platform defines five distinct stakeholder roles mapped to the 5-tier hierarchy, each interfacing via plain-English conversational prompts. ALL spec update requests MUST begin with an explicit role declaration:
 
 **Role Declaration Protocol**:
 When any stakeholder requests a spec update, they MUST declare their role FIRST:
-1. **Platform**: Updates the core speckit platform framework itself (tier definitions, templates, governance rules, platform tooling)
-2. **Business**: Updates business-tier specifications (cost targets, SLAs, operational policies, business requirements)
-3. **Security**: Updates security-tier specifications (compliance policies, policy-as-code, threat models, security constraints)
-4. **Infrastructure**: Updates infrastructure-tier specifications (landing zones, IaC modules, networking, pipelines, observability)
+1. **Platform**: Updates platform-tier specifications (spec-system, iac-linting, artifact-org, policy-as-code) OR core speckit framework (tier definitions, templates, governance rules)
+2. **Business**: Updates business-tier category specifications (cost, governance, compliance-framework)
+3. **Security**: Updates security-tier category specifications (data-protection, access-control, audit-logging)
+4. **Infrastructure**: Updates infrastructure-tier category specifications (compute, networking, storage, cicd-pipelinequests MUST begin with an explicit role declaration:
+
+**Role Declaration Protocol**:
+When any stakeholder requests a spec update, they MUST declare their role FIRST:
+1. *Platform Role**: Manages platform-tier category specs (artifact-org, iac-linting, policy-as-code, spec-system) defining platform standards and tooling, OR updates core speckit framework (tier definitions, templates, governance rules). Platform tier categories: `artifact-org` (directory structure), `iac-linting` (code quality), `policy-as-code` (Azure Policy enforcement), `spec-system` (meta-spec defining category system itself).
+- **Business Role**: Manages business-tier category specs defining strategic decisions and operational requirements. Business tier categories: `cost` (budget targets, cost optimization), `governance` (approval workflows, SLAs, change management), `compliance-framework` (NIST 800-171, data residency, retention policies). Each category versions independently.
+- **Security Role**: Manages security-tier category specs translating business requirements into security controls and compliance policies. Security tier categories: `data-protection` (encryption, key management, TLS), `access-control` (authentication, RBAC, MFA), `audit-logging` (auditd, monitoring, log retention). Each category can override business-tier specs when security non-negotiable.
+- **Infrastructure Role**: Manages infrastructure-tier category specs designing Azure technical implementation. Infrastructure tier categories: `compute` (VM SKUs, autoscaling, reserved instances), `networking` (VNets, NSGs, load balancing), `storage` (disk tiers, backup, replication), `cicd-pipeline` (deployment automation, approval gates). Each category depends on upstream business/security constraints.
+- **Application Role**: Manages application-tier specs for specific applications, adopting upstream category specs from business/security/infrastructure/platform
 5. **Application**: Updates application-tier specifications for a specific application (either NEW application or EXISTING application to be named)
 
 **Role Definitions**:
@@ -64,57 +126,214 @@ All platform outputs (IaC modules, Bicep templates, GitHub Actions pipelines, po
 Every artifact (IaC module, pipeline, policy, application code deployment) MUST be traceable to its originating spec tier and linked specs. Bidirectional traceability required: spec → generated artifacts, artifacts → source specs. Version specs alongside artifacts; when a spec changes, mark dependent artifacts for regeneration review.
 
 ## Tier Specifications Organization
+implements a **category-based spec system** with 14 categories across 5 tiers, governed by a root manifest and tier-specific category indexes. Directory structure: `/specs/<tier>/<category>/spec.md`
 
-The platform maintains four parallel specification directories under `/specs/` with a multi-spec, hierarchical structure:
+### Root Manifest & Indexes
+
+**Root Manifest** (`/specs/specs.yaml`):
+- Defines 5-tier hierarchy with priority levels (business=0 → application=4)
+- Lists all 14 categories across 4 operational tiers
+- Documents 7 formalized conflict patterns with precedence rules
+- Declares category precedence within tiers
+- 200+ lines, canonical source of truth for tier/category relationships
+
+**Tier-Specific Category Indexes**:
+- `/specs/business/_categories.yaml` (3 categories: compliance-framework > governance > cost)
+- `/specs/security/_categories.yaml` (3 categories: data-protection ≈ access-control > audit-logging)
+- `/specs/infrastructure/_categories.yaml` (4 categories: workload-dependent precedence)
+- `/specs/platform/_categories.yaml` (4 categories: spec-system ≈ iac-linting foundational)
+- Each index lists category IDs, names, descriptions, current versions, precedence order
+
+**Application Registry** (`/specs/application/_index.yaml`):
+- Lists all registered applications (e.g., mycoolapp)
+- Tracks upstream category dependencies per application
+- Documents compliance status with category specs
 
 ### Business Tier (`/specs/business/`)
-**Purpose**: Business requirements, cost targets, SLAs, operational policies  
-**Structure**: Multiple independent spec files per business domain:
-- `001-cost-reduction-targets/spec.md` (business cost targets)
-- `002-disaster-recovery-sla/spec.md` (RTO/RPO requirements)
-- `003-security-posture/spec.md` (security investment priorities)
-- etc.
+**Purpose**: Strategic decisions, operational requirements, budget targets  
+**Priority**: 0 (highest tier in 5-tier hierarchy)  
+**Categories** (3 total):
 
-Each business spec is independently versioned but all cascade down to security/infrastructure/application tiers.
+1. **Cost** (`business/cost/spec.md`, spec-id: `cost-001`)
+   - Purpose: Budget targets, cost optimization, reserved instance strategies
+   - Example: 10% year-over-year cost reduction, 3-year reserved instance commitments
+   - Precedence: Loses to security/data-protection (encryption non-negotiable), compliance-framework (regulatory binding)
+   - Status: Published v1.0.0
+
+2. **Governance** (`business/governance/spec.md`, spec-id: `gov-001`)
+   - Purpose: Approval workflows, SLA definitions, change management, break-glass procedures
+   - Example: Production requires approval, 99.95% SLA critical workloads, 99% SLA non-critical
+   - Precedence: Wins over cost, loses to security/access-control (foundational security)
+   - Status: Draft v1.0.0-draft
+
+3. **Compliance-Framework** (`business/compliance-framework/spec.md`, spec-id: `comp-001`)
+   - Purpose: Regulatory requirements (NIST 800-171), data residency, retention policies, audit schedules
+   - Example: US regions only, 7-year retention, annual compliance audits
+   - Precedence: OVERRIDES cost and storage (regulatory requirements binding)
+   - Status: Draft v1.0.0-draft
 
 ### Security Tier (`/specs/security/`)
-**Purpose**: Compliance frameworks, policy-as-code rules, threat models, security policies derived from business tier  
-**Structure**: Multiple independent spec files per compliance/security domain:
-- `001-encryption-standards/spec.md` (derived from business/001)
-- `002-identity-governance/spec.md` (derived from business/002)
-- `003-incident-response/spec.md` (derived from business/003)
-- etc.
+**Purpose**: Security controls, compliance policies, threat mitigation  
+**Priority**: 1 (second-highest tier)  
+**Categories** (3 total):
 
-Each security spec must cite its parent business spec(s) and flows down to infrastructure/application tiers.
+1. **Data-Protection** (`security/data-protection/spec.md`, spec-id: `dp-001`)
+   - Purpose: Encryption standards (AES-256), key management, TLS requirements, data-at-rest/in-transit protection
+   - Example: Azure Key Vault Premium (HSM), 90-day key rotation, TLS 1.2+ mandatory
+   - Dependencies: None (foundational security)
+   - Precedence: OVERRIDES business/cost (encryption non-negotiable even if costly)
+   - Status: Published v1.0.0
+
+2. **Access-Control** (`security/access-control/spec.md`, spec-id: `ac-001`)
+   - Purpose: Authentication, authorization, RBAC, MFA, SSH key management
+   - Example: SSH keys only (no passwords), MFA for privileged access, Azure RBAC role assignments
+   - Dependencies: None (foundational security)
+   - Precedence: OVERRIDES business/governance (access control foundational, non-negotiable)
+   - Status: Draft v1.0.0-draft
+
+3. **Audit-Logging** (`security/audit-logging/spec.md`, spec-id: `audit-001`)
+   - Purpose: Audit trails, monitoring, log retention, immutability
+   - Example: auditd on all Linux VMs, Azure Monitor integration, 3-year retention, immutable logs
+   - Dependencies: access-control (monitors access events)
+   - Precedence: Loses to data-protection and access-control (logging supports security controls)
+   - Status: Draft v1.0.0-draft
 
 ### Infrastructure Tier (`/specs/infrastructure/`)
-**Purpose**: Azure landing zones, networking, module catalogs, pipeline templates, observability policies derived from business + security tiers  
-**Structure**: Multiple independent spec files per infrastructure domain:
-- `001-compute-modules/spec.md` (derived from business/001, security/001)
-- `002-networking-design/spec.md` (derived from business/002, security/002)
-- `003-observability-platform/spec.md` (derived from business/003, security/003)
-- etc.
+**Purpose**: Azure technical implementation, IaC modules, networking, pipelines  
+**Priority**: 2 (middle tier)  
+**Categories** (4 total):
 
-Each infrastructure spec must cite its parent business and security specs and flows down to application tier.
+1. **Compute** (`infrastructure/compute/spec.md`, spec-id: `compute-001`)
+   - Purpose: VM SKUs, autoscaling, reserved instances, availability sets/zones
+   - Example: Standard_B2s (dev), Standard_B4ms (prod), 3-year reserved instances, availability zones for critical workloads
+   - Dependencies: business/cost-001 (budget constraints), security/dp-001 (disk encryption)
+   - Precedence: Wins over storage (workload determines storage tier)
+   - Status: Published v1.0.0
+
+2. **Networking** (`infrastructure/networking/spec.md`, spec-id: `net-001`)
+   - Purpose: VNet architecture, NSGs, load balancing, private DNS, ExpressRoute/VPN
+   - Example: /16 VNets, NSGs on all subnets, Standard Load Balancer, private DNS zones
+   - Dependencies: business/governance (SLA requirements for load balancer tier)
+   - Precedence: Dual-gate with cost (SLA + cost both constrain networking SKUs)
+   - Status: Draft v1.0.0-draft
+
+3. **Storage** (`infrastructure/storage/spec.md`, spec-id: `stor-001`)
+   - Purpose: Disk tiers, replication strategies, backup policies, retention
+   - Example: Standard SSD default, LRS replication, 30-day backup retention, GRS for critical data
+   - Dependencies: compute-001 (workload determines tier), compliance-framework (retention requirements)
+   - Precedence: Loses to compute (workload-driven), loses to compliance (retention binding)
+   - Status: Draft v1.0.0-draft
+
+4. **CI/CD-Pipeline** (`infrastructure/cicd-pipeline/spec.md`, spec-id: `cicd-001`)
+   - Purpose: Deployment automation, approval gates, rollback procedures, pipeline security
+   - Example: GitHub Actions, production approval gates, automated validation, rollback procedures
+   - Dependencies: business/governance (approval workflow requirements), compute (deployment targets)
+   - Precedence: Loses to governance (approval gates non-negotiable)
+   - Status: Draft v1.0.0-draft
+
+### Platform Tier (`/specs/platform/`)
+**Purpose**: Platform standards, tooling, code quality, policy enforcement  
+**Priority**: 3 (second-lowest tier)  
+**Categories** (4 total):
+
+1. **Spec-System** (`platform/spec-system/spec.md`, spec-id: `spec-001`, **META-SPEC**)
+   - Purpose: Defines the category-based spec system itself (self-referential meta-specification)
+   - Example: YAML frontmatter structure, 5-tier hierarchy, precedence algorithm, validation rules
+   - Is-Meta: true (defines the system governing all specs)
+   - Dependencies: None (foundational platform standard)
+   - Status: Draft v1.0.0-draft
+
+2. **Artifact-Org** (`platform/artifact-org/spec.md`, spec-id: `artifact-001`)
+   - Purpose: Directory structure, naming conventions, artifact organization
+   - Example: /artifacts/applications/<appname>/{iac, scripts, pipelines, docs} structure
+   - Dependencies: spec-001 (follows spec system structure)
+   - Status: Published v1.0.0
+
+3. **IaC-Linting** (`platform/iac-linting/spec.md`, spec-id: `lint-001`)
+   - Purpose: Code quality standards for Bicep, PowerShell, YAML
+   - Example: bicep build validation, PSScriptAnalyzer, yamllint, errors block PR merge
+   - Dependencies: None (foundational platform standard)
+   - Status: Draft v1.0.0-draft
+
+4. **Policy-as-Code** (`platform/policy-as-code/spec.md`, spec-id: `pac-001`)
+   - Purpose: Azure Policy enforcement, remediation tasks, compliance dashboards
+   - Example: Policies for encryption, data residency, tagging, SKU restrictions, automatic remediation
+   - Dependencies: compliance-framework (policies enforce compliance), access-control (policies enforce access rules)
+   - Status: Draft v1.0.0-draft
 
 ### Application Tier (`/specs/application/`)
-**Purpose**: Application architecture, feature specs, performance requirements, deployment patterns derived from business + security + infrastructure tiers  
-**Structure**: Application-specific directory hierarchies (separate directory per application):
-- `/specs/application/web-app-001/` — Single application's specs, plans, tasks (NEW app)
-  - `spec.md` (application spec)
+**Purpose**: Application-specific architecture, features, deployment patterns  
+**Priority**: 4 (lowest tier, adopts upstream category specs)  
+**Structure**: Application-specific directories (separate directory per application):
+- `/specs/application/mycoolapp/` — Single application's specs, plans, tasks
+  - `spec.md` (application spec with upstream category dependencies)
   - `plan.md` (implementation plan)
   - `tasks.md` (work breakdown)
-- `/specs/application/api-service-002/` — Another application's specs, plans, tasks
+- `/specs/appli2.0 | **Ratified**: 2026-02-05 | **Last Amended**: 2026-02-07 (Amendment: Category-Based Spec System & 5-Tier Precedence Hierarchy
 - etc.
 
-When application role requests update for a NEW application, platform creates entire `/specs/application/[app-name]/` directory structure with standard spec/plan/tasks templates.  
-When application role requests update for an EXISTING application, platform modifies files within that application's directory.
+**Application Registry**: `/specs/application/_index.yaml` tracks all applications and their upstream category dependencies.
 
-### Common Pattern for All Tiers (except Application)
-Each tier spec MUST include:
-- **Source Specs**: References to parent tier specs that constrain this tier.
-- **Derived Constraints**: Specific rules, SKU limitations, cost budgets, security policies, or architectural patterns inherited from above.
-- **Generated Outputs**: IaC modules, pipelines, policy documents, configuration templates generated from these specs (with AI assistance).
+When application role requests update for a **NEW application**, platform creates entire `/specs/application/[app-name]/` directory structure.  
+When application role requests update for an **EXISTING application**, platform modifies files within that application's directory.
+
+### Category Spec Frontmatter Standard (YAML)
+
+ALL category specs MUST include YAML frontmatter with mandatory fields:
+
+```yaml
+---
+tier: business | security | infrastructure | platform | application
+category: cost | governance | data-protection | compute | ... (14 categories)
+spec-id: unique-id (e.g., cost-001, dp-001, compute-001)
+version: semver (1.0.0, 1.0.0-draft, etc.)
+status: draft | published | deprecated
+created: YYYY-MM-DD
+description: "One sentence category purpose"
+depends-on:
+  - tier: parent-tier
+    category: parent-category
+    spec-id: parent-spec-id
+    reason: "Dependency rationale"
+precedence:
+  wins-over:
+    - tier: lower-tier
+      category: lower-category
+      spec-id: lower-spec-id
+  loses-to:
+    - tier: higher-tier
+      category: higher-category
+      spec-id: higher-spec-id
+  overrides:
+    - tier: tier-to-override
+      category: category-to-override
+      spec-id: spec-to-override
+      reason: "Override rationale (e.g., security non-negotiable)"
+adhered-by:
+  - app-id: application-name
+    version: app-version
+    compliance: full | partial | planned
+---
+```
+
+### Precedence Resolution Algorithm
+
+When conflicts arise between category specs, resolve using this 5-step algorithm:
+
+1. **Tier Precedence** (primary): Higher tier always wins (business > security > infrastructure > platform > application)
+2. **Explicit Overrides** (trumps tier): Check `precedence.overrides` field for documented exceptions (e.g., security/data-protection OVERRIDES business/cost)
+3. **Category Precedence** (within tier): Use tier-specific category order from tier index files (e.g., within business: compliance-framework > governance > cost)
+4. **Dependency Order** (DAG): Dependencies form directed acyclic graph; upstream dependencies constrain downstream dependents
+5. **Manual Escalation** (last resort): If still ambiguous, document exception in both conflicting specs and add to root manifest conflicts list
+
+**Formalized Conflict Patterns** (7 documented in specs.yaml):
+1. **Cost vs Compute**: Cost wins (business budget constrains infrastructure SKUs)
+2. **Cost vs Data-Protection**: Security wins (encryption non-negotiable even if costly)
+3. **Governance vs CI/CD-Pipeline**: Governance wins (production approval gates required)
+4. **Compliance-Framework vs Storage**: Compliance wins (regulatory retention requirements binding)
+5. **Access-Control vs Governance**: Security wins (access control foundational, non-negotiable)
+6. **Compute vs Storage**: Compute wins (workload determines storage tier)
+7. **Cost vs Networking**: Dual-gate (both SLA and cost constrain networking SKUs)th AI assistance).
 - **Version/Change Log**: Tracks when specs change and why (business decision, security update, cost optimization, etc.).
 
 ## AI-Generated Artifact Standards
@@ -160,7 +379,7 @@ When declaring "Role: Application", stakeholder MUST also specify:
 - Platform MUST:
   1. Create `/specs/application/my-app-name/` directory structure
   2. Populate with standard templates: `spec.md`, `plan.md`, `tasks.md`
-  3. Reference parent infrastructure/security/business specs in new spec
+  3. Reference parent platform/infrastructure/security/business specs in new spec
   4. Prompt user to fill in application-specific requirements
   5. Version as v1.0.0 (new application)
   6. Auto-generate work items and cascading downstream artifacts
