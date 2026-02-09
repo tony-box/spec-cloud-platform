@@ -31,9 +31,9 @@ tiers:
     
   - tier: infrastructure
     name: "Infrastructure Tier"
-    description: "Infrastructure-level standards (compute, networking, storage, CI/CD)"
+    description: "Infrastructure-level standards (compute, networking, storage, CI/CD, IaC modules)"
     priority: 2
-    categories: 4
+    categories: 6
     
   - tier: platform
     name: "Platform Tier"
@@ -111,6 +111,12 @@ categories:
       version: "1.0.0-draft"
       file: infrastructure/cicd-pipeline/spec.md
       description: "Deployment automation, testing, and validation"
+      
+    iac-modules:
+      spec-id: iac-001
+      version: "1.0.0"
+      file: infrastructure/iac-modules/spec.md
+      description: "Centralized reusable Bicep wrapper modules based on AVM"
       
   platform:
     artifact-org:

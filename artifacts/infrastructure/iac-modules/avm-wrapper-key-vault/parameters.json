@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "keyVaultName": {
+      "value": "mycoolapp-dev-kv"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "centralus"
+    },
+    "sku": {
+      "value": "standard"
+    },
+    "enableSoftDelete": {
+      "value": true
+    },
+    "softDeleteRetentionDays": {
+      "value": 7
+    },
+    "enablePurgeProtection": {
+      "value": false
+    },
+    "enableRbacAuthorization": {
+      "value": true
+    },
+    "publicNetworkAccess": {
+      "value": "Enabled"
+    },
+    "subnetIds": {
+      "value": []
+    },
+    "additionalTags": {
+      "value": {
+        "costCenter": "Engineering",
+        "purpose": "secrets-management"
+      }
+    }
+  }
+}

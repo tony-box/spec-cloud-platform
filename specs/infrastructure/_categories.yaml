@@ -11,9 +11,10 @@ metadata:
   tier: infrastructure
   name: "Infrastructure Categories"
   description: "All categories at the infrastructure tier level"
-  version: "1.0.0-draft"
+  version: "1.1.0-draft"
   created: "2026-02-07"
-  category-count: 4
+  updated: "2026-02-07"
+  category-count: 6
 
 # Infrastructure tier categories (workload-dependent precedence)
 categories:
@@ -99,6 +100,40 @@ categories:
         category: compute
         spec-id: compute-001
         reason: "Deployment targets must exist per compute specifications"
+
+  - category: iac-modules
+    spec-id: iac-001
+    version: "1.0.0"
+    file: iac-modules/spec.md
+    name: "Infrastructure as Code Modules"
+    description: "Reusable Bicep wrapper modules (VNet, NSG, Public IP, Linux VM, Managed Disk, Key Vault, Storage Account, Azure MySQL) that enforce platform compliance (cost, security, compliance specs)"
+    priority: 4
+    status: "published"
+    created: "2026-02-07"
+    published: "2026-02-07"
+    precedence:
+      rationale: "IaC modules implement and enforce all infrastructure, security, and business specs at deployment time"
+    depends-on:
+      - tier: business
+        category: cost
+        spec-id: cost-001
+        reason: "Wrapper modules enforce cost-optimized SKU selections (B-series VMs, Burstable MySQL)"
+      - tier: security
+        category: data-protection
+        spec-id: dp-001
+        reason: "Wrapper modules enforce encryption, TLS 1.2+, backup retention, soft delete"
+      - tier: security
+        category: access-control
+        spec-id: ac-001
+        reason: "Wrapper modules enforce SSH keys, VNet integration, RBAC, managed identity"
+      - tier: security
+        category: compliance-framework
+        spec-id: comp-001
+        reason: "Wrapper modules enforce US regions only, NIST 800-171 tagging"
+      - tier: platform
+        category: linting
+        spec-id: lint-001
+        reason: "All modules pass bicep build, include README.md and parameters.json"
 
 # Category relationships
 relationships:

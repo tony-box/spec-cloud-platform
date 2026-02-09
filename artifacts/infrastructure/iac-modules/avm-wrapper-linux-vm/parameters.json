@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vmName": {
+      "value": "mycoolapp-dev-vm"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "centralus"
+    },
+    "vmSize": {
+      "value": "Standard_B2s"
+    },
+    "adminUsername": {
+      "value": "azureuser"
+    },
+    "sshPublicKey": {
+      "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC... (replace with your SSH public key)"
+    },
+    "subnetId": {
+      "value": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-mycoolapp-dev/providers/Microsoft.Network/virtualNetworks/mycoolapp-dev-vnet/subnets/app-subnet"
+    },
+    "publicIpId": {
+      "value": ""
+    },
+    "nsgId": {
+      "value": ""
+    },
+    "enableAcceleratedNetworking": {
+      "value": false
+    },
+    "osDiskSizeGB": {
+      "value": 64
+    },
+    "osDiskType": {
+      "value": "StandardSSD_LRS"
+    },
+    "enableDiskEncryption": {
+      "value": false
+    },
+    "customData": {
+      "value": "#cloud-config\npackage_update: true\npackage_upgrade: true\npackages:\n  - apache2\n  - mysql-server\n  - php\n  - libapache2-mod-php\n  - php-mysql\nruncmd:\n  - systemctl start apache2\n  - systemctl enable apache2\n  - systemctl start mysql\n  - systemctl enable mysql\n  - echo '<?php phpinfo(); ?>' > /var/www/html/info.php\n"
+    },
+    "additionalTags": {
+      "value": {
+        "costCenter": "Engineering",
+        "project": "LAMP-Stack"
+      }
+    }
+  }
+}

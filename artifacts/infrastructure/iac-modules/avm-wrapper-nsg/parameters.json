@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "nsgName": {
+      "value": "mycoolapp-dev-nsg"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "centralus"
+    },
+    "sshSourceAddressPrefix": {
+      "value": ""
+    },
+    "customRules": {
+      "value": [
+        {
+          "name": "AllowMySQL",
+          "priority": 2000,
+          "direction": "Inbound",
+          "access": "Allow",
+          "protocol": "Tcp",
+          "sourcePortRange": "*",
+          "destinationPortRange": "3306",
+          "sourceAddressPrefix": "10.0.1.0/24",
+          "destinationAddressPrefix": "10.0.2.0/24",
+          "description": "Allow MySQL from app subnet to DB subnet"
+        }
+      ]
+    },
+    "additionalTags": {
+      "value": {
+        "costCenter": "Engineering"
+      }
+    }
+  }
+}

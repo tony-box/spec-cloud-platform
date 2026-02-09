@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "storageAccountName": {
+      "value": "mycoolappdevstorage"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "centralus"
+    },
+    "sku": {
+      "value": "Standard_LRS"
+    },
+    "kind": {
+      "value": "StorageV2"
+    },
+    "accessTier": {
+      "value": "Hot"
+    },
+    "minimumTlsVersion": {
+      "value": "TLS1_2"
+    },
+    "enableBlobSoftDelete": {
+      "value": false
+    },
+    "blobSoftDeleteRetentionDays": {
+      "value": 7
+    },
+    "supportsHttpsTrafficOnly": {
+      "value": true
+    },
+    "publicNetworkAccess": {
+      "value": "Enabled"
+    },
+    "networkAclsBypass": {
+      "value": "AzureServices"
+    },
+    "networkAclsDefaultAction": {
+      "value": "Allow"
+    },
+    "subnetIds": {
+      "value": []
+    },
+    "additionalTags": {
+      "value": {
+        "costCenter": "Engineering",
+        "purpose": "application-storage"
+      }
+    }
+  }
+}

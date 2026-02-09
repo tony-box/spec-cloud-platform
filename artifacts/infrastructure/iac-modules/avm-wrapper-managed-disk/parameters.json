@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "diskName": {
+      "value": "mycoolapp-dev-data-disk"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "centralus"
+    },
+    "diskSizeGB": {
+      "value": 128
+    },
+    "diskSku": {
+      "value": "StandardSSD_LRS"
+    },
+    "createOption": {
+      "value": "Empty"
+    },
+    "sourceResourceId": {
+      "value": ""
+    },
+    "enableEncryption": {
+      "value": false
+    },
+    "zone": {
+      "value": ""
+    },
+    "additionalTags": {
+      "value": {
+        "costCenter": "Engineering",
+        "purpose": "application-data"
+      }
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "serverName": {
+      "value": "mycoolapp-dev-mysql"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "centralus"
+    },
+    "sku": {
+      "value": "Burstable_B1ms"
+    },
+    "mysqlVersion": {
+      "value": "8.0.21"
+    },
+    "administratorLogin": {
+      "value": "mysqladmin"
+    },
+    "administratorPassword": {
+      "value": "ChangeThisPassword123!"
+    },
+    "delegatedSubnetId": {
+      "value": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-mycoolapp-dev/providers/Microsoft.Network/virtualNetworks/mycoolapp-dev-vnet/subnets/mysql-subnet"
+    },
+    "privateDnsZoneId": {
+      "value": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-mycoolapp-dev/providers/Microsoft.Network/privateDnsZones/privatelink.mysql.database.azure.com"
+    },
+    "storageSizeGB": {
+      "value": 20
+    },
+    "storageIops": {
+      "value": 360
+    },
+    "storageAutogrow": {
+      "value": false
+    },
+    "backupRetentionDays": {
+      "value": 7
+    },
+    "geoRedundantBackup": {
+      "value": false
+    },
+    "highAvailability": {
+      "value": false
+    },
+    "standbyAvailabilityZone": {
+      "value": ""
+    },
+    "additionalTags": {
+      "value": {
+        "costCenter": "Engineering",
+        "purpose": "database"
+      }
+    }
+  }
+}

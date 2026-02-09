@@ -1,0 +1,26 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "publicIpName": {
+      "value": "mycoolapp-dev-pip"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "centralus"
+    },
+    "dnsLabel": {
+      "value": "mycoolapp-dev"
+    },
+    "zones": {
+      "value": []
+    },
+    "additionalTags": {
+      "value": {
+        "costCenter": "Engineering"
+      }
+    }
+  }
+}
