@@ -19,6 +19,38 @@ The IaC wrapper modules are **pre-built, compliance-enforced** infrastructure te
 
 ---
 
+## Choose Your Instance Type (Important!)
+
+Before deploying, understand the two VM instance types available in the Linux VM module:
+
+### Regular Instances (Default)
+- **What**: Standard pay-as-you-go or Reserved Instance-eligible VMs
+- **Availability**: Always available, no interruption risk
+- **Cost**: ~$30-250/month (varies by size)
+- **Best for**: Production, staging, critical workloads
+- **Discount options**: Purchase Reserved Instances in Azure Portal for 23-50% savings
+
+### Spot Instances (Cost-Optimized)
+- **What**: Unused Azure capacity at discounted rates
+- **Availability**: Subject to eviction with 30-second notice when Azure needs capacity
+- **Cost**: ~$10-15/month (84-87% cheaper!)
+- **Best for**: Dev/test, CI/CD agents, batch jobs, non-critical workloads
+- **Requirement**: Must use D-series VMs (B-series doesn't support Spot)
+
+### Quick Decision Guide
+
+| Your Workload | Recommended Instance | Why |
+|---|---|---|
+| Production web servers | Regular + 3-year RI | Reliability first, 40% savings |
+| Staging environments | Regular + 1-year RI | Balance cost & uptime |
+| Development/testing | **Spot** | 84-87% savings, interruptions OK |
+| CI/CD build agents | **Spot** | Can restart builds, huge savings |
+| Databases (MySQL, etc.) | Regular only | Cannot tolerate interruptions |
+
+💡 **Pro tip**: Use Spot for dev environments during this guide to save 84-87% on compute costs!
+
+---
+
 ## Quick Start: Deploy Dev LAMP Stack (15 minutes)
 
 ### Step 1: Prerequisites
@@ -223,6 +255,13 @@ module vm '../infrastructure/iac-modules/avm-wrapper-linux-vm/main.bicep' = {
     publicIpId: publicIp.outputs.publicIpId
     nsgId: nsg.outputs.nsgId
     customData: lampCloudInit
+    
+    // ⚡ COST OPTIMIZATION: Uncomment for 84-87% savings with Spot VMs
+    // vmSize: 'Standard_D2s_v5'  // Change from B-series to D-series for Spot support
+    // vmPriority: 'Spot'  // Enable Spot pricing
+    // spotEvictionPolicy: 'Delete'  // Remove VM if evicted (simplest)
+    // spotMaxPrice: '-1'  // No price limit
+    // NOTE: Spot VMs may be interrupted. Not suitable for production!
   }
 }
 
@@ -376,6 +415,136 @@ az deployment group show --resource-group rg-mycoolapp-dev --name deploy-lamp-de
 - **NSG**: Attached to app-subnet, allows HTTP/HTTPS, denies SSH from internet
 - **Public IP**: Associated with VM NIC
 - **Storage**: Accessible from VM via managed identity
+
+---
+
+## Quick Start: Deploy Spot VM for Dev/Test (84-87% Savings!)
+
+### When to Use Spot VMs
+
+Spot VMs are perfect for **dev/test environments** where you can tolerate occasional interruptions. You'll save **84-87% on compute costs** (~$10-15/month vs ~$95 for regular D-series).
+
+⚠️ **Important**: Spot VMs can be evicted by Azure with 30 seconds notice. Do NOT use for:
+- Production workloads
+- Databases or stateful services
+- Long-running processes that can't restart
+
+✅ **Perfect for**:
+- Development and testing
+- CI/CD build agents
+- Ephemeral workloads
+- Learning and experimentation
+
+### Modify Your VM Deployment for Spot
+
+In your `deploy-lamp-dev.bicep`, change the VM module to use Spot pricing:
+
+```bicep
+// ============================================================================
+// 7. Linux VM with LAMP Stack (SPOT INSTANCE - 84-87% SAVINGS!)
+// ============================================================================
+
+module vm '../infrastructure/iac-modules/avm-wrapper-linux-vm/main.bicep' = {
+  name: 'vm-deployment'
+  params: {
+    vmName: '${appName}-${environment}-spot-vm'
+    workloadCriticality: 'dev-test'  // Important: dev-test tier for Spot
+    environment: environment
+    location: location
+    
+    // SPOT INSTANCE CONFIGURATION
+    vmSize: 'Standard_D2s_v5'  // Must use D-series (B-series doesn't support Spot)
+    vmPriority: 'Spot'  // Enable Spot pricing
+    spotEvictionPolicy: 'Delete'  // Remove VM if evicted (no storage charges)
+    spotMaxPrice: '-1'  // No price limit (pay up to on-demand rate)
+    
+    // Standard configuration
+    sshPublicKey: sshPublicKey
+    subnetId: vnet.outputs.subnetIds[0]
+    publicIpId: publicIp.outputs.publicIpId
+    nsgId: nsg.outputs.nsgId
+    customData: lampCloudInit
+    
+    additionalTags: {
+      instanceType: 'Spot'
+      costOptimization: 'true'
+      note: 'May be interrupted - not for production'
+    }
+  }
+}
+```
+
+### Cost Comparison
+
+| VM Instance Type | Monthly Cost | Savings |
+|---|---|---|
+| **Regular B2s** (default) | ~$30 | Baseline |
+| **Regular D2s_v5** | ~$95 | More powerful |
+| **Spot D2s_v5** | **~$10-15** | **84-87% savings!** |
+
+### What If Your VM Gets Evicted?
+
+**Spot VMs are evicted when Azure needs the capacity.** Here's what happens:
+
+1. **30-second warning**: Azure sends eviction notice
+2. **VM stops**: Azure deallocates or deletes the VM (based on `spotEvictionPolicy`)
+3. **You redeploy**: Restart your Bicep deployment
+4. **Cost**: Only pay for actual usage time
+
+**Eviction rates** (historical average):
+- **D-series in US regions**: 1-5% per week
+- **Most evictions**: Off-peak hours (nights/weekends)
+
+**Mitigation strategies**:
+- Use `spotEvictionPolicy: 'Deallocate'` to keep VM configuration
+- Save work frequently during development
+- Use stateless workloads
+- Accept that dev interruptions are worth 84-87% savings
+
+---
+
+## Cost Optimization Strategies
+
+### Strategy 1: Spot for Dev, Regular+RI for Prod
+
+**Recommended approach for most teams:**
+
+```
+Development:  Spot D2s_v5 ($10-15/mo)   → 84-87% savings
+Staging:      Regular + 1-year RI       → 23% savings  
+Production:   Regular + 3-year RI       → 40-50% savings
+```
+
+**Total savings**: 50-70% across all environments!
+
+### Strategy 2: Reserved Instances (Separate Purchase)
+
+Reserved Instances are **purchased separately** in Azure Portal (not in Bicep):
+
+1. **Deploy Regular VMs** (using this guide)
+2. **Azure Portal → Reservations** → Buy Reservations
+3. **Select**:
+   - Resource type: Virtual Machines
+   - Region: Central US (or your region)
+   - VM size: Standard_D4s_v5 (match your deployment)
+   - Term: 1-year (23% off) or 3-year (40% off)
+4. **Pay**: Upfront or monthly
+5. **RI discount**: Automatically applies to matching VMs
+
+**Cost savings**:
+- **1-year RI**: 23-34% discount
+- **3-year RI**: 37-50% discount
+
+**When to buy RIs**:
+- Production workloads (stable, predictable)
+- Workloads running 24/7
+- After 1-2 months of production usage (confirm sizing)
+
+### Strategy 3: Hybrid Approach
+
+**Development**: Spot VMs (84-87% savings)  
+**Production**: Regular VMs + Reserved Instances (37-50% savings)  
+**Result**: Maximum cost optimization across all environments
 
 ---
 

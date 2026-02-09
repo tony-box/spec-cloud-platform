@@ -1,14 +1,18 @@
 // ============================================================================
 // Azure Managed Disk Wrapper Module
 // ============================================================================
-// Purpose: Compliant Managed Disk wrapper around Azure Verified Module
+// Purpose: Compliant Managed Disk wrapper with cost tier support per business/cost v2.0.0
 // AVM Source: br/public:avm/res/compute/disk:0.6.0
 // Spec: infrastructure/iac-modules (iac-001)
-// Compliance: cost-001, dp-001, ac-001, comp-001, lint-001
+// Compliance: cost-001 v2.0.0, dp-001, ac-001, comp-001, lint-001
 // ============================================================================
 
 @description('Name of the managed disk')
 param diskName string
+
+@description('Workload criticality tier per business/cost v2.0.0')
+@allowed(['critical', 'non-critical', 'dev-test'])
+param workloadCriticality string = 'non-critical'
 
 @description('Environment: dev or prod')
 @allowed(['dev', 'prod'])
@@ -23,9 +27,9 @@ param location string = 'centralus'
 @maxValue(32767)
 param diskSizeGB int = 128
 
-@description('Disk SKU (Standard_LRS for dev, Premium_LRS for prod)')
+@description('Disk SKU per workload criticality (Critical: Premium_ZRS, Non-Critical: StandardSSD_LRS, Dev-Test: Standard_LRS)')
 @allowed(['Standard_LRS', 'StandardSSD_LRS', 'Premium_LRS', 'Premium_ZRS', 'PremiumV2_LRS', 'UltraSSD_LRS'])
-param diskSku string = (environment == 'dev') ? 'StandardSSD_LRS' : 'Premium_LRS'
+param diskSku string = workloadCriticality == 'critical' ? 'Premium_ZRS' : (workloadCriticality == 'non-critical' ? 'StandardSSD_LRS' : 'Standard_LRS')
 
 @description('Create option: Empty for new disk, Copy for snapshot copy')
 @allowed(['Empty', 'Copy'])
@@ -53,7 +57,9 @@ var defaultTags = {
   managedBy: 'bicep'
   tier: 'infrastructure'
   module: 'avm-wrapper-managed-disk'
-  version: '1.0.0'
+  version: '2.0.0'
+  workloadCriticality: workloadCriticality
+  costSpec: 'business/cost-001 v2.0.0'
 }
 
 var tags = union(defaultTags, additionalTags)

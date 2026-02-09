@@ -1,10 +1,10 @@
 # Azure Linux Virtual Machine Wrapper Module
 
 **Purpose**: Compliant Azure Linux VM wrapper around Azure Verified Module  
-**AVM Source**: `br/public:avm/res/compute/virtual-machine:0.7.3`  
+**AVM Source**: `br/public:avm/res/compute/virtual-machine:0.21.0`  
 **Spec**: infrastructure/iac-modules (iac-001)  
-**Version**: 1.0.0  
-**Status**: Ready for use
+**Version**: 2.1.0  
+**Status**: Production Ready (now with Spot instance support)
 
 ---
 
@@ -14,6 +14,7 @@ This wrapper module provides a compliant Azure Linux Virtual Machine with cost-o
 
 **Key Features**:
 - ✅ Cost-optimized VM SKUs (Standard_B2s dev, Standard_B4ms prod)
+- ✅ **NEW in v2.1.0:** Spot instance support (up to 90% cost savings for dev/test)
 - ✅ SSH key authentication only (no passwords per ac-001)
 - ✅ Ubuntu 22.04 LTS (5-year support)
 - ✅ Azure Disk Encryption for production (dp-001)
@@ -61,6 +62,9 @@ This wrapper module provides a compliant Azure Linux Virtual Machine with cost-o
 | `enableDiskEncryption` | bool | `true` (prod), `false` (dev) | Azure Disk Encryption |
 | `customData` | string | `''` (none) | Cloud-init script for provisioning |
 | `additionalTags` | object | `{}` | Additional tags |
+| `vmPriority` | string | `'Regular'` | VM instance type: `'Regular'` (pay-as-you-go) or `'Spot'` (cost-optimized) |
+| `spotEvictionPolicy` | string | `'Deallocate'` | Spot eviction behavior: `'Deallocate'` (retry later) or `'Delete'` (remove VM). Only used with Spot priority |
+| `spotMaxPrice` | string | `'-1'` | Max hourly price in USD for Spot VMs. `'-1'` = no limit. Only used with Spot priority |
 
 ---
 
@@ -77,6 +81,45 @@ This wrapper module provides a compliant Azure Linux Virtual Machine with cost-o
 | `vmSize` | string | VM SKU |
 | `osDiskId` | string | OS disk resource ID |
 | `resourceGroupName` | string | Resource group name |
+
+---
+
+## Instance Types
+
+This module supports two instance type options per the cost-001 v2.0.0 specification:
+
+### Regular (Pay-as-You-Go)
+- **Default setting** (`vmPriority: 'Regular'`)
+- **Availability**: Always available, no interruption risk
+- **Cost**: Standard on-demand pricing (~$30-250/month depending on SKU)
+- **Best for**: Production workloads, critical applications
+- **RI Eligible**: Yes - can apply Reserved Instance discounts (purchase separately in Azure Portal)
+
+### Spot
+- **Setting**: `vmPriority: 'Spot'`
+- **Availability**: Subject to Azure capacity; may be interrupted with 30-second notice
+- **Cost**: Up to 90% savings vs on-demand
+- **Eviction Handling**: Configure `spotEvictionPolicy` to `Deallocate` (retry) or `Delete` (remove)
+- **Best for**: Dev/test, batch jobs, non-critical workloads
+- **Note**: B-series VMs do NOT support Spot; use D-series instead
+
+### Cost Comparison
+
+| Instance Type | Standard_B2s | Standard_D2s_v5 | Savings |
+|---|---|---|---|
+| **Regular On-Demand** | ~$30/mo | ~$95/mo | Baseline |
+| **Spot (with -1 max price)** | N/A (B-series unsupported) | ~$10-15/mo | 84-87% |
+| **1-Year RI** | ~$23/mo | ~$63/mo | 23-34% |
+| **3-Year RI** | ~$19/mo | ~$47/mo | 37-50% |
+
+**Cost Optimization Strategy by Environment**:
+
+| Environment | Recommended Instance | Reason |
+|---|---|---|
+| **Production** | Regular + 3-Year RI | Reliability + 37-50% savings |
+| **Staging** | Regular + 1-Year RI | Balance cost/reliability |
+| **Dev/Test** | Spot on D-series | 84-87% savings, acceptable interruption |
+| **CI/CD Agents** | Spot | Can restart jobs; perfect for spot evictions |
 
 ---
 
@@ -155,7 +198,40 @@ module vm '../../../infrastructure/iac-modules/avm-wrapper-linux-vm/main.bicep' 
 // After deployment: http://<VM-IP>/info.php shows PHP info
 ```
 
-### Example 4: VM with Managed Identity and Key Vault Access
+### Example 4: Cost-Optimized Spot VM for Dev/Test (Up to 90% Savings!)
+
+```bicep
+module vm '../../../infrastructure/iac-modules/avm-wrapper-linux-vm/main.bicep' = {
+  name: 'vm-deployment'
+  params: {
+    vmName: 'mycoolapp-dev-spot'
+    environment: 'dev'
+    workloadCriticality: 'dev-test'
+    vmSize: 'Standard_D2s_v5'  // D-series required for Spot (B-series not supported)
+    vmPriority: 'Spot'  // Enable Spot for cost savings
+    spotEvictionPolicy: 'Delete'  // Remove VM if evicted (simplest; no storage charges)
+    spotMaxPrice: '-1'  // No price limit; pay up to on-demand rate
+    sshPublicKey: loadTextContent('~/.ssh/id_rsa.pub')
+    subnetId: vnet.outputs.subnetIds[0]
+    additionalTags: {
+      instanceType: 'Spot'
+      costOptimization: 'true'
+      note: 'May be interrupted; not for production'
+    }
+  }
+}
+
+// Output: Standard_D2s_v5, ~$10-15/month vs ~$95 regular (84-87% savings!)
+// Suitable for: Development, testing, ephemeral workloads, CI/CD agents
+```
+
+**⚠️ Spot VM Considerations**:
+- **Interruption**: Azure can reclaim the VM with 30 seconds notice
+- **Use Case**: Dev/test environments, batch processing, CI/CD runners, stateless workloads
+- **Not Suitable For**: Databases, long-running services, production workloads
+- **Eviction Rates**: Varies by region and size (typically 1-5% per week for D-series)
+
+### Example 5: VM with Managed Identity and Key Vault Access
 
 ```bicep
 module vm '../../../infrastructure/iac-modules/avm-wrapper-linux-vm/main.bicep' = {

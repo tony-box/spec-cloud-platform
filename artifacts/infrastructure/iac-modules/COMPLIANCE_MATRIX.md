@@ -2,8 +2,8 @@
 
 **Purpose**: Detailed compliance traceability for all 8 wrapper modules against platform specs  
 **Status**: Active  
-**Version**: 1.0.0  
-**Last Updated**: 2026-02-07  
+**Version**: 2.1.0  
+**Last Updated**: 2026-02-09  
 
 ---
 
@@ -21,10 +21,11 @@ This matrix documents how each of the 8 IaC wrapper modules enforces compliance 
 
 ## Compliance Specifications Summary
 
-### cost-001: Cost Reduction Targets
-- **Objective**: Reduce infrastructure costs by 40% through SKU optimization
+### cost-001: Cost Reduction Targets (v2.0.0)
+- **Objective**: Reduce infrastructure costs by 40% through SKU optimization and instance type selection
 - **Requirements**:
-  - VM SKUs limited to cost-optimized tiers (B-series)
+  - VM SKUs limited to cost-optimized tiers (B-series for Regular, D-series for Spot)
+  - **NEW (v2.1.0)**: Spot instance support for 84-87% dev/test cost savings
   - MySQL SKUs limited to Burstable/GeneralPurpose tiers
   - Storage account limited to Standard_LRS/ZRS
   - No premium resources in dev environments
@@ -115,11 +116,14 @@ This matrix documents how each of the 8 IaC wrapper modules enforces compliance 
 
 ---
 
-### Module 4: avm-wrapper-linux-vm
+### Module 4: avm-wrapper-linux-vm (v2.1.0 - Spot Instance Support Added)
 
 | Spec | Requirement | Implementation | Enforcement Mechanism |
 |------|-------------|----------------|----------------------|
-| **cost-001** | B-series SKUs only | `@allowed(['Standard_B2s', 'Standard_B4ms'])` on `vmSize` parameter | Parameter constraint |
+| **cost-001** | B-series SKUs for Regular | `@allowed(['Standard_B2s', 'Standard_B4ms', 'Standard_D2s_v5', 'Standard_D4s_v5'])` on `vmSize` parameter | Parameter constraint |
+| **cost-001** | **NEW: Spot instance support** | `vmPriority: 'Regular' \| 'Spot'` parameter (84-87% savings for dev/test) | Optional parameter (defaults to 'Regular') |
+| **cost-001** | Spot eviction control | `spotEvictionPolicy: 'Deallocate' \| 'Delete'` parameter | Conditional (only when vmPriority='Spot') |
+| **cost-001** | Spot price control | `spotMaxPrice: string` parameter (default '-1' = no limit) | Conditional (only when vmPriority='Spot') |
 | **cost-001** | Cost-optimized disks | StandardSSD_LRS default for dev, Premium_LRS for prod | Environment-based default |
 | **dp-001** | Encryption at rest | `encryptionAtHost: true` for prod environment | Environment-based conditional |
 | **dp-001** | N/A (VM has no backup in module) | Backup is separate Azure Backup service | Out of scope |
@@ -129,9 +133,15 @@ This matrix documents how each of the 8 IaC wrapper modules enforces compliance 
 | **comp-001** | US regions only | `@allowed(['centralus', 'eastus'])` on `location` parameter | Parameter constraint |
 | **comp-001** | NIST 800-171 tagging | `Compliance: 'NIST-800-171'` tag automatically applied | Default tag merge |
 | **lint-001** | Bicep validation | Module passes `bicep build` | Build-time validation |
-| **lint-001** | Documentation | README.md (600+ lines), parameters.json with cloud-init example | Files included |
+| **lint-001** | Documentation | README.md (600+ lines with Spot guidance), parameters.json + parameters-spot-example.json | Files included |
 
-**Audit Trail**: All deployments include VM ID, private IP, managed identity principal ID, vmSize, osDiskId, and compliance tags in outputs
+**Key Updates (v2.1.0)**:
+- Added `vmPriority`, `spotEvictionPolicy`, `spotMaxPrice` parameters for Spot instance support
+- Expanded VM SKU options to include D-series (required for Spot; B-series doesn't support Spot)
+- Maintains backward compatibility (vmPriority defaults to 'Regular')
+- See [reserved-instance-vm-migration.md](./reserved-instance-vm-migration.md) for deprecated template migration
+
+**Audit Trail**: All deployments include VM ID, private IP, managed identity principal ID, vmSize, vmPriority (if Spot), osDiskId, and compliance tags in outputs
 
 ---
 

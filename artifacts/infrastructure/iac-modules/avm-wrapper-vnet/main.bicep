@@ -1,14 +1,19 @@
 // ============================================================================
 // Azure Virtual Network Wrapper Module
 // ============================================================================
-// Purpose: Compliant VNet wrapper around Azure Verified Module
+// Purpose: Compliant VNet wrapper with multi-zone support per business/cost v2.0.0
 // AVM Source: br/public:avm/res/network/virtual-network:0.7.2
 // Spec: infrastructure/iac-modules (iac-001)
-// Compliance: cost-001, dp-001, ac-001, comp-001, lint-001
+// Compliance: cost-001 v2.0.0, dp-001, ac-001, comp-001, lint-001
+// Multi-Zone: Critical only (cost optimization per cost-001)
 // ============================================================================
 
 @description('Name of the virtual network')
 param vnetName string
+
+@description('Workload criticality tier per business/cost v2.0.0')
+@allowed(['critical', 'non-critical', 'dev-test'])
+param workloadCriticality string = 'non-critical'
 
 @description('Address prefix for the VNet (CIDR notation)')
 param addressPrefix string = '10.0.0.0/16'
@@ -48,7 +53,10 @@ var defaultTags = {
   managedBy: 'bicep'
   tier: 'infrastructure'
   module: 'avm-wrapper-vnet'
-  version: '1.0.0'
+  version: '2.0.0'
+  workloadCriticality: workloadCriticality
+  multiZoneRequired: workloadCriticality == 'critical' ? 'true' : 'false'
+  costSpec: 'business/cost-001 v2.0.0'
 }
 
 var tags = union(defaultTags, additionalTags)

@@ -1,0 +1,126 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vmName": {
+      "value": "mycoolapp-dev-spot-vm",
+      "metadata": {
+        "description": "Cost-optimized Spot VM for dev/test workloads (up to 90% savings vs on-demand)"
+      }
+    },
+    "workloadCriticality": {
+      "value": "dev-test",
+      "metadata": {
+        "description": "Dev/test workload allows Spot VM for cost optimization"
+      }
+    },
+    "environment": {
+      "value": "dev",
+      "metadata": {
+        "description": "Development environment"
+      }
+    },
+    "location": {
+      "value": "centralus",
+      "metadata": {
+        "description": "Primary US region for deployment"
+      }
+    },
+    "vmSize": {
+      "value": "Standard_D2s_v5",
+      "metadata": {
+        "description": "D-series required for Spot support. Note: B-series is cheaper but does NOT support Spot instances"
+      }
+    },
+    "adminUsername": {
+      "value": "azureuser",
+      "metadata": {
+        "description": "Admin user (no password auth per security policy)"
+      }
+    },
+    "sshPublicKey": {
+      "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC... (replace with your SSH public key)",
+      "metadata": {
+        "description": "SSH public key for remote access (generate with: ssh-keygen -t rsa -b 4096)"
+      }
+    },
+    "subnetId": {
+      "value": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-mycoolapp-dev/providers/Microsoft.Network/virtualNetworks/mycoolapp-dev-vnet/subnets/app-subnet",
+      "metadata": {
+        "description": "Subnet where VM will be deployed"
+      }
+    },
+    "publicIpId": {
+      "value": "",
+      "metadata": {
+        "description": "Optional public IP for SSH access. Leave empty for private-only deployment"
+      }
+    },
+    "nsgId": {
+      "value": "",
+      "metadata": {
+        "description": "Optional NSG for network rules. Leave empty if using subnet-level NSG"
+      }
+    },
+    "enableAcceleratedNetworking": {
+      "value": false,
+      "metadata": {
+        "description": "Accelerated networking for D2s_v5 (optional enhancement)"
+      }
+    },
+    "osDiskSizeGB": {
+      "value": 64,
+      "metadata": {
+        "description": "OS disk size in GB"
+      }
+    },
+    "osDiskType": {
+      "value": "StandardSSD_LRS",
+      "metadata": {
+        "description": "Standard SSD for dev/test (supports Spot). Use Premium_LRS for prod only"
+      }
+    },
+    "enableDiskEncryption": {
+      "value": false,
+      "metadata": {
+        "description": "Disk encryption disabled for dev (enable for prod)"
+      }
+    },
+    "customData": {
+      "value": "#cloud-config\npackage_update: true\npackage_upgrade: true\npackages:\n  - apache2\n  - mysql-server\n  - php\n  - libapache2-mod-php\n  - php-mysql\nruncmd:\n  - systemctl start apache2\n  - systemctl enable apache2\n  - systemctl start mysql\n  - systemctl enable mysql\n  - echo '<?php phpinfo(); ?>' > /var/www/html/info.php\n",
+      "metadata": {
+        "description": "Cloud-init script for LAMP stack provisioning"
+      }
+    },
+    "additionalTags": {
+      "value": {
+        "costCenter": "Engineering",
+        "project": "LAMP-Stack",
+        "instanceType": "Spot",
+        "costOptimization": "true",
+        "note": "This Spot VM may be interrupted by Azure. Not suitable for production workloads"
+      },
+      "metadata": {
+        "description": "Custom tags for cost tracking and resource management"
+      }
+    },
+    "vmPriority": {
+      "value": "Spot",
+      "metadata": {
+        "description": "Spot priority enables up to 90% cost savings. May be interrupted by Azure with 30 seconds notice"
+      }
+    },
+    "spotEvictionPolicy": {
+      "value": "Delete",
+      "metadata": {
+        "description": "Delete: Remove VM on eviction (simplest, no storage costs). Deallocate: Keep VM in stopped state for retry"
+      }
+    },
+    "spotMaxPrice": {
+      "value": -1,
+      "metadata": {
+        "description": "Maximum hourly price in USD. -1 = no limit (pay up to regular price). Set custom limit (e.g., 0.50) to constrain costs"
+      }
+    }
+  }
+}

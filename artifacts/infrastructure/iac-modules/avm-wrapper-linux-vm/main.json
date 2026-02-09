@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "6337250204032613307"
+      "templateHash": "16278283217324505358"
     }
   },
   "parameters": {
@@ -13,6 +13,18 @@
       "type": "string",
       "metadata": {
         "description": "Name of the virtual machine"
+      }
+    },
+    "workloadCriticality": {
+      "type": "string",
+      "defaultValue": "non-critical",
+      "allowedValues": [
+        "critical",
+        "non-critical",
+        "dev-test"
+      ],
+      "metadata": {
+        "description": "Workload criticality tier per business/cost v2.0.0"
       }
     },
     "environment": {
@@ -46,18 +58,20 @@
         3
       ],
       "metadata": {
-        "description": "Availability zone (-1 for none, 1-3 for zonal deployment)"
+        "description": "Availability zone (-1 for none, 1-3 for zonal deployment, 1-3+ for multi-zone per criticality)"
       }
     },
     "vmSize": {
       "type": "string",
-      "defaultValue": "[if(equals(parameters('environment'), 'dev'), 'Standard_B2s', 'Standard_B4ms')]",
+      "defaultValue": "[if(equals(parameters('workloadCriticality'), 'critical'), 'Standard_D4s_v5', if(equals(parameters('workloadCriticality'), 'non-critical'), 'Standard_B4ms', 'Standard_B2s'))]",
       "allowedValues": [
         "Standard_B2s",
-        "Standard_B4ms"
+        "Standard_B4ms",
+        "Standard_D2s_v5",
+        "Standard_D4s_v5"
       ],
       "metadata": {
-        "description": "VM size (restricted to cost-optimized SKUs per cost-001)"
+        "description": "VM size (determined by workload criticality per cost-001 v2.0.0)"
       }
     },
     "adminUsername": {
@@ -141,6 +155,35 @@
       "metadata": {
         "description": "Additional tags to merge with default compliance tags"
       }
+    },
+    "vmPriority": {
+      "type": "string",
+      "defaultValue": "Regular",
+      "allowedValues": [
+        "Regular",
+        "Spot"
+      ],
+      "metadata": {
+        "description": "VM priority: Regular (pay-as-you-go/RI-eligible) or Spot (interruption-prone, cost-optimized)"
+      }
+    },
+    "spotEvictionPolicy": {
+      "type": "string",
+      "defaultValue": "Deallocate",
+      "allowedValues": [
+        "Deallocate",
+        "Delete"
+      ],
+      "metadata": {
+        "description": "Spot eviction policy: Deallocate (stop and retry later) or Delete (remove VM). Only used when vmPriority is Spot."
+      }
+    },
+    "spotMaxPrice": {
+      "type": "string",
+      "defaultValue": "-1",
+      "metadata": {
+        "description": "Maximum hourly price in USD for Spot VMs. \"-1\" = no limit (pay up to regular price). Only used when vmPriority is Spot."
+      }
     }
   },
   "variables": {
@@ -150,7 +193,10 @@
       "managedBy": "bicep",
       "tier": "infrastructure",
       "module": "avm-wrapper-linux-vm",
-      "version": "1.0.0"
+      "version": "2.0.0",
+      "workloadCriticality": "[parameters('workloadCriticality')]",
+      "costBaseline": "[if(equals(parameters('workloadCriticality'), 'critical'), '$150-250', if(equals(parameters('workloadCriticality'), 'non-critical'), '$50-100', '$20-50'))]",
+      "costSpec": "business/cost-001 v2.0.0"
     },
     "tags": "[union(variables('defaultTags'), parameters('additionalTags'))]",
     "imageReference": {

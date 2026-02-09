@@ -1,8 +1,8 @@
 # IaC Module Catalog
 
 **Purpose**: Complete catalog of Azure Verified Module (AVM) wrapper modules for LAMP stack infrastructure  
-**Version**: 1.0.0  
-**Last Updated**: 2026-02-07  
+**Version**: 2.1.0  
+**Last Updated**: 2026-02-09  
 **Owner**: Infrastructure Engineering Team
 
 ---
@@ -25,14 +25,15 @@ This catalog contains 8 wrapper modules organized into 3 categories: **Networkin
 | 1 | [avm-wrapper-vnet](#1-avm-wrapper-vnet) | Networking | Virtual Network | $0 | $0-2944* |
 | 2 | [avm-wrapper-nsg](#2-avm-wrapper-nsg) | Networking | Network Security Group | $0 | $0 |
 | 3 | [avm-wrapper-public-ip](#3-avm-wrapper-public-ip) | Networking | Public IP Address | $3.65/mo | $3.65/mo |
-| 4 | [avm-wrapper-linux-vm](#4-avm-wrapper-linux-vm) | Compute | Linux Virtual Machine | $35/mo | $140/mo |
+| 4 | [avm-wrapper-linux-vm](#4-avm-wrapper-linux-vm) | Compute | Linux VM (Regular or Spot*) | $10-35/mo | $140/mo |
 | 5 | [avm-wrapper-managed-disk](#5-avm-wrapper-managed-disk) | Storage | Managed Disk | $10/mo | $82/mo (512GB) |
 | 6 | [avm-wrapper-key-vault](#6-avm-wrapper-key-vault) | Security | Key Vault | <$1/mo | $5-10/mo |
 | 7 | [avm-wrapper-storage-account](#7-avm-wrapper-storage-account) | Storage | Storage Account | $3/mo | $30-35/mo |
 | 8 | [avm-wrapper-mysql-flexibleserver](#8-avm-wrapper-mysql-flexibleserver) | Database | Azure MySQL Flexible Server | $17/mo | $160/mo |
 | | **TOTAL LAMP Stack** | | | **~$70/mo** | **~$420-680/mo** |
 
-_*DDoS Protection Standard for production VNets adds ~$2944/month if enabled_
+_*DDoS Protection Standard for production VNets adds ~$2944/month if enabled_  
+_*Spot VM (dev/test only) saves up to 84-87% on compute costs; requires D-series SKU_
 
 ---
 
@@ -172,32 +173,62 @@ module publicIp './avm-wrapper-public-ip/main.bicep' = {
 
 ### 4. avm-wrapper-linux-vm
 
-**Linux Virtual Machine Wrapper**
+**Linux Virtual Machine Wrapper** (v2.1.0 - Now with Spot Instance Support!)
 
 | Property | Value |
 |----------|-------|
-| **Purpose** | Cost-optimized Ubuntu 22.04 LTS VM for LAMP stack |
-| **AVM Module** | `br/public:avm/res/compute/virtual-machine:0.7.3` |
+| **Purpose** | Cost-optimized Ubuntu 22.04 LTS VM for LAMP stack (Regular or Spot) |
+| **AVM Module** | `br/public:avm/res/compute/virtual-machine:0.21.0` |
 | **README** | [avm-wrapper-linux-vm/README.md](./avm-wrapper-linux-vm/README.md) |
-| **Parameters** | [parameters.json](./avm-wrapper-linux-vm/parameters.json) |
-| **Compliance** | SKU restricted to Standard_B2s/B4ms, SSH keys only, disk encryption prod |
-| **Cost (Dev)** | ~$35/month (Standard_B2s, 2 vCPU, 4 GB RAM, StandardSSD_LRS 64 GB) |
-| **Cost (Prod)** | ~$140/month (Standard_B4ms, 4 vCPU, 16 GB RAM, Premium_LRS 128 GB, encrypted) |
+| **Parameters** | [parameters.json](./avm-wrapper-linux-vm/parameters.json) · [Spot Example](./avm-wrapper-linux-vm/parameters-spot-example.json) |
+| **Compliance** | SKU restricted to Standard_B2s/B4ms (D-series for Spot), SSH keys only, disk encryption prod |
+| **Cost (Dev)** | ~$35/mo Regular OR ~$10-15/mo Spot |
+| **Cost (Prod)** | ~$140/mo Regular + RI discounts OR N/A Spot (use Regular) |
 
-**Key Features**:
+**Key Features** (v2.1.0):
+- ✅ **NEW: Spot instance support** (up to 90% cost savings for dev/test!)
 - Ubuntu 22.04 LTS (5-year support)
 - SSH key authentication only (no passwords)
 - Azure Disk Encryption for production
 - System-assigned managed identity (Azure RBAC)
 - Cloud-init support for LAMP stack provisioning
 - Accelerated networking (Standard_B4ms+)
+- Reserved Instance eligible for production workloads
+
+**New Instance Type Parameters (v2.1.0)**:
+```bicep
+vmPriority: 'Regular' | 'Spot'          // Choose instance type
+spotEvictionPolicy: 'Deallocate' | 'Delete'  // Eviction behavior (Spot only)
+spotMaxPrice: '-1'                      // Max hourly price $ (Spot only)
+```
 
 **Common Use Cases**:
-- LAMP stack web server (Apache, MySQL, PHP)
-- Application server with cloud-init provisioning
-- Dev/test environments
+- Regular: Production LAMP stack, critical applications, Reserved Instance eligible
+- Spot: Dev/test environments, CI/CD agents, batch jobs, ephemeral workloads
 
-**Example**:
+**Cost Optimization Strategy**:
+- **Production**: Regular + 3-year RI purchase (37-50% savings)
+- **Dev/Test**: Spot on D-series (84-87% savings)
+
+**Example (Regular)**:
+```bicep
+module vm './avm-wrapper-linux-vm/main.bicep' = {
+  params: {
+    vmName: 'mycoolapp-prod-vm'
+    environment: 'prod'
+    vmSize: 'Standard_B4ms'
+    // vmPriority defaults to 'Regular' - no additional params needed
+    sshPublicKey: loadTextContent('~/.ssh/id_rsa.pub')
+    subnetId: vnet.outputs.subnetIds[0]
+  }
+}
+```
+
+**Example (Spot)**: See [parameters-spot-example.json](./avm-wrapper-linux-vm/parameters-spot-example.json)
+
+**⚠️ DEPRECATION**: `reserved-instance-vm.bicep` has been retired. See [Migration Guide](./reserved-instance-vm-migration.md)
+
+---
 ```bicep
 module vm './avm-wrapper-linux-vm/main.bicep' = {
   params: {

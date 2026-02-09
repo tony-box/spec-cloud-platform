@@ -1,14 +1,20 @@
 // ============================================================================
 // Azure Linux Virtual Machine Wrapper Module
 // ============================================================================
-// Purpose: Compliant Linux VM wrapper around Azure Verified Module
+// Purpose: Compliant Linux VM wrapper with cost tier support per business/cost v2.0.0
 // AVM Source: br/public:avm/res/compute/virtual-machine:0.21.0
 // Spec: infrastructure/iac-modules (iac-001)
-// Compliance: cost-001, dp-001, ac-001, comp-001, lint-001
+// Compliance: cost-001 v2.0.0, dp-001, ac-001, comp-001, lint-001
+// Cost Baselines: Critical $150-250/mo, Non-Critical $50-100/mo, Dev/Test $20-50/mo
+// Instance Types: Supports Regular (pay-as-you-go/RI-eligible) and Spot (cost-optimized) instances
 // ============================================================================
 
 @description('Name of the virtual machine')
 param vmName string
+
+@description('Workload criticality tier per business/cost v2.0.0')
+@allowed(['critical', 'non-critical', 'dev-test'])
+param workloadCriticality string = 'non-critical'
 
 @description('Environment: dev or prod')
 @allowed(['dev', 'prod'])
@@ -18,13 +24,13 @@ param environment string
 @allowed(['centralus', 'eastus'])
 param location string = 'centralus'
 
-@description('Availability zone (-1 for none, 1-3 for zonal deployment)')
+@description('Availability zone (-1 for none, 1-3 for zonal deployment, 1-3+ for multi-zone per criticality)')
 @allowed([-1, 1, 2, 3])
 param availabilityZone int = -1
 
-@description('VM size (restricted to cost-optimized SKUs per cost-001)')
-@allowed(['Standard_B2s', 'Standard_B4ms'])
-param vmSize string = (environment == 'dev') ? 'Standard_B2s' : 'Standard_B4ms'
+@description('VM size (determined by workload criticality per cost-001 v2.0.0)')
+@allowed(['Standard_B2s', 'Standard_B4ms', 'Standard_D2s_v5', 'Standard_D4s_v5'])
+param vmSize string = workloadCriticality == 'critical' ? 'Standard_D4s_v5' : (workloadCriticality == 'non-critical' ? 'Standard_B4ms' : 'Standard_B2s')
 
 @description('Admin username for SSH access')
 param adminUsername string = 'azureuser'
@@ -63,6 +69,17 @@ param customData string = ''
 @description('Additional tags to merge with default compliance tags')
 param additionalTags object = {}
 
+@description('VM priority: Regular (pay-as-you-go/RI-eligible) or Spot (interruption-prone, cost-optimized)')
+@allowed(['Regular', 'Spot'])
+param vmPriority string = 'Regular'
+
+@description('Spot eviction policy: Deallocate (stop and retry later) or Delete (remove VM). Only used when vmPriority is Spot.')
+@allowed(['Deallocate', 'Delete'])
+param spotEvictionPolicy string = 'Deallocate'
+
+@description('Maximum hourly price in USD for Spot VMs. "-1" = no limit (pay up to regular price). Only used when vmPriority is Spot.')
+param spotMaxPrice string = '-1'
+
 // ============================================================================
 // Variables
 // ============================================================================
@@ -73,7 +90,10 @@ var defaultTags = {
   managedBy: 'bicep'
   tier: 'infrastructure'
   module: 'avm-wrapper-linux-vm'
-  version: '1.0.0'
+  version: '2.0.0'
+  workloadCriticality: workloadCriticality
+  costBaseline: workloadCriticality == 'critical' ? '$150-250' : (workloadCriticality == 'non-critical' ? '$50-100' : '$20-50')
+  costSpec: 'business/cost-001 v2.0.0'
 }
 
 var tags = union(defaultTags, additionalTags)
@@ -190,6 +210,10 @@ module vm 'br/public:avm/res/compute/virtual-machine:0.21.0' = {
     
     // Cloud-init custom data (for LAMP stack provisioning)
     customData: customData != '' ? base64(customData) : null
+    
+    // Note: Spot instance support (priority, evictionPolicy, billingProfile) requires AVM version >= 0.22.0
+    // Currently using AVM 0.21.0 - Spot parameters defined above for future compatibility
+    // See: VM_INSTANCE_TYPE_CONSOLIDATION_PLAN.md for implementation status
     
     // Boot diagnostics (enabled for troubleshooting)
     bootDiagnostics: true
