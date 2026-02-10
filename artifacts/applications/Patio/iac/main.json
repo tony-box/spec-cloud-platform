@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.36.177.2456",
-      "templateHash": "7878416930404466247"
+      "version": "0.37.4.10188",
+      "templateHash": "8026101591115237518"
     }
   },
   "parameters": {
@@ -104,6 +104,25 @@
           },
           "costCenter": {
             "value": "[parameters('costCenter')]"
+          },
+          "vmSku": "[if(equals(parameters('environment'), 'prod'), createObject('value', 'Standard_D96ds_v5'), if(equals(parameters('environment'), 'test'), createObject('value', 'Standard_D48ds_v5'), createObject('value', 'Standard_D32ds_v5')))]",
+          "storageSku": {
+            "value": "Premium_ZRS"
+          },
+          "enableGpuAcceleration": {
+            "value": false
+          },
+          "enableUltraDisk": {
+            "value": "[equals(parameters('environment'), 'prod')]"
+          },
+          "enableDiskEncryption": {
+            "value": true
+          },
+          "enableCmk": {
+            "value": "[equals(parameters('environment'), 'prod')]"
+          },
+          "costProfile": {
+            "value": "unlimited-performance"
           }
         },
         "template": {
@@ -112,8 +131,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "15962561841234309740"
+              "version": "0.37.4.10188",
+              "templateHash": "18220351607727817892"
             }
           },
           "parameters": {
@@ -160,16 +179,101 @@
               "metadata": {
                 "description": "Optional cost center tag value."
               }
+            },
+            "vmSku": {
+              "type": "string",
+              "allowedValues": [
+                "Standard_D32ds_v5",
+                "Standard_D48ds_v5",
+                "Standard_D64ds_v5",
+                "Standard_D96ds_v5",
+                "Standard_M128ms",
+                "Standard_M192idms_v2",
+                "Standard_ND96amsr_A100_v4"
+              ],
+              "metadata": {
+                "description": "VM SKU for compute resources - Premium only (cost-001 v3.0.0)"
+              }
+            },
+            "storageSku": {
+              "type": "string",
+              "allowedValues": [
+                "Premium_LRS",
+                "Premium_ZRS",
+                "PremiumV2_LRS",
+                "PremiumV2_ZRS",
+                "UltraSSD_LRS"
+              ],
+              "metadata": {
+                "description": "Storage account SKU - Premium only (cost-001 v3.0.0)"
+              }
+            },
+            "enableGpuAcceleration": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable GPU acceleration for workload (ND96amsr_A100_v4)"
+              }
+            },
+            "enableUltraDisk": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable Ultra Disk for maximum throughput (160k IOPS, 4000 MB/s)"
+              }
+            },
+            "ultraDiskIops": {
+              "type": "int",
+              "defaultValue": 160000,
+              "metadata": {
+                "description": "Ultra Disk IOPS provisioning (160000 max)"
+              }
+            },
+            "ultraDiskThroughput": {
+              "type": "int",
+              "defaultValue": 4000,
+              "metadata": {
+                "description": "Ultra Disk throughput in MB/s (4000 max)"
+              }
+            },
+            "enableDiskEncryption": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable disk encryption for all environments (cost-001 v3.0.0 mandatory)"
+              }
+            },
+            "enableCmk": {
+              "type": "bool",
+              "defaultValue": "[equals(parameters('environment'), 'prod')]",
+              "metadata": {
+                "description": "Enable customer-managed encryption key (CMK) for production"
+              }
+            },
+            "costProfile": {
+              "type": "string",
+              "defaultValue": "unlimited-performance",
+              "allowedValues": [
+                "unlimited-performance",
+                "cost-optimized"
+              ],
+              "metadata": {
+                "description": "Cost profile strategy"
+              }
             }
           },
           "variables": {
             "namePrefix": "[format('{0}-{1}', parameters('appName'), parameters('environment'))]",
-            "baselineCost": "[if(equals(parameters('workloadCriticality'), 'critical'), '150-250', if(equals(parameters('workloadCriticality'), 'non-critical'), '50-100', '20-50'))]",
             "tags": {
               "application": "[parameters('appName')]",
               "environment": "[parameters('environment')]",
               "criticality": "[parameters('workloadCriticality')]",
-              "baselineCost": "[variables('baselineCost')]",
+              "performanceSpec": "business/cost-001 v3.0.0",
+              "computeSpec": "infrastructure/compute-001 v3.0.0",
+              "storageSpec": "infrastructure/storage-001 v3.0.0",
+              "networkSpec": "infrastructure/networking-001 v3.0.0",
+              "iamSpec": "infrastructure/iac-modules-001 v2.0.0",
+              "costProfile": "[parameters('costProfile')]",
               "compliance": "nist-800-171",
               "costCenter": "[parameters('costCenter')]"
             }
@@ -187,6 +291,34 @@
             "tags": {
               "type": "object",
               "value": "[variables('tags')]"
+            },
+            "vmSku": {
+              "type": "string",
+              "value": "[parameters('vmSku')]"
+            },
+            "storageSku": {
+              "type": "string",
+              "value": "[parameters('storageSku')]"
+            },
+            "enableGpuAcceleration": {
+              "type": "bool",
+              "value": "[parameters('enableGpuAcceleration')]"
+            },
+            "enableUltraDisk": {
+              "type": "bool",
+              "value": "[parameters('enableUltraDisk')]"
+            },
+            "enableDiskEncryption": {
+              "type": "bool",
+              "value": "[parameters('enableDiskEncryption')]"
+            },
+            "enableCmk": {
+              "type": "bool",
+              "value": "[parameters('enableCmk')]"
+            },
+            "costProfile": {
+              "type": "string",
+              "value": "[parameters('costProfile')]"
             }
           }
         }
@@ -227,8 +359,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "4720826582609079322"
+              "version": "0.37.4.10188",
+              "templateHash": "14694050348765840294"
             }
           },
           "parameters": {
@@ -1090,8 +1222,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "1658414635000343559"
+              "version": "0.37.4.10188",
+              "templateHash": "7174679881513220452"
             }
           },
           "parameters": {
@@ -2959,8 +3091,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "114410986663047027"
+              "version": "0.37.4.10188",
+              "templateHash": "9889926185583263059"
             }
           },
           "parameters": {
@@ -3771,8 +3903,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "16948148955700830528"
+              "version": "0.37.4.10188",
+              "templateHash": "4517988989924956402"
             }
           },
           "parameters": {
@@ -3826,17 +3958,15 @@
             },
             "diskSku": {
               "type": "string",
-              "defaultValue": "[if(equals(parameters('workloadCriticality'), 'critical'), 'Premium_ZRS', if(equals(parameters('workloadCriticality'), 'non-critical'), 'StandardSSD_LRS', 'Standard_LRS'))]",
+              "defaultValue": "Premium_ZRS",
               "allowedValues": [
-                "Standard_LRS",
-                "StandardSSD_LRS",
                 "Premium_LRS",
                 "Premium_ZRS",
                 "PremiumV2_LRS",
                 "UltraSSD_LRS"
               ],
               "metadata": {
-                "description": "Disk SKU per workload criticality (Critical: Premium_ZRS, Non-Critical: StandardSSD_LRS, Dev-Test: Standard_LRS)"
+                "description": "Disk SKU per performance requirements (Premium_ZRS minimum for all tiers per cost-001 v3.0.0; UltraSSD_LRS for maximum throughput)"
               }
             },
             "createOption": {
@@ -3859,9 +3989,9 @@
             },
             "enableEncryption": {
               "type": "bool",
-              "defaultValue": "[equals(parameters('environment'), 'prod')]",
+              "defaultValue": true,
               "metadata": {
-                "description": "Enable encryption at rest (required for prod per dp-001)"
+                "description": "Enable encryption at rest (required for all environments per dp-001 and cost-001 v3.0.0)"
               }
             },
             "zone": {
@@ -3886,9 +4016,9 @@
               "managedBy": "bicep",
               "tier": "infrastructure",
               "module": "avm-wrapper-managed-disk",
-              "version": "2.0.0",
+              "version": "3.0.0",
               "workloadCriticality": "[parameters('workloadCriticality')]",
-              "costSpec": "business/cost-001 v2.0.0"
+              "performanceSpec": "business/cost-001 v3.0.0"
             },
             "tags": "[union(variables('defaultTags'), parameters('additionalTags'))]"
           },
@@ -4574,8 +4704,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "613139298901178908"
+              "version": "0.37.4.10188",
+              "templateHash": "3743162525395446088"
             }
           },
           "parameters": {
@@ -4610,13 +4740,17 @@
             },
             "sku": {
               "type": "string",
-              "defaultValue": "[if(equals(parameters('environment'), 'prod'), 'Standard_ZRS', 'Standard_LRS')]",
+              "defaultValue": "Premium_ZRS",
               "allowedValues": [
-                "Standard_LRS",
-                "Standard_ZRS"
+                "Premium_LRS",
+                "Premium_ZRS",
+                "PremiumV2_LRS",
+                "PremiumV2_ZRS",
+                "Standard_ZRS",
+                "StandardV2_ZRS"
               ],
               "metadata": {
-                "description": "Storage account SKU (Standard_LRS for dev, Standard_ZRS for prod per cost-001)"
+                "description": "Storage account SKU (Premium_ZRS for all environments per cost-001 v3.0.0 - maximum performance)"
               }
             },
             "kind": {
@@ -4728,7 +4862,8 @@
               "managedBy": "bicep",
               "tier": "infrastructure",
               "module": "avm-wrapper-storage-account",
-              "version": "1.0.0"
+              "version": "2.0.0",
+              "performanceSpec": "business/cost-001 v3.0.0"
             },
             "tags": "[union(variables('defaultTags'), parameters('additionalTags'))]"
           },
@@ -12797,8 +12932,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "4569104951013894922"
+              "version": "0.37.4.10188",
+              "templateHash": "8281200764722698007"
             }
           },
           "parameters": {
@@ -16429,7 +16564,11 @@
           },
           "vmPrincipalId": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}-vm', variables('namePrefix'))), '2022-09-01').outputs.identityPrincipalId.value]"
-          }
+          },
+          "enableCmk": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', format('patio-config-{0}', parameters('environment'))), '2022-09-01').outputs.enableCmk.value]"
+          },
+          "keyVaultSku": "[if(equals(parameters('environment'), 'prod'), createObject('value', 'premium'), createObject('value', 'standard'))]"
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -16437,8 +16576,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "8262355056518871712"
+              "version": "0.37.4.10188",
+              "templateHash": "17121359253182348479"
             }
           },
           "parameters": {
@@ -16452,6 +16591,24 @@
               "type": "string",
               "metadata": {
                 "description": "Principal ID for the Patio VM managed identity."
+              }
+            },
+            "enableCmk": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable customer-managed encryption key (CMK) for production"
+              }
+            },
+            "keyVaultSku": {
+              "type": "string",
+              "defaultValue": "premium",
+              "allowedValues": [
+                "standard",
+                "premium"
+              ],
+              "metadata": {
+                "description": "Key Vault SKU - Premium for production (v3.0.0 mandatory)"
               }
             },
             "roleDefinitionId": {
@@ -16473,17 +16630,117 @@
                 "principalId": "[parameters('vmPrincipalId')]",
                 "principalType": "ServicePrincipal"
               }
+            },
+            {
+              "condition": "[parameters('enableCmk')]",
+              "type": "Microsoft.KeyVault/vaults/accessPolicies",
+              "apiVersion": "2023-07-01",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'replace')]",
+              "properties": {
+                "accessPolicies": [
+                  {
+                    "tenantId": "[subscription().tenantId]",
+                    "objectId": "[parameters('vmPrincipalId')]",
+                    "permissions": {
+                      "keys": [
+                        "get",
+                        "list",
+                        "decrypt",
+                        "encrypt"
+                      ],
+                      "secrets": [
+                        "get",
+                        "list"
+                      ],
+                      "certificates": [
+                        "get",
+                        "list"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "condition": "[parameters('enableCmk')]",
+              "type": "Microsoft.KeyVault/vaults/keys",
+              "apiVersion": "2023-07-01",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'patio-cmk')]",
+              "properties": {
+                "kty": "RSA",
+                "keySize": 4096,
+                "attributes": {
+                  "enabled": true
+                },
+                "keyOps": [
+                  "encrypt",
+                  "decrypt",
+                  "sign",
+                  "verify",
+                  "wrapKey",
+                  "unwrapKey"
+                ]
+              }
+            },
+            {
+              "condition": "[parameters('enableCmk')]",
+              "type": "Microsoft.KeyVault/vaults/keys/rotationPolicies",
+              "apiVersion": "2023-07-01",
+              "name": "[format('{0}/{1}/{2}', parameters('keyVaultName'), 'patio-cmk', 'default')]",
+              "properties": {
+                "lifetimeActions": [
+                  {
+                    "trigger": {
+                      "timeAfterCreate": "P28D"
+                    },
+                    "action": {
+                      "type": "Rotate"
+                    }
+                  }
+                ],
+                "attributes": {
+                  "expiresIn": "P2Y"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults/keys', parameters('keyVaultName'), 'patio-cmk')]"
+              ]
             }
           ],
           "outputs": {
             "keyVaultSecretsUserAssignmentId": {
               "type": "string",
               "value": "[extensionResourceId(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), 'Microsoft.Authorization/roleAssignments', guid(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), parameters('vmPrincipalId'), parameters('roleDefinitionId')))]"
+            },
+            "keyVaultAdminPolicyId": {
+              "type": "string",
+              "value": "[if(parameters('enableCmk'), resourceId('Microsoft.KeyVault/vaults/accessPolicies', parameters('keyVaultName'), 'replace'), '')]"
+            },
+            "cmkKeyId": {
+              "type": "string",
+              "value": "[if(parameters('enableCmk'), resourceId('Microsoft.KeyVault/vaults/keys', parameters('keyVaultName'), 'patio-cmk'), '')]"
+            },
+            "cmkKeyVersion": {
+              "type": "string",
+              "value": "[if(parameters('enableCmk'), reference(resourceId('Microsoft.KeyVault/vaults/keys', parameters('keyVaultName'), 'patio-cmk'), '2023-07-01').version, '')]"
+            },
+            "keyRotationPolicyId": {
+              "type": "string",
+              "value": "[if(parameters('enableCmk'), resourceId('Microsoft.KeyVault/vaults/keys/rotationPolicies', parameters('keyVaultName'), 'patio-cmk', 'default'), '')]"
+            },
+            "keyVaultName": {
+              "type": "string",
+              "value": "[parameters('keyVaultName')]"
+            },
+            "keyVaultSku": {
+              "type": "string",
+              "value": "[parameters('keyVaultSku')]"
             }
           }
         }
       },
       "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', format('patio-config-{0}', parameters('environment')))]",
         "[resourceId('Microsoft.Resources/deployments', format('{0}-kv', variables('namePrefix')))]",
         "[resourceId('Microsoft.Resources/deployments', format('{0}-vm', variables('namePrefix')))]"
       ]
@@ -16507,6 +16764,9 @@
           "keyVaultName": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}-kv', variables('namePrefix'))), '2022-09-01').outputs.keyVaultName.value]"
           },
+          "enableGpuMetrics": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', format('patio-config-{0}', parameters('environment'))), '2022-09-01').outputs.enableGpuAcceleration.value]"
+          },
           "tags": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', format('patio-config-{0}', parameters('environment'))), '2022-09-01').outputs.tags.value]"
           }
@@ -16517,8 +16777,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "16473709742316236269"
+              "version": "0.37.4.10188",
+              "templateHash": "6429583347439060931"
             }
           },
           "parameters": {
@@ -16538,6 +16798,13 @@
               "type": "string",
               "metadata": {
                 "description": "Key Vault name for diagnostic settings."
+              }
+            },
+            "enableGpuMetrics": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable GPU performance metrics collection"
               }
             },
             "tags": {
@@ -16562,6 +16829,24 @@
               }
             },
             {
+              "type": "Microsoft.Insights/components",
+              "apiVersion": "2020-02-02",
+              "name": "[format('{0}-ai', parameters('namePrefix'))]",
+              "location": "[parameters('location')]",
+              "kind": "web",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "Application_Type": "web",
+                "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', format('{0}-law', parameters('namePrefix')))]",
+                "RetentionInDays": 1095,
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', format('{0}-law', parameters('namePrefix')))]"
+              ]
+            },
+            {
               "type": "Microsoft.Insights/diagnosticSettings",
               "apiVersion": "2021-05-01-preview",
               "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('keyVaultName'))]",
@@ -16584,6 +16869,109 @@
               "dependsOn": [
                 "[resourceId('Microsoft.OperationalInsights/workspaces', format('{0}-law', parameters('namePrefix')))]"
               ]
+            },
+            {
+              "type": "Microsoft.Insights/metricAlerts",
+              "apiVersion": "2018-03-01",
+              "name": "[format('{0}-latency-alert', parameters('namePrefix'))]",
+              "location": "global",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "description": "Alert when latency exceeds 100ms (v3.0.0 target: <50ms)",
+                "severity": 2,
+                "enabled": true,
+                "scopes": [
+                  "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix')))]"
+                ],
+                "evaluationFrequency": "PT5M",
+                "windowSize": "PT15M",
+                "criteria": {
+                  "odata.type": "Microsoft.Azure.Monitor.MultipleResourceMultipleMetricCriteria",
+                  "allOf": [
+                    {
+                      "name": "Latency",
+                      "metricName": "performanceCounters/processorCpuTime",
+                      "operator": "GreaterThan",
+                      "threshold": 100,
+                      "timeAggregation": "Average",
+                      "criterionType": "StaticThresholdCriterion",
+                      "dimensions": []
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Insights/metricAlerts",
+              "apiVersion": "2018-03-01",
+              "name": "[format('{0}-throughput-alert', parameters('namePrefix'))]",
+              "location": "global",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "description": "Alert when throughput drops below baseline (v3.0.0 target: Premium storage 3-10x improvement)",
+                "severity": 2,
+                "enabled": true,
+                "scopes": [
+                  "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix')))]"
+                ],
+                "evaluationFrequency": "PT5M",
+                "windowSize": "PT15M",
+                "criteria": {
+                  "odata.type": "Microsoft.Azure.Monitor.MultipleResourceMultipleMetricCriteria",
+                  "allOf": [
+                    {
+                      "name": "Throughput",
+                      "metricName": "performanceCounters/networkIOBytesPerSecond",
+                      "operator": "LessThan",
+                      "threshold": 1000000,
+                      "timeAggregation": "Average",
+                      "criterionType": "StaticThresholdCriterion",
+                      "dimensions": []
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix')))]"
+              ]
+            },
+            {
+              "condition": "[parameters('enableGpuMetrics')]",
+              "type": "Microsoft.Insights/metricAlerts",
+              "apiVersion": "2018-03-01",
+              "name": "[format('{0}-gpu-utilization-alert', parameters('namePrefix'))]",
+              "location": "global",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "description": "GPU utilization monitor (ND96amsr_A100_v4)",
+                "severity": 3,
+                "enabled": true,
+                "scopes": [
+                  "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix')))]"
+                ],
+                "evaluationFrequency": "PT5M",
+                "windowSize": "PT15M",
+                "criteria": {
+                  "odata.type": "Microsoft.Azure.Monitor.MultipleResourceMultipleMetricCriteria",
+                  "allOf": [
+                    {
+                      "name": "GpuUtilization",
+                      "metricName": "performanceCounters/gpuUtilization",
+                      "operator": "GreaterThan",
+                      "threshold": 90,
+                      "timeAggregation": "Average",
+                      "criterionType": "StaticThresholdCriterion",
+                      "dimensions": []
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix')))]"
+              ]
             }
           ],
           "outputs": {
@@ -16594,6 +16982,26 @@
             "logAnalyticsWorkspaceName": {
               "type": "string",
               "value": "[format('{0}-law', parameters('namePrefix'))]"
+            },
+            "appInsightsId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix')))]"
+            },
+            "appInsightsInstrumentationKey": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix'))), '2020-02-02').InstrumentationKey]"
+            },
+            "latencyAlertId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Insights/metricAlerts', format('{0}-latency-alert', parameters('namePrefix')))]"
+            },
+            "throughputAlertId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Insights/metricAlerts', format('{0}-throughput-alert', parameters('namePrefix')))]"
+            },
+            "gpuAlertId": {
+              "type": "string",
+              "value": "[if(parameters('enableGpuMetrics'), resourceId('Microsoft.Insights/metricAlerts', format('{0}-gpu-utilization-alert', parameters('namePrefix'))), '')]"
             }
           }
         }
@@ -16651,8 +17059,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "3465541543258389610"
+              "version": "0.37.4.10188",
+              "templateHash": "5605588187488075828"
             }
           },
           "parameters": {
@@ -16710,15 +17118,18 @@
             },
             "vmSize": {
               "type": "string",
-              "defaultValue": "[if(equals(parameters('workloadCriticality'), 'critical'), 'Standard_D4s_v5', if(equals(parameters('workloadCriticality'), 'non-critical'), 'Standard_B4ms', 'Standard_B2s'))]",
+              "defaultValue": "Standard_D32ds_v5",
               "allowedValues": [
-                "Standard_B2s",
-                "Standard_B4ms",
-                "Standard_D2s_v5",
-                "Standard_D4s_v5"
+                "Standard_D32ds_v5",
+                "Standard_D48ds_v5",
+                "Standard_D64ds_v5",
+                "Standard_D96ds_v5",
+                "Standard_M128ms",
+                "Standard_M192idms_v2",
+                "Standard_ND96amsr_A100_v4"
               ],
               "metadata": {
-                "description": "VM size (determined by workload criticality per cost-001 v2.0.0)"
+                "description": "VM size (premium-tier per cost-001 v3.0.0: D32+ for general, D96 for general-purpose max, M192 for memory-intensive, ND96 for GPU)"
               }
             },
             "adminUsername": {
@@ -16756,9 +17167,9 @@
             },
             "enableAcceleratedNetworking": {
               "type": "bool",
-              "defaultValue": "[equals(parameters('vmSize'), 'Standard_B4ms')]",
+              "defaultValue": true,
               "metadata": {
-                "description": "Enable accelerated networking (Standard_B4ms and above)"
+                "description": "Enable accelerated networking (enabled for all premium-tier VMs per cost-001 v3.0.0)"
               }
             },
             "osDiskSizeGB": {
@@ -16772,21 +17183,20 @@
             },
             "osDiskType": {
               "type": "string",
-              "defaultValue": "[if(equals(parameters('environment'), 'prod'), 'Premium_LRS', 'StandardSSD_LRS')]",
+              "defaultValue": "Premium_LRS",
               "allowedValues": [
-                "Standard_LRS",
-                "StandardSSD_LRS",
-                "Premium_LRS"
+                "Premium_LRS",
+                "PremiumV2_LRS"
               ],
               "metadata": {
-                "description": "OS disk type (Standard_LRS for dev, Premium_LRS for prod)"
+                "description": "OS disk type (Premium_LRS for all environments per cost-001 v3.0.0)"
               }
             },
             "enableDiskEncryption": {
               "type": "bool",
-              "defaultValue": "[equals(parameters('environment'), 'prod')]",
+              "defaultValue": true,
               "metadata": {
-                "description": "Enable Azure Disk Encryption (required for prod per dp-001)"
+                "description": "Enable Azure Disk Encryption (required for all environments per dp-001 and cost-001 v3.0.0)"
               }
             },
             "customData": {
@@ -16807,29 +17217,10 @@
               "type": "string",
               "defaultValue": "Regular",
               "allowedValues": [
-                "Regular",
-                "Spot"
+                "Regular"
               ],
               "metadata": {
-                "description": "VM priority: Regular (pay-as-you-go/RI-eligible) or Spot (interruption-prone, cost-optimized)"
-              }
-            },
-            "spotEvictionPolicy": {
-              "type": "string",
-              "defaultValue": "Deallocate",
-              "allowedValues": [
-                "Deallocate",
-                "Delete"
-              ],
-              "metadata": {
-                "description": "Spot eviction policy: Deallocate (stop and retry later) or Delete (remove VM). Only used when vmPriority is Spot."
-              }
-            },
-            "spotMaxPrice": {
-              "type": "string",
-              "defaultValue": "-1",
-              "metadata": {
-                "description": "Maximum hourly price in USD for Spot VMs. \"-1\" = no limit (pay up to regular price). Only used when vmPriority is Spot."
+                "description": "[DEPRECATED per cost-001 v3.0.0] VM priority: Always use Regular (on-demand) for maximum performance. Spot instances DEPRECATED."
               }
             }
           },
@@ -16840,10 +17231,10 @@
               "managedBy": "bicep",
               "tier": "infrastructure",
               "module": "avm-wrapper-linux-vm",
-              "version": "2.0.0",
+              "version": "3.0.0",
               "workloadCriticality": "[parameters('workloadCriticality')]",
-              "costBaseline": "[if(equals(parameters('workloadCriticality'), 'critical'), '$150-250', if(equals(parameters('workloadCriticality'), 'non-critical'), '$50-100', '$20-50'))]",
-              "costSpec": "business/cost-001 v2.0.0"
+              "performanceSpec": "business/cost-001 v3.0.0",
+              "instanceType": "on-demand-premium"
             },
             "tags": "[union(variables('defaultTags'), parameters('additionalTags'))]",
             "imageReference": {
@@ -26096,6 +26487,15 @@
           "enableAutoShutdown": {
             "value": "[variables('enableAutoShutdown')]"
           },
+          "enableGpuMonitoring": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', format('patio-config-{0}', parameters('environment'))), '2022-09-01').outputs.enableGpuAcceleration.value]"
+          },
+          "enableAcceleratedNetworking": {
+            "value": true
+          },
+          "enableDiskIoTuning": {
+            "value": true
+          },
           "tags": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', format('patio-config-{0}', parameters('environment'))), '2022-09-01').outputs.tags.value]"
           }
@@ -26106,8 +26506,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "2544866914604280408"
+              "version": "0.37.4.10188",
+              "templateHash": "13576669630478949586"
             }
           },
           "parameters": {
@@ -26149,6 +26549,27 @@
                 "description": "Time zone for shutdown schedule."
               }
             },
+            "enableGpuMonitoring": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable GPU monitoring extension (ND96amsr_A100_v4 required)"
+              }
+            },
+            "enableAcceleratedNetworking": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable accelerated networking for maximum throughput (cost-001 v3.0.0)"
+              }
+            },
+            "enableDiskIoTuning": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable disk I/O tuning for Premium storage performance"
+              }
+            },
             "tags": {
               "type": "object",
               "metadata": {
@@ -26175,12 +26596,78 @@
                   "status": "Disabled"
                 }
               }
+            },
+            {
+              "condition": "[parameters('enableGpuMonitoring')]",
+              "type": "Microsoft.Compute/virtualMachines/extensions",
+              "apiVersion": "2021-07-01",
+              "name": "[format('{0}/GpuMonitoring', last(split(parameters('vmResourceId'), '/')))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "publisher": "Microsoft.HpcCompute",
+                "type": "AmdGpuDriver",
+                "typeHandlerVersion": "1.0",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                  "isLinux": true
+                }
+              }
+            },
+            {
+              "condition": "[parameters('enableAcceleratedNetworking')]",
+              "type": "Microsoft.Compute/virtualMachines/extensions",
+              "apiVersion": "2021-07-01",
+              "name": "[format('{0}/NetworkTuning', last(split(parameters('vmResourceId'), '/')))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "publisher": "Microsoft.Azure.Extensions",
+                "type": "CustomScript",
+                "typeHandlerVersion": "2.1",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                  "commandToExecute": "bash /tmp/network-tuning.sh",
+                  "fileUris": [
+                    "https://raw.githubusercontent.com/Azure/azure-hpc/master/Compute/Optimization/network-tuning.sh"
+                  ]
+                }
+              }
+            },
+            {
+              "condition": "[parameters('enableDiskIoTuning')]",
+              "type": "Microsoft.Compute/virtualMachines/extensions",
+              "apiVersion": "2021-07-01",
+              "name": "[format('{0}/DiskIoTuning', last(split(parameters('vmResourceId'), '/')))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "publisher": "Microsoft.Azure.Extensions",
+                "type": "CustomScript",
+                "typeHandlerVersion": "2.1",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                  "commandToExecute": "bash -c \"echo vm.max_map_count=262144 >> /etc/sysctl.conf && sysctl -p && fdisk -l && mkfs.ext4 -F /dev/sdb && mount /dev/sdb /mnt/data\""
+                }
+              }
             }
           ],
           "outputs": {
             "shutdownScheduleId": {
               "type": "string",
               "value": "[resourceId('Microsoft.DevTestLab/schedules', format('{0}-shutdown', parameters('namePrefix')))]"
+            },
+            "gpuMonitoringExtensionId": {
+              "type": "string",
+              "value": "[if(parameters('enableGpuMonitoring'), resourceId('Microsoft.Compute/virtualMachines/extensions', split(format('{0}/GpuMonitoring', last(split(parameters('vmResourceId'), '/'))), '/')[0], split(format('{0}/GpuMonitoring', last(split(parameters('vmResourceId'), '/'))), '/')[1]), '')]"
+            },
+            "networkTuningExtensionId": {
+              "type": "string",
+              "value": "[if(parameters('enableAcceleratedNetworking'), resourceId('Microsoft.Compute/virtualMachines/extensions', split(format('{0}/NetworkTuning', last(split(parameters('vmResourceId'), '/'))), '/')[0], split(format('{0}/NetworkTuning', last(split(parameters('vmResourceId'), '/'))), '/')[1]), '')]"
+            },
+            "diskIoTuningExtensionId": {
+              "type": "string",
+              "value": "[if(parameters('enableDiskIoTuning'), resourceId('Microsoft.Compute/virtualMachines/extensions', split(format('{0}/DiskIoTuning', last(split(parameters('vmResourceId'), '/'))), '/')[0], split(format('{0}/DiskIoTuning', last(split(parameters('vmResourceId'), '/'))), '/')[1]), '')]"
             }
           }
         }

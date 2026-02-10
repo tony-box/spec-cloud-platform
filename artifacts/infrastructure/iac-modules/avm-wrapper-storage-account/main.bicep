@@ -1,10 +1,11 @@
 // ============================================================================
 // Azure Storage Account Wrapper Module
 // ============================================================================
-// Purpose: Compliant Azure Storage Account wrapper around Azure Verified Module
+// Purpose: Premium-tier Storage Account wrapper for unlimited performance per business/cost v3.0.0
 // AVM Source: br/public:avm/res/storage/storage-account:0.31.0
 // Spec: infrastructure/iac-modules (iac-001)
-// Compliance: cost-001, dp-001, ac-001, comp-001, lint-001
+// Compliance: cost-001 v3.0.0, dp-001, ac-001, comp-001, lint-001
+// Performance: Premium ZRS replication with maximum throughput for all environments
 // ============================================================================
 
 @description('Name of the storage account (globally unique, 3-24 chars, lowercase alphanumeric only)')
@@ -20,9 +21,9 @@ param environment string
 @allowed(['centralus', 'eastus'])
 param location string = 'centralus'
 
-@description('Storage account SKU (Standard_LRS for dev, Standard_ZRS for prod per cost-001)')
-@allowed(['Standard_LRS', 'Standard_ZRS'])
-param sku string = (environment == 'prod') ? 'Standard_ZRS' : 'Standard_LRS'
+@description('Storage account SKU (Premium_ZRS for all environments per cost-001 v3.0.0 - maximum performance)')
+@allowed(['Premium_LRS', 'Premium_ZRS', 'PremiumV2_LRS', 'PremiumV2_ZRS', 'Standard_ZRS', 'StandardV2_ZRS'])
+param sku string = 'Premium_ZRS'
 
 @description('Storage account kind (StorageV2 is general-purpose v2)')
 @allowed(['StorageV2'])
@@ -75,7 +76,8 @@ var defaultTags = {
   managedBy: 'bicep'
   tier: 'infrastructure'
   module: 'avm-wrapper-storage-account'
-  version: '1.0.0'
+  version: '2.0.0'
+  performanceSpec: 'business/cost-001 v3.0.0'
 }
 
 var tags = union(defaultTags, additionalTags)

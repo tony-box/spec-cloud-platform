@@ -1,0 +1,168 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.37.4.10188",
+      "templateHash": "17121359253182348479"
+    }
+  },
+  "parameters": {
+    "keyVaultName": {
+      "type": "string",
+      "metadata": {
+        "description": "Key Vault name."
+      }
+    },
+    "vmPrincipalId": {
+      "type": "string",
+      "metadata": {
+        "description": "Principal ID for the Patio VM managed identity."
+      }
+    },
+    "enableCmk": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Enable customer-managed encryption key (CMK) for production"
+      }
+    },
+    "keyVaultSku": {
+      "type": "string",
+      "defaultValue": "premium",
+      "allowedValues": [
+        "standard",
+        "premium"
+      ],
+      "metadata": {
+        "description": "Key Vault SKU - Premium for production (v3.0.0 mandatory)"
+      }
+    },
+    "roleDefinitionId": {
+      "type": "string",
+      "defaultValue": "4633458b-17de-408a-b874-0445c86b69e6",
+      "metadata": {
+        "description": "Role definition ID for Key Vault Secrets User."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('keyVaultName'))]",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), parameters('vmPrincipalId'), parameters('roleDefinitionId'))]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', parameters('roleDefinitionId'))]",
+        "principalId": "[parameters('vmPrincipalId')]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "condition": "[parameters('enableCmk')]",
+      "type": "Microsoft.KeyVault/vaults/accessPolicies",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}', parameters('keyVaultName'), 'replace')]",
+      "properties": {
+        "accessPolicies": [
+          {
+            "tenantId": "[subscription().tenantId]",
+            "objectId": "[parameters('vmPrincipalId')]",
+            "permissions": {
+              "keys": [
+                "get",
+                "list",
+                "decrypt",
+                "encrypt"
+              ],
+              "secrets": [
+                "get",
+                "list"
+              ],
+              "certificates": [
+                "get",
+                "list"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "condition": "[parameters('enableCmk')]",
+      "type": "Microsoft.KeyVault/vaults/keys",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}', parameters('keyVaultName'), 'patio-cmk')]",
+      "properties": {
+        "kty": "RSA",
+        "keySize": 4096,
+        "attributes": {
+          "enabled": true
+        },
+        "keyOps": [
+          "encrypt",
+          "decrypt",
+          "sign",
+          "verify",
+          "wrapKey",
+          "unwrapKey"
+        ]
+      }
+    },
+    {
+      "condition": "[parameters('enableCmk')]",
+      "type": "Microsoft.KeyVault/vaults/keys/rotationPolicies",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}/{2}', parameters('keyVaultName'), 'patio-cmk', 'default')]",
+      "properties": {
+        "lifetimeActions": [
+          {
+            "trigger": {
+              "timeAfterCreate": "P28D"
+            },
+            "action": {
+              "type": "Rotate"
+            }
+          }
+        ],
+        "attributes": {
+          "expiresIn": "P2Y"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults/keys', parameters('keyVaultName'), 'patio-cmk')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "keyVaultSecretsUserAssignmentId": {
+      "type": "string",
+      "value": "[extensionResourceId(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), 'Microsoft.Authorization/roleAssignments', guid(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), parameters('vmPrincipalId'), parameters('roleDefinitionId')))]"
+    },
+    "keyVaultAdminPolicyId": {
+      "type": "string",
+      "value": "[if(parameters('enableCmk'), resourceId('Microsoft.KeyVault/vaults/accessPolicies', parameters('keyVaultName'), 'replace'), '')]"
+    },
+    "cmkKeyId": {
+      "type": "string",
+      "value": "[if(parameters('enableCmk'), resourceId('Microsoft.KeyVault/vaults/keys', parameters('keyVaultName'), 'patio-cmk'), '')]"
+    },
+    "cmkKeyVersion": {
+      "type": "string",
+      "value": "[if(parameters('enableCmk'), reference(resourceId('Microsoft.KeyVault/vaults/keys', parameters('keyVaultName'), 'patio-cmk'), '2023-07-01').version, '')]"
+    },
+    "keyRotationPolicyId": {
+      "type": "string",
+      "value": "[if(parameters('enableCmk'), resourceId('Microsoft.KeyVault/vaults/keys/rotationPolicies', parameters('keyVaultName'), 'patio-cmk', 'default'), '')]"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "value": "[parameters('keyVaultName')]"
+    },
+    "keyVaultSku": {
+      "type": "string",
+      "value": "[parameters('keyVaultSku')]"
+    }
+  }
+}

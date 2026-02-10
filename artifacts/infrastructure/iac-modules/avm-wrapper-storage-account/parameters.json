@@ -12,7 +12,7 @@
       "value": "centralus"
     },
     "sku": {
-      "value": "Standard_LRS"
+      "value": "Premium_ZRS"
     },
     "kind": {
       "value": "StorageV2"
@@ -24,10 +24,10 @@
       "value": "TLS1_2"
     },
     "enableBlobSoftDelete": {
-      "value": false
+      "value": true
     },
     "blobSoftDeleteRetentionDays": {
-      "value": 7
+      "value": 30
     },
     "supportsHttpsTrafficOnly": {
       "value": true

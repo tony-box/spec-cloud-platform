@@ -1,0 +1,234 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.37.4.10188",
+      "templateHash": "6429583347439060931"
+    }
+  },
+  "parameters": {
+    "namePrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Name prefix for Patio resources."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for deployment."
+      }
+    },
+    "keyVaultName": {
+      "type": "string",
+      "metadata": {
+        "description": "Key Vault name for diagnostic settings."
+      }
+    },
+    "enableGpuMetrics": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Enable GPU performance metrics collection"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "metadata": {
+        "description": "Tags to apply to monitoring resources."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2022-10-01",
+      "name": "[format('{0}-law', parameters('namePrefix'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "retentionInDays": 1095,
+        "sku": {
+          "name": "PerGB2018"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[format('{0}-ai', parameters('namePrefix'))]",
+      "location": "[parameters('location')]",
+      "kind": "web",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "Application_Type": "web",
+        "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', format('{0}-law', parameters('namePrefix')))]",
+        "RetentionInDays": 1095,
+        "publicNetworkAccessForIngestion": "Enabled",
+        "publicNetworkAccessForQuery": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', format('{0}-law', parameters('namePrefix')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('keyVaultName'))]",
+      "name": "[format('{0}-kv-diag', parameters('namePrefix'))]",
+      "properties": {
+        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', format('{0}-law', parameters('namePrefix')))]",
+        "logs": [
+          {
+            "category": "AuditEvent",
+            "enabled": true
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', format('{0}-law', parameters('namePrefix')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[format('{0}-latency-alert', parameters('namePrefix'))]",
+      "location": "global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "description": "Alert when latency exceeds 100ms (v3.0.0 target: <50ms)",
+        "severity": 2,
+        "enabled": true,
+        "scopes": [
+          "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix')))]"
+        ],
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT15M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.MultipleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name": "Latency",
+              "metricName": "performanceCounters/processorCpuTime",
+              "operator": "GreaterThan",
+              "threshold": 100,
+              "timeAggregation": "Average",
+              "criterionType": "StaticThresholdCriterion",
+              "dimensions": []
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[format('{0}-throughput-alert', parameters('namePrefix'))]",
+      "location": "global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "description": "Alert when throughput drops below baseline (v3.0.0 target: Premium storage 3-10x improvement)",
+        "severity": 2,
+        "enabled": true,
+        "scopes": [
+          "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix')))]"
+        ],
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT15M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.MultipleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name": "Throughput",
+              "metricName": "performanceCounters/networkIOBytesPerSecond",
+              "operator": "LessThan",
+              "threshold": 1000000,
+              "timeAggregation": "Average",
+              "criterionType": "StaticThresholdCriterion",
+              "dimensions": []
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix')))]"
+      ]
+    },
+    {
+      "condition": "[parameters('enableGpuMetrics')]",
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[format('{0}-gpu-utilization-alert', parameters('namePrefix'))]",
+      "location": "global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "description": "GPU utilization monitor (ND96amsr_A100_v4)",
+        "severity": 3,
+        "enabled": true,
+        "scopes": [
+          "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix')))]"
+        ],
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT15M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.MultipleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name": "GpuUtilization",
+              "metricName": "performanceCounters/gpuUtilization",
+              "operator": "GreaterThan",
+              "threshold": 90,
+              "timeAggregation": "Average",
+              "criterionType": "StaticThresholdCriterion",
+              "dimensions": []
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix')))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.OperationalInsights/workspaces', format('{0}-law', parameters('namePrefix')))]"
+    },
+    "logAnalyticsWorkspaceName": {
+      "type": "string",
+      "value": "[format('{0}-law', parameters('namePrefix'))]"
+    },
+    "appInsightsId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix')))]"
+    },
+    "appInsightsInstrumentationKey": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Insights/components', format('{0}-ai', parameters('namePrefix'))), '2020-02-02').InstrumentationKey]"
+    },
+    "latencyAlertId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Insights/metricAlerts', format('{0}-latency-alert', parameters('namePrefix')))]"
+    },
+    "throughputAlertId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Insights/metricAlerts', format('{0}-throughput-alert', parameters('namePrefix')))]"
+    },
+    "gpuAlertId": {
+      "type": "string",
+      "value": "[if(parameters('enableGpuMetrics'), resourceId('Microsoft.Insights/metricAlerts', format('{0}-gpu-utilization-alert', parameters('namePrefix'))), '')]"
+    }
+  }
+}

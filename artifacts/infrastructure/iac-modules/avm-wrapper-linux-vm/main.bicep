@@ -1,12 +1,12 @@
 // ============================================================================
 // Azure Linux Virtual Machine Wrapper Module
 // ============================================================================
-// Purpose: Compliant Linux VM wrapper with cost tier support per business/cost v2.0.0
+// Purpose: Premium-tier Linux VM wrapper for unlimited performance per business/cost v3.0.0
 // AVM Source: br/public:avm/res/compute/virtual-machine:0.21.0
 // Spec: infrastructure/iac-modules (iac-001)
-// Compliance: cost-001 v2.0.0, dp-001, ac-001, comp-001, lint-001
-// Cost Baselines: Critical $150-250/mo, Non-Critical $50-100/mo, Dev/Test $20-50/mo
-// Instance Types: Supports Regular (pay-as-you-go/RI-eligible) and Spot (cost-optimized) instances
+// Compliance: cost-001 v3.0.0, dp-001, ac-001, comp-001, lint-001
+// Performance: Premium-only SKUs (D32+, M192+) with GPU acceleration option; on-demand pricing
+// Instance Types: Regular on-demand instances; Spot instances DEPRECATED (use on-demand for maximum performance)
 // ============================================================================
 
 @description('Name of the virtual machine')
@@ -28,9 +28,9 @@ param location string = 'centralus'
 @allowed([-1, 1, 2, 3])
 param availabilityZone int = -1
 
-@description('VM size (determined by workload criticality per cost-001 v2.0.0)')
-@allowed(['Standard_B2s', 'Standard_B4ms', 'Standard_D2s_v5', 'Standard_D4s_v5'])
-param vmSize string = workloadCriticality == 'critical' ? 'Standard_D4s_v5' : (workloadCriticality == 'non-critical' ? 'Standard_B4ms' : 'Standard_B2s')
+@description('VM size (premium-tier per cost-001 v3.0.0: D32+ for general, D96 for general-purpose max, M192 for memory-intensive, ND96 for GPU)')
+@allowed(['Standard_D32ds_v5', 'Standard_D48ds_v5', 'Standard_D64ds_v5', 'Standard_D96ds_v5', 'Standard_M128ms', 'Standard_M192idms_v2', 'Standard_ND96amsr_A100_v4'])
+param vmSize string = 'Standard_D32ds_v5'
 
 @description('Admin username for SSH access')
 param adminUsername string = 'azureuser'
@@ -48,20 +48,20 @@ param publicIpId string = ''
 @description('Optional: Network Security Group resource ID')
 param nsgId string = ''
 
-@description('Enable accelerated networking (Standard_B4ms and above)')
-param enableAcceleratedNetworking bool = (vmSize == 'Standard_B4ms')
+@description('Enable accelerated networking (enabled for all premium-tier VMs per cost-001 v3.0.0)')
+param enableAcceleratedNetworking bool = true
 
 @description('OS disk size in GB (>=30)')
 @minValue(30)
 @maxValue(1024)
 param osDiskSizeGB int = 64
 
-@description('OS disk type (Standard_LRS for dev, Premium_LRS for prod)')
-@allowed(['Standard_LRS', 'StandardSSD_LRS', 'Premium_LRS'])
-param osDiskType string = (environment == 'prod') ? 'Premium_LRS' : 'StandardSSD_LRS'
+@description('OS disk type (Premium_LRS for all environments per cost-001 v3.0.0)')
+@allowed(['Premium_LRS', 'PremiumV2_LRS'])
+param osDiskType string = 'Premium_LRS'
 
-@description('Enable Azure Disk Encryption (required for prod per dp-001)')
-param enableDiskEncryption bool = (environment == 'prod')
+@description('Enable Azure Disk Encryption (required for all environments per dp-001 and cost-001 v3.0.0)')
+param enableDiskEncryption bool = true
 
 @description('Cloud-init script for VM provisioning (e.g., LAMP stack installation)')
 param customData string = ''
@@ -69,16 +69,9 @@ param customData string = ''
 @description('Additional tags to merge with default compliance tags')
 param additionalTags object = {}
 
-@description('VM priority: Regular (pay-as-you-go/RI-eligible) or Spot (interruption-prone, cost-optimized)')
-@allowed(['Regular', 'Spot'])
+@description('[DEPRECATED per cost-001 v3.0.0] VM priority: Always use Regular (on-demand) for maximum performance. Spot instances DEPRECATED.')
+@allowed(['Regular'])
 param vmPriority string = 'Regular'
-
-@description('Spot eviction policy: Deallocate (stop and retry later) or Delete (remove VM). Only used when vmPriority is Spot.')
-@allowed(['Deallocate', 'Delete'])
-param spotEvictionPolicy string = 'Deallocate'
-
-@description('Maximum hourly price in USD for Spot VMs. "-1" = no limit (pay up to regular price). Only used when vmPriority is Spot.')
-param spotMaxPrice string = '-1'
 
 // ============================================================================
 // Variables
@@ -90,10 +83,10 @@ var defaultTags = {
   managedBy: 'bicep'
   tier: 'infrastructure'
   module: 'avm-wrapper-linux-vm'
-  version: '2.0.0'
+  version: '3.0.0'
   workloadCriticality: workloadCriticality
-  costBaseline: workloadCriticality == 'critical' ? '$150-250' : (workloadCriticality == 'non-critical' ? '$50-100' : '$20-50')
-  costSpec: 'business/cost-001 v2.0.0'
+  performanceSpec: 'business/cost-001 v3.0.0'
+  instanceType: 'on-demand-premium'
 }
 
 var tags = union(defaultTags, additionalTags)

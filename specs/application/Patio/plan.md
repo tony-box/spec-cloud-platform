@@ -1,8 +1,8 @@
 # Implementation Plan: Patio App IaC
 
-**Branch**: `002-app-iac` | **Date**: February 10, 2026 | **Spec**: [specs/application/Patio/spec.md](specs/application/Patio/spec.md)  
-**Input**: Feature specification from /specs/application/Patio/spec.md  
-**Depends-On**: platform/spec-system (spec-001 v1.0.0-draft), platform/iac-linting (lint-001 v1.0.0-draft), platform/policy-as-code (pac-001 v1.0.0-draft), platform/artifact-org (artifact-001 v1.0.0), platform/001-application-artifact-organization (platform-001, draft 2026-02-05), business/compliance-framework (comp-001 v1.0.0-draft), business/governance (gov-001 v1.0.0-draft), business/cost (cost-001 v2.0.0), security/access-control (ac-001 v1.0.0-draft), security/data-protection (dp-001 v1.0.0), security/audit-logging (audit-001 v1.0.0-draft), infrastructure/compute (compute-001 v2.0.0), infrastructure/networking (net-001 v2.0.0), infrastructure/storage (stor-001 v2.0.0), infrastructure/cicd-pipeline (cicd-001 v2.0.0), infrastructure/iac-modules (iac-001 v1.0.0-draft), devops/deployment-automation (deploy-001 v1.0.0-placeholder), devops/observability (obs-001 v1.0.0-placeholder), devops/environment-management (env-001 v1.0.0-placeholder), devops/ci-cd-orchestration (cicd-orch-001 v1.0.0-placeholder)
+**Branch**: `patio-unlimited-performance` | **Date**: February 10, 2026 | **Spec**: [specs/application/Patio/spec.md](specs/application/Patio/spec.md)  
+**Input**: Feature specification from /specs/application/Patio/spec.md | **Cost Strategy**: Unlimited Performance (v3.0.0)  
+**Depends-On**: platform/spec-system (spec-001 v1.0.0-draft), platform/iac-linting (lint-001 v1.0.0-draft), platform/policy-as-code (pac-001 v1.0.0-draft), platform/artifact-org (artifact-001 v1.0.0), platform/001-application-artifact-organization (platform-001, draft 2026-02-05), business/compliance-framework (comp-001 v1.0.0-draft), business/governance (gov-001 v1.0.0-draft), business/cost (cost-001 v3.0.0), security/access-control (ac-001 v1.0.0-draft), security/data-protection (dp-001 v1.0.0), security/audit-logging (audit-001 v1.0.0-draft), infrastructure/compute (compute-001 v3.0.0), infrastructure/networking (net-001 v3.0.0), infrastructure/storage (stor-001 v3.0.0), infrastructure/cicd-pipeline (cicd-001 v2.0.0), infrastructure/iac-modules (iac-001 v2.0.0), devops/deployment-automation (deploy-001 v1.0.0-placeholder), devops/observability (obs-001 v1.0.0-placeholder), devops/environment-management (env-001 v1.0.0-placeholder), devops/ci-cd-orchestration (cicd-orch-001 v1.0.0-placeholder)
 
 **Note**: This plan follows the `/speckit.plan` workflow from .specify/templates/commands/plan.md.
 
@@ -34,13 +34,13 @@ Deliver a Patio infrastructure configuration (IaC) plan that defines environment
 
 **Language/Version**: Bicep (Azure Bicep CLI), PowerShell 7 for scripts, YAML for pipelines  
 **Primary Dependencies**: Azure Verified Modules (AVM) wrappers, Azure CLI, GitHub Actions  
-**Storage**: N/A for spec; storage choices governed by infrastructure/storage spec  
+**Storage**: N/A for spec; Premium storage with ZRS/Ultra Disk mandated by infrastructure/storage v3.0.0  
 **Testing**: `bicep build` validation, PSScriptAnalyzer, YAML validation in CI/CD  
 **Target Platform**: Microsoft Azure (US regions only)  
 **Project Type**: IaC specification and artifact planning  
-**Performance Goals**: Workload SLAs and performance expectations defined by workload criticality tiers  
-**Constraints**: Encryption (AES-256), TLS 1.2+, RBAC + MFA, audit logging retention (3 years), cost baselines, multi-zone for critical workloads  
-**Scale/Scope**: 3 environments (dev/test/prod); workload criticality to be confirmed per environment
+**Performance Goals**: Unlimited performance strategy — 60%+ latency reduction vs v2.0.0, 300%+ GPU speedup (if enabled), multi-region for < 50ms latency to end users  
+**Constraints**: Encryption (AES-256), TLS 1.2+, RBAC + MFA, audit logging retention (3 years), GPU acceleration capable, Premium VM/storage SKUs mandatory (cost-001 v3.0.0), multi-region deployment  
+**Scale/Scope**: 3 environments (dev/test/prod); Premium tier minimum all environments; critical workloads assigned GPU-enabled ND96amsr_A100_v4 nodes
 
 ## Constitution Check: Tier Alignment & Spec Cascading
 
@@ -57,10 +57,13 @@ Deliver a Patio infrastructure configuration (IaC) plan that defines environment
 - **Parent Tier Specs**: platform/* (spec-system, iac-linting, policy-as-code, artifact-org, application-artifact-organization), business/* (cost, governance, compliance-framework), security/* (access-control, data-protection, audit-logging), infrastructure/* (compute, networking, storage, cicd-pipeline, iac-modules), devops/* (deployment-automation, observability, environment-management, ci-cd-orchestration)
 - **Derived Constraints**:
   - Artifact directories must follow /artifacts/applications/patio/ with required subdirectories and naming rules
-  - US-only regions, AES-256 at rest, TLS 1.2+ in transit, Key Vault HSM for production
-  - Workload criticality drives cost baselines, SKU choices, multi-zone requirements, and pipeline approvals
+  - US-only regions, AES-256 at rest, TLS 1.2+ in transit, Key Vault Premium (HSM) for production
+  - Cost-001 v3.0.0 mandates unlimited performance: Premium VM SKUs (D32-D96ds_v5 minimum, M192idms_v2, ND96amsr_A100_v4 for GPU), Premium storage (ZRS/Ultra Disk)
+  - Multi-region deployment mandatory for < 50ms latency to user base
   - Audit logs retained for 3 years with immutable storage
-  - CI/CD must use GitHub Actions with cost validation and approval gates
+  - CI/CD must use GitHub Actions with performance validation and approval gates (no cost gates)
+  - VM defaults: dev=D32ds_v5, test=D48ds_v5, prod=D96ds_v5 or M192idms_v2; GPU optional per workload
+  - Success criteria: 60%+ latency reduction vs v2.0.0, GPU availability ready for AI/ML workloads
 - **Artifact Traceability**: This spec will generate the following outputs (AI-assisted, human-reviewed):
   - Patio environment matrix and IaC scope definition
   - Access control, data protection, and audit logging mappings

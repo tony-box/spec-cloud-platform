@@ -1,3 +1,15 @@
+// Patio IaC Main Module - v3.0.0 (Unlimited Performance Strategy)
+// Composes all infrastructure modules: VNet, NSG, VM, storage, Key Vault, monitoring, security
+// Source Specs: 
+//   - business/cost-001 v3.0.0 (unlimited performance, premium-only SKUs)
+//   - infrastructure/compute-001 v3.0.0 (D32-D96ds_v5, M192, ND96amsr_A100_v4)
+//   - infrastructure/storage-001 v3.0.0 (Premium_ZRS/Ultra)
+//   - infrastructure/networking-001 v3.0.0 (multi-region, 50ms latency target)
+//   - infrastructure/iac-modules-001 v2.0.0 (wrapper modules with v3.0.0 defaults)
+// Branch: patio-unlimited-performance
+// Date: February 10, 2026
+// Success Metrics: 60%+ latency reduction vs v2.0.0, 3-10x throughput improvement (Premium storage)
+
 targetScope = 'resourceGroup'
 
 @description('Application name used for naming resources.')
@@ -44,6 +56,13 @@ module config './config.bicep' = {
     location: location
     workloadCriticality: workloadCriticality
     costCenter: costCenter
+    vmSku: (environment == 'prod') ? 'Standard_D96ds_v5' : (environment == 'test' ? 'Standard_D48ds_v5' : 'Standard_D32ds_v5')
+    storageSku: 'Premium_ZRS'
+    enableGpuAcceleration: false
+    enableUltraDisk: (environment == 'prod')
+    enableDiskEncryption: true
+    enableCmk: (environment == 'prod')
+    costProfile: 'unlimited-performance'
   }
 }
 
@@ -138,6 +157,8 @@ module security './security.bicep' = {
   params: {
     keyVaultName: keyVault.outputs.keyVaultName
     vmPrincipalId: linuxVm.outputs.identityPrincipalId
+    enableCmk: config.outputs.enableCmk
+    keyVaultSku: (environment == 'prod') ? 'premium' : 'standard'
   }
 }
 
@@ -147,6 +168,7 @@ module monitoring './monitoring.bicep' = {
     namePrefix: namePrefix
     location: location
     keyVaultName: keyVault.outputs.keyVaultName
+    enableGpuMetrics: config.outputs.enableGpuAcceleration
     tags: config.outputs.tags
   }
 }
@@ -177,6 +199,9 @@ module automation './automation.bicep' = {
     location: location
     vmResourceId: linuxVm.outputs.vmId
     enableAutoShutdown: enableAutoShutdown
+    enableGpuMonitoring: config.outputs.enableGpuAcceleration
+    enableAcceleratedNetworking: true
+    enableDiskIoTuning: true
     tags: config.outputs.tags
   }
 }

@@ -3,17 +3,18 @@
 tier: infrastructure
 category: iac-modules
 spec-id: iac-001
-version: 1.0.0-draft
-status: draft
+version: 2.0.0
+status: published
 created: 2026-02-07
-description: "Centralized reusable IaC wrapper modules based on Azure Verified Modules"
+last-updated: 2026-02-10
+description: "Centralized reusable IaC wrapper modules with premium-tier SKU defaults for unlimited performance strategy"
 
 # Dependencies
 depends-on:
   - tier: business
     category: cost
     spec-id: cost-001
-    reason: "Wrapper modules must enforce cost-optimized SKU defaults"
+    reason: "Wrapper modules must enforce premium-tier SKU defaults for unlimited performance strategy"
   - tier: security
     category: data-protection
     spec-id: dp-001
@@ -63,19 +64,20 @@ adhered-by:
 **Category**: iac-modules  
 **Spec ID**: iac-001  
 **Created**: 2026-02-07  
-**Status**: Draft  
+**Updated**: 2026-02-10  
+**Status**: Published  
 
 ## Executive Summary
 
 **Problem**: Without centralized IaC modules:
-- Application teams deploy non-compliant infrastructure (wrong SKUs, missing encryption, non-US regions)
-- Security policies and cost constraints are not enforced at deployment time
-- Code duplication across applications leads to drift and maintenance burden
-- No standardization of Azure resource configurations
+- Application teams deploy suboptimal infrastructure (insufficient SKU tiers, missing performance optimization)
+- Performance targets and throughput requirements not enforced at deployment time
+- Code duplication across applications leads to drift and inconsistent performance
+- No standardization of premium-tier Azure resource configurations
 
-**Solution**: Provide centralized, reusable Bicep wrapper modules based on Azure Verified Modules (AVM) that expose only compliant parameters and enforce platform defaults.
+**Solution**: Provide centralized, reusable Bicep wrapper modules based on Azure Verified Modules (AVM) that expose only compliant parameters and enforce premium-tier defaults for maximum performance.
 
-**Impact**: Application teams can only deploy infrastructure that satisfies business cost targets, security policies, compliance requirements, and platform standards.
+**Impact**: Application teams can only deploy infrastructure that satisfies business performance targets, utilizes premium SKUs, enables GPU acceleration where applicable, and maintains security/compliance requirements.
 
 ## Requirements
 
@@ -91,31 +93,33 @@ All infrastructure modules MUST be **wrappers** around publicly published Azure 
 **Rationale**: AVM modules are Microsoft-maintained, well-tested, and follow Azure best practices. Wrapping them allows us to enforce platform-specific constraints while benefiting from upstream maintenance. Version pinning via CHANGELOG.md ensures consistency and easy version tracking.
 
 #### REQ-002: Minimal Parameter Exposure
-Wrapper modules MUST expose only parameters necessary for application teams to customize their deployments while remaining compliant:
-- **Allowed Parameters**: Application name, environment (dev/prod), resource-specific sizing within approved SKU ranges
-- **Hidden Parameters**: Security settings (encryption enabled by default), compliance settings (US regions only), prohibited SKU options
-- **Validation**: Use Bicep `@allowed` decorators to restrict parameter values to compliant options
+Wrapper modules MUST expose only parameters necessary for application teams to customize their deployments while remaining compliant with performance targets:
+- **Allowed Parameters**: Application name, environment (dev/prod), resource-specific sizing within premium SKU ranges
+- **Hidden Parameters**: Security settings (encryption enabled by default), compliance settings (US regions only), cost constraints (removed - on-demand pricing acceptable)
+- **Validation**: Use Bicep `@allowed` decorators to restrict parameter values to compliant (premium-tier) options
 
-**Example**: VM wrapper module exposes `vmSku` parameter but restricts choices to `['Standard_B2s', 'Standard_B4ms']` per cost-001.
+**Example**: VM wrapper module exposes `vmSku` parameter but restricts choices to `['Standard_D32ds_v5', 'Standard_D48ds_v5', 'Standard_D64ds_v5', 'Standard_D96ds_v5']` per cost-001 v3.0.0 performance-first strategy.
 
 #### REQ-003: Compliant Default Parameters
 Wrapper modules MUST include default parameters that satisfy all upstream specifications:
-- **Cost Defaults** (from business/cost-001):
-  - VM SKUs: `Standard_B2s` (dev), `Standard_B4ms` (prod)
-  - Storage: `Standard_LRS` replication
-  - Reserved instances: 3-year commitment for production VMs
+- **Performance Defaults** (from business/cost-001 v3.0.0):
+  - VM SKUs: `Standard_D32ds_v5` (dev), `Standard_D96ds_v5` (prod) - minimum premium tiers
+  - GPU SKUs: `Standard_ND96amsr_A100_v4` (AI/ML workloads) - 8x NVIDIA A100 GPUs
+  - Storage: `Premium_ZRS` replication (P30+ minimum) or `StandardSSD_ZRS` for maximum throughput
+  - Reserved instances: On-demand pricing acceptable (cost optimization not applicable)
 - **Security Defaults** (from security/data-protection-001, security/access-control-001):
   - Encryption at rest: Enabled (Azure Disk Encryption or server-side encryption)
   - Encryption in transit: TLS 1.2+ required
   - Authentication: SSH keys only (no password authentication)
-  - Key Vault: Azure Key Vault Premium (HSM-backed) for production secrets
+  - Key Vault: Azure Key Vault Premium (HSM-backed) for all secrets
 - **Compliance Defaults** (from business/compliance-framework-001):
   - Location: `centralus` or `eastus` only (US data residency)
   - Tagging: `compliance: nist-800-171` tag mandatory
-  - Diagnostics: Azure Monitor integration enabled
+  - Diagnostics: Azure Monitor integration enabled with premium metrics
 - **Platform Defaults** (from platform/iac-linting-001):
   - Code quality: Pass `bicep build` validation
   - Naming conventions: `<appname>-<environment>-<resourcetype>`
+  - Performance monitoring: Azure Monitor with custom performance metrics enabled
 
 #### REQ-004: Module Catalog for LAMP Stack
 Initial module catalog MUST support mycoolapp LAMP stack deployment (Ubuntu 22.04 + Apache + PHP + Azure Database for MySQL):
@@ -140,21 +144,23 @@ Initial module catalog MUST support mycoolapp LAMP stack deployment (Ubuntu 22.0
 
 4. **Virtual Machine Module** (`avm-wrapper-linux-vm`)
    - **AVM Source**: `br/public:avm/res/compute/virtual-machine:X.Y.Z`
-   - **Exposed Parameters**: `vmName`, `vmSku` (restricted to `['Standard_B2s', 'Standard_B4ms']`), `sshPublicKey`, `adminUsername`
+   - **Exposed Parameters**: `vmName`, `vmSku` (restricted to `['Standard_D32ds_v5', 'Standard_D48ds_v5', 'Standard_D64ds_v5', 'Standard_D96ds_v5', 'Standard_M128ms', 'Standard_M192idms_v2']`), `sshPublicKey`, `adminUsername`, `enableGpu` (for AI/ML workloads)
    - **Enforced Defaults**: 
      - Ubuntu 22.04 LTS image
+     - Premium-tier SKU minimum (D32ds_v5 for dev, D96ds_v5 for prod)
+     - GPU acceleration enabled when `enableGpu=true` (Standard_ND96amsr_A100_v4 with 8x NVIDIA A100)
      - Managed identity enabled
      - Azure Disk Encryption enabled (data-protection-001)
      - SSH authentication only (access-control-001)
-     - Reserved instance pricing mode for production
-     - Azure Monitor VM Insights extension installed
-     - cloud-init for LAMP stack provisioning
-   - **Outputs**: `vmId`, `privateIpAddress`, `managedIdentityPrincipalId`
+     - On-demand pricing mode (cost optimization not applicable)
+     - Azure Monitor VM Insights extension with premium metrics
+     - Cloud-init for application stack provisioning
+   - **Outputs**: `vmId`, `privateIpAddress`, `managedIdentityPrincipalId`, `gpuEnabled`
 
 5. **Managed Disk Module** (`avm-wrapper-managed-disk`)
    - **AVM Source**: `br/public:avm/res/compute/disk:X.Y.Z`
-   - **Exposed Parameters**: `diskName`, `diskSizeGB`, `environment`
-   - **Enforced Defaults**: Standard SSD, LRS replication (dev), ZRS (prod), encryption enabled, US regions only
+   - **Exposed Parameters**: `diskName`, `diskSizeGB`, `environment`, `diskTier` (Premium SSD or Ultra)
+   - **Enforced Defaults**: Premium SSD P30+ minimum (dev), Premium SSD P30+ or Ultra Disk (prod), ZRS replication, encryption enabled, US regions only
    - **Outputs**: `diskId`
 
 6. **Key Vault Module** (`avm-wrapper-key-vault`)
@@ -171,32 +177,34 @@ Initial module catalog MUST support mycoolapp LAMP stack deployment (Ubuntu 22.0
 
 7. **Storage Account Module** (`avm-wrapper-storage-account`)
    - **AVM Source**: `br/public:avm/res/storage/storage-account:X.Y.Z`
-   - **Exposed Parameters**: `storageAccountName`, `environment`
+   - **Exposed Parameters**: `storageAccountName`, `environment`, `performanceTier` (Premium or StandardViaUltraDisk)
    - **Enforced Defaults**: 
-     - Standard_LRS replication (dev), Standard_ZRS (prod)
+     - Premium_ZRS replication (dev), Premium_ZRS or Ultra Disk (prod) - maximum throughput tiers
      - TLS 1.2 minimum version
-     - Encryption enabled (Microsoft-managed keys)
+     - Encryption enabled (Microsoft-managed keys or customer-managed via Key Vault)
      - Blob soft delete enabled (30-day retention per compliance-001)
      - US regions only
+     - Network acceleration enabled for maximum throughput
    - **Outputs**: `storageAccountId`, `primaryEndpoints`
 
 8. **Azure Database for MySQL Flexible Server Module** (`avm-wrapper-mysql-flexibleserver`)
    - **AVM Source**: `br/public:avm/res/db-for-my-sql/flexible-server:X.Y.Z`
-   - **Exposed Parameters**: `serverName`, `environment`, `administratorLogin`, `storageGB` (restricted to cost-optimized tiers)
+   - **Exposed Parameters**: `serverName`, `environment`, `administratorLogin`, `storageGB`, `computeTier` (GeneralPurpose or MemoryOptimized)
    - **Enforced Defaults**:
-     - SKU: Burstable_B1ms (dev), GeneralPurpose_D2ds_v4 (prod) per cost-001
+     - SKU: GeneralPurpose_D4ds_v4 (dev minimum), GeneralPurpose_D8ds_v4 or MemoryOptimized_E4ds_v4 (prod) per cost-001 v3.0.0
      - MySQL version: 8.0 (latest LTS)
-     - Storage: 20GB (dev), 32GB (prod) auto-grow enabled
-     - High availability: Disabled (dev), Zone-redundant (prod) per governance-001 SLA
-     - Backup retention: 7 days (dev), 30 days (prod) per compliance-001
+     - Storage: 128GB (dev), 256GB or more (prod) with auto-grow enabled
+     - High availability: Zone-redundant for all tiers (performance + availability)
+     - Backup retention: 14 days (dev), 30+ days (prod) per compliance-001
      - SSL enforcement: Required (TLS 1.2+) per dp-001
-     - Encryption: Microsoft-managed keys
+     - Encryption: Customer-managed keys (via Key Vault) for prod per dp-001
      - Public network access: Disabled (VNet integration only) per ac-001
      - Location: US regions only per comp-001
      - Firewall rules: Azure services allowed, specific VNet subnet access only
+     - Performance monitoring: Enabled with Premium Insights
    - **Outputs**: `serverId`, `fqdn`, `administratorLogin`
 
-#### REQ-005: Module Directory Structure
+```#### REQ-005: Module Directory Structure
 Centralized wrapper modules MUST reside in the artifacts infrastructure directory:
 ```
 /artifacts/
@@ -386,7 +394,15 @@ All wrapper modules MUST include:
 
 ---
 
-**Document Version**: 1.0.0-draft  
-**Last Updated**: 2026-02-07  
+## Change Log
+
+| Version | Date | Change | Approved By |
+|---------|------|--------|------------|
+| 1.0.0-draft | 2026-02-07 | Initial infrastructure IaC modules spec with cost-optimized defaults | Infrastructure Lead |
+| 2.0.0 | 2026-02-10 | **BREAKING**: Updated to align with business/cost v3.0.0; changed all module SKU defaults to premium-tier (D32+ VMs, Premium SSD P30+, GPU acceleration options) ; removed cost constraints and reserved instance defaults; focused on maximum performance; published | Infrastructure Lead (cascade from business/cost) |
+
+**Document Version**: 2.0.0  
+**Last Updated**: 2026-02-10  
 **Owner**: Infrastructure Engineering Team  
-**Status**: Draft (pending review and wrapper module implementation)
+**Status**: Published  
+**Depends On**: business/cost-001 (v3.0.0), infrastructure/compute (v3.0.0), infrastructure/storage (v3.0.0), infrastructure/networking (v3.0.0)

@@ -12,7 +12,7 @@
       "value": "centralus"
     },
     "sku": {
-      "value": "Burstable_B1ms"
+      "value": "GeneralPurpose_D4ds_v4"
     },
     "mysqlVersion": {
       "value": "8.0.21"
@@ -30,25 +30,25 @@
       "value": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-mycoolapp-dev/providers/Microsoft.Network/privateDnsZones/privatelink.mysql.database.azure.com"
     },
     "storageSizeGB": {
-      "value": 20
+      "value": 128
     },
     "storageIops": {
-      "value": 360
+      "value": 3000
     },
     "storageAutogrow": {
-      "value": false
+      "value": true
     },
     "backupRetentionDays": {
-      "value": 7
+      "value": 14
     },
     "geoRedundantBackup": {
       "value": false
     },
     "highAvailability": {
-      "value": false
+      "value": true
     },
     "standbyAvailabilityZone": {
-      "value": ""
+      "value": 2
     },
     "additionalTags": {
       "value": {

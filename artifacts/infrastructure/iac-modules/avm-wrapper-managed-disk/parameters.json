@@ -15,7 +15,7 @@
       "value": 128
     },
     "diskSku": {
-      "value": "StandardSSD_LRS"
+      "value": "Premium_ZRS"
     },
     "createOption": {
       "value": "Empty"
@@ -24,7 +24,7 @@
       "value": ""
     },
     "enableEncryption": {
-      "value": false
+      "value": true
     },
     "zone": {
       "value": ""

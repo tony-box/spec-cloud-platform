@@ -1,0 +1,171 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.37.4.10188",
+      "templateHash": "13576669630478949586"
+    }
+  },
+  "parameters": {
+    "namePrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Name prefix for Patio resources."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for deployment."
+      }
+    },
+    "vmResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Target VM resource ID for auto-shutdown."
+      }
+    },
+    "enableAutoShutdown": {
+      "type": "bool",
+      "metadata": {
+        "description": "Enable auto-shutdown schedule (true for dev/test)."
+      }
+    },
+    "shutdownTime": {
+      "type": "string",
+      "defaultValue": "1900",
+      "metadata": {
+        "description": "Daily shutdown time in HHmm (24-hour clock)."
+      }
+    },
+    "timeZoneId": {
+      "type": "string",
+      "defaultValue": "UTC",
+      "metadata": {
+        "description": "Time zone for shutdown schedule."
+      }
+    },
+    "enableGpuMonitoring": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Enable GPU monitoring extension (ND96amsr_A100_v4 required)"
+      }
+    },
+    "enableAcceleratedNetworking": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable accelerated networking for maximum throughput (cost-001 v3.0.0)"
+      }
+    },
+    "enableDiskIoTuning": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable disk I/O tuning for Premium storage performance"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "metadata": {
+        "description": "Tags to apply to automation resources."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.DevTestLab/schedules",
+      "apiVersion": "2018-09-15",
+      "name": "[format('{0}-shutdown', parameters('namePrefix'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "status": "[if(parameters('enableAutoShutdown'), 'Enabled', 'Disabled')]",
+        "taskType": "ComputeVmShutdownTask",
+        "targetResourceId": "[parameters('vmResourceId')]",
+        "dailyRecurrence": {
+          "time": "[parameters('shutdownTime')]"
+        },
+        "timeZoneId": "[parameters('timeZoneId')]",
+        "notificationSettings": {
+          "status": "Disabled"
+        }
+      }
+    },
+    {
+      "condition": "[parameters('enableGpuMonitoring')]",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2021-07-01",
+      "name": "[format('{0}/GpuMonitoring', last(split(parameters('vmResourceId'), '/')))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "publisher": "Microsoft.HpcCompute",
+        "type": "AmdGpuDriver",
+        "typeHandlerVersion": "1.0",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "isLinux": true
+        }
+      }
+    },
+    {
+      "condition": "[parameters('enableAcceleratedNetworking')]",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2021-07-01",
+      "name": "[format('{0}/NetworkTuning', last(split(parameters('vmResourceId'), '/')))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.1",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "commandToExecute": "bash /tmp/network-tuning.sh",
+          "fileUris": [
+            "https://raw.githubusercontent.com/Azure/azure-hpc/master/Compute/Optimization/network-tuning.sh"
+          ]
+        }
+      }
+    },
+    {
+      "condition": "[parameters('enableDiskIoTuning')]",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2021-07-01",
+      "name": "[format('{0}/DiskIoTuning', last(split(parameters('vmResourceId'), '/')))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.1",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "commandToExecute": "bash -c \"echo vm.max_map_count=262144 >> /etc/sysctl.conf && sysctl -p && fdisk -l && mkfs.ext4 -F /dev/sdb && mount /dev/sdb /mnt/data\""
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "shutdownScheduleId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.DevTestLab/schedules', format('{0}-shutdown', parameters('namePrefix')))]"
+    },
+    "gpuMonitoringExtensionId": {
+      "type": "string",
+      "value": "[if(parameters('enableGpuMonitoring'), resourceId('Microsoft.Compute/virtualMachines/extensions', split(format('{0}/GpuMonitoring', last(split(parameters('vmResourceId'), '/'))), '/')[0], split(format('{0}/GpuMonitoring', last(split(parameters('vmResourceId'), '/'))), '/')[1]), '')]"
+    },
+    "networkTuningExtensionId": {
+      "type": "string",
+      "value": "[if(parameters('enableAcceleratedNetworking'), resourceId('Microsoft.Compute/virtualMachines/extensions', split(format('{0}/NetworkTuning', last(split(parameters('vmResourceId'), '/'))), '/')[0], split(format('{0}/NetworkTuning', last(split(parameters('vmResourceId'), '/'))), '/')[1]), '')]"
+    },
+    "diskIoTuningExtensionId": {
+      "type": "string",
+      "value": "[if(parameters('enableDiskIoTuning'), resourceId('Microsoft.Compute/virtualMachines/extensions', split(format('{0}/DiskIoTuning', last(split(parameters('vmResourceId'), '/'))), '/')[0], split(format('{0}/DiskIoTuning', last(split(parameters('vmResourceId'), '/'))), '/')[1]), '')]"
+    }
+  }
+}

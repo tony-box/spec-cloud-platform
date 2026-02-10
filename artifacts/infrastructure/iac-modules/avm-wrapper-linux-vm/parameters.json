@@ -12,7 +12,7 @@
       "value": "centralus"
     },
     "vmSize": {
-      "value": "Standard_B2s"
+      "value": "Standard_D32ds_v5"
     },
     "adminUsername": {
       "value": "azureuser"

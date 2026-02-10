@@ -1,5 +1,8 @@
 using './main.bicep'
 
+// Patio Test Environment Parameters - v3.0.0 Unlimited Performance
+// Updated: February 10, 2026
+
 param appName = 'patio'
 param environment = 'test'
 param location = 'centralus'

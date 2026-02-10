@@ -1,10 +1,11 @@
 // ============================================================================
 // Azure Managed Disk Wrapper Module
 // ============================================================================
-// Purpose: Compliant Managed Disk wrapper with cost tier support per business/cost v2.0.0
+// Purpose: Premium-tier Managed Disk wrapper for unlimited performance per business/cost v3.0.0
 // AVM Source: br/public:avm/res/compute/disk:0.6.0
 // Spec: infrastructure/iac-modules (iac-001)
-// Compliance: cost-001 v2.0.0, dp-001, ac-001, comp-001, lint-001
+// Compliance: cost-001 v3.0.0, dp-001, ac-001, comp-001, lint-001
+// Performance: Premium SSD minimum with ZRS replication for all environments; Ultra Disk option for maximum throughput
 // ============================================================================
 
 @description('Name of the managed disk')
@@ -27,9 +28,9 @@ param location string = 'centralus'
 @maxValue(32767)
 param diskSizeGB int = 128
 
-@description('Disk SKU per workload criticality (Critical: Premium_ZRS, Non-Critical: StandardSSD_LRS, Dev-Test: Standard_LRS)')
-@allowed(['Standard_LRS', 'StandardSSD_LRS', 'Premium_LRS', 'Premium_ZRS', 'PremiumV2_LRS', 'UltraSSD_LRS'])
-param diskSku string = workloadCriticality == 'critical' ? 'Premium_ZRS' : (workloadCriticality == 'non-critical' ? 'StandardSSD_LRS' : 'Standard_LRS')
+@description('Disk SKU per performance requirements (Premium_ZRS minimum for all tiers per cost-001 v3.0.0; UltraSSD_LRS for maximum throughput)')
+@allowed(['Premium_LRS', 'Premium_ZRS', 'PremiumV2_LRS', 'UltraSSD_LRS'])
+param diskSku string = 'Premium_ZRS'
 
 @description('Create option: Empty for new disk, Copy for snapshot copy')
 @allowed(['Empty', 'Copy'])
@@ -38,8 +39,8 @@ param createOption string = 'Empty'
 @description('Source resource ID if createOption is Copy (snapshot ID)')
 param sourceResourceId string = ''
 
-@description('Enable encryption at rest (required for prod per dp-001)')
-param enableEncryption bool = (environment == 'prod')
+@description('Enable encryption at rest (required for all environments per dp-001 and cost-001 v3.0.0)')
+param enableEncryption bool = true
 
 @description('Availability zone for zone-redundant disk (1, 2, 3, or empty for LRS)')
 param zone string = ''
@@ -57,9 +58,9 @@ var defaultTags = {
   managedBy: 'bicep'
   tier: 'infrastructure'
   module: 'avm-wrapper-managed-disk'
-  version: '2.0.0'
+  version: '3.0.0'
   workloadCriticality: workloadCriticality
-  costSpec: 'business/cost-001 v2.0.0'
+  performanceSpec: 'business/cost-001 v3.0.0'
 }
 
 var tags = union(defaultTags, additionalTags)

@@ -1,10 +1,11 @@
 // ============================================================================
 // Azure Database for MySQL Flexible Server Wrapper Module
 // ============================================================================
-// Purpose: Compliant Azure MySQL wrapper around Azure Verified Module
+// Purpose: Premium-tier MySQL wrapper for unlimited performance per business/cost v3.0.0
 // AVM Source: br/public:avm/res/db-for-my-sql/flexible-server:0.10.1
 // Spec: infrastructure/iac-modules (iac-001)
-// Compliance: cost-001, dp-001, ac-001, comp-001, lint-001
+// Compliance: cost-001 v3.0.0, dp-001, ac-001, comp-001, lint-001
+// Performance: GeneralPurpose D4+ tiers for all environments; MemoryOptimized E4+ option for maximum throughput
 // ============================================================================
 
 @description('Name of the MySQL server (globally unique)')
@@ -18,9 +19,9 @@ param environment string
 @allowed(['centralus', 'eastus'])
 param location string = 'centralus'
 
-@description('MySQL SKU (Burstable_B1ms for dev, GeneralPurpose_D2ds_v4 for prod per cost-001)')
-@allowed(['Burstable_B1ms', 'GeneralPurpose_D2ds_v4'])
-param sku string = (environment == 'dev') ? 'Burstable_B1ms' : 'GeneralPurpose_D2ds_v4'
+@description('MySQL SKU (GeneralPurpose_D4ds_v4 minimum per cost-001 v3.0.0; D8+ for prod, MemoryOptimized_E4+ for maximum throughput)')
+@allowed(['GeneralPurpose_D4ds_v4', 'GeneralPurpose_D8ds_v4', 'GeneralPurpose_D16ds_v4', 'GeneralPurpose_D32ds_v4', 'MemoryOptimized_E4ds_v4', 'MemoryOptimized_E8ds_v4'])
+param sku string = (environment == 'dev') ? 'GeneralPurpose_D4ds_v4' : 'GeneralPurpose_D8ds_v4'
 
 @description('MySQL version (8.0 LTS)')
 @allowed(['8.0.21'])
@@ -40,33 +41,33 @@ param delegatedSubnetId string
 @description('Private DNS zone resource ID for MySQL (required for VNet integration)')
 param privateDnsZoneId string
 
-@description('Storage size in GiB (20-16384)')
-@minValue(20)
+@description('Storage size in GiB (128 min for dev, 256+ for prod per cost-001 v3.0.0)')
+@minValue(128)
 @maxValue(16384)
-param storageSizeGB int = (environment == 'dev') ? 20 : 100
+param storageSizeGB int = (environment == 'dev') ? 128 : 256
 
-@description('Storage IOPS (360-20000, auto-scale for GeneralPurpose)')
-@minValue(360)
+@description('Storage IOPS (3000+ for all tiers per cost-001 v3.0.0)')
+@minValue(3000)
 @maxValue(20000)
-param storageIops int = (environment == 'dev') ? 360 : 3000
+param storageIops int = (environment == 'dev') ? 3000 : 5000
 
-@description('Storage autogrow (enabled for prod)')
-param storageAutogrow bool = (environment == 'prod')
+@description('Storage autogrow (enabled for all environments per cost-001 v3.0.0)')
+param storageAutogrow bool = true
 
-@description('Backup retention days (7 for dev, 30 for prod per dp-001)')
-@minValue(1)
+@description('Backup retention days (14+ for all environments per cost-001 v3.0.0 and dp-001)')
+@minValue(14)
 @maxValue(35)
-param backupRetentionDays int = (environment == 'prod') ? 30 : 7
+param backupRetentionDays int = (environment == 'dev') ? 14 : 30
 
-@description('Geo-redundant backup (disabled for cost optimization per cost-001)')
-param geoRedundantBackup bool = false
+@description('Geo-redundant backup (enabled for prod per dp-001, deferred for dev)')
+param geoRedundantBackup bool = (environment == 'prod')
 
-@description('Zone-redundant high availability (enabled for prod per dp-001)')
-param highAvailability bool = (environment == 'prod')
+@description('Zone-redundant high availability (enabled for all environments per cost-001 v3.0.0)')
+param highAvailability bool = true
 
-@description('Standby availability zone for HA (-1 for none, 1-3 for zonal)')
-@allowed([-1, 1, 2, 3])
-param standbyAvailabilityZone int = highAvailability ? 2 : -1
+@description('Standby availability zone for HA (1-3 per environment per cost-001 v3.0.0)')
+@allowed([1, 2, 3])
+param standbyAvailabilityZone int = 2
 
 @description('Additional tags to merge with default compliance tags')
 param additionalTags object = {}
@@ -81,7 +82,9 @@ var defaultTags = {
   managedBy: 'bicep'
   tier: 'infrastructure'
   module: 'avm-wrapper-mysql-flexibleserver'
-  version: '1.0.0'
+  version: '2.0.0'
+  performanceSpec: 'business/cost-001 v3.0.0'
+  highAvailability: highAvailability ? 'enabled' : 'enabled'
 }
 
 var tags = union(defaultTags, additionalTags)

@@ -3,19 +3,19 @@
 tier: infrastructure
 category: storage
 spec-id: stor-001
-version: 2.0.0
+version: 3.0.0
 status: published
 created: 2026-02-07
-last-updated: 2026-02-09
-description: "Storage tier selections, backup retention, and replication strategies aligned with cost baselines per workload tier"
+last-updated: 2026-02-10
+description: "Premium+ storage tier selections for maximum performance: P30+ SSD, Ultra Disk with maximum throughput; unlimited performance strategy"
 
 # Dependencies
 depends-on:
   - tier: business
     category: cost
     spec-id: cost-001
-    version: 2.0.0
-    reason: "Storage tier selections must align with cost baselines per workload tier"
+    version: 3.0.0
+    reason: "Storage tier selections must use Premium SSD (P30+) and Ultra Disk for maximum performance, no cost constraints"
   - tier: infrastructure
     category: compute
     spec-id: compute-001
@@ -47,39 +47,38 @@ adhered-by: []
 **Category**: storage  
 **Spec ID**: stor-001  
 **Created**: 2026-02-07  
-**Updated**: 2026-02-09  
+**Updated**: 2026-02-10  
 **Status**: Published  
-**Derived From**: business/cost-001 v2.0.0 (cost baselines per tier) + business/compliance-framework  
+**Derived From**: business/cost-001 v3.0.0 (maximum performance strategy) + business/compliance-framework  
 
 ## Executive Summary
 
-**Problem**: Without tiered storage guidance:
-- Over-provisioned storage (Premium SSD when Standard SSD sufficient)
-- Inconsistent backup retention across workloads
-- Cost overruns from inappropriate replication strategies
+**Problem**: Without performance-optimized storage guidance:
+- Under-provisioned storage (Standard when Premium SSD needed for speed)
+- Inconsistent IOPS/throughput configurations
+- Inadequate backup strategies for data integrity
 - Compliance violations (retention requirements not met)
 
-**Solution**: Define storage tier selections, replication strategies, and backup retention policies aligned with workload criticality and cost baselines.
+**Solution**: Define premium storage tier selections and throughput optimization strategies aligned with performance requirements.
 
-**Cost Impact**: Storage included in compute cost baselines:
-- Critical: Premium SSD (P10/P15), zone-redundant - included in $150-250/month
-- Non-Critical: Standard SSD (E10/E15), locally-redundant - included in $50-100/month
-- Dev/Test: Standard HDD or Standard SSD (E6), locally-redundant - included in $20-50/month
+**Performance Impact**: All workloads use high-performance storage:
+- All Workloads: Premium SSD P30+ minimum, with Ultra Disk option for maximum throughput
+- Replication: Zone-redundant where applicable for performance + availability
+- Backup Retention: Aligned with critical data requirements, not cost minimization
 
-**Impact**: All applications use appropriate storage tier for workload criticality; backups aligned with recovery requirements.
+**Impact**: All applications achieve maximum storage throughput and IOPS; data durability ensured with high-performance backup strategies.
 
 ## Requirements
 
 ### Functional Requirements
 
 - **REQ-001**: All VMs MUST use managed disks (not unmanaged)
-- **REQ-002**: Storage tier selection MUST be based on workload criticality (critical/non-critical/dev-test)
-- **REQ-003**: Storage costs MUST stay within cost baselines for workload tier (included in compute baseline)
-- **REQ-004**: Critical workloads MUST use zone-redundant storage (ZRS) for high availability
-- **REQ-005**: Non-critical and dev/test workloads SHOULD use locally-redundant storage (LRS) for cost optimization
-- **REQ-006**: Backup retention MUST align with workload tier (30-day critical, 7-day non-critical, optional dev/test)
-- **REQ-007**: All storage MUST comply with data residency requirements (US regions only)
-- **REQ-008**: Premium SSD SHOULD NOT be used for non-critical or dev/test without business justification
+- **REQ-002**: Storage tier selection MUST prioritize performance (Premium SSD P30+ minimum for all workloads)
+- **REQ-003**: Ultra Disk SHOULD be used for maximum throughput requirements (no cost constraints)
+- **REQ-004**: Storage IOPS and throughput MUST be optimized for workload requirements
+- **REQ-005**: Zone-redundant storage (ZRS) SHOULD be used where available (performance + availability)
+- **REQ-006**: All storage MUST comply with data residency requirements (US regions only)
+- **REQ-007**: Backup retention MUST ensure critical data durability (no cost-based reduction)
 
 ### Approved Storage Tiers by Workload Tier
 
@@ -108,53 +107,77 @@ adhered-by: []
 
 #### Non-Critical Workloads (99% SLA)
 **Target**: Included in $50-100/month compute baseline  
+### Approved Storage Tiers by Workload Type
+
+#### All Production Workloads (Maximum Performance)
+**Principle**: Premium+ storage for maximum throughput and reliability
+
 **Approved Storage Tiers**:
-- **Standard SSD (E10 or E15)** - RECOMMENDED for balanced performance and cost
-  - E10: 128 GB, 500 IOPS, 60 MB/s
-  - E15: 256 GB, 500 IOPS, 60 MB/s
-- Standard HDD (S10 or S15) - Acceptable for infrequent access workloads
+- **Ultra Disk** - RECOMMENDED for maximum IOPS/throughput
+  - Up to 160,000 IOPS, 4,000 MB/s throughput
+  - Ideal for high-performance databases, real-time analytics
+- **Premium SSD P30-P80** - RECOMMENDED as minimum
+  - P30: 1TB, 5,000 IOPS, 200 MB/s (minimum tier)
+  - P80: 32TB, 20,000 IOPS, 750 MB/s (maximum)
+- Choose based on workload throughput needs (not cost)
 
 **Replication Strategy**:
-- **Locally Redundant Storage (LRS)** - RECOMMENDED for cost optimization
-- 3 copies within single datacenter
-- Durability: 99.999999999% (11 nines) - sufficient for non-critical
-- Cost: Baseline (no replication premium)
+- **Zone-Redundant Storage (ZRS)** - RECOMMENDED for performance + availability
+- 3 copies across availability zones with automatic failover
+- Minimal latency impact (<5ms between zones within region)
+- Ensures data availability during zone failures
+
+**Backup Retention**:
+- **Continuous** or **Daily backups**: REQUIRED for critical data
+- **Retention**: 30 days minimum for production workloads
+- **Long-term**: Snapshots retained per compliance requirements
+- **RPO**: 4 hours or better (near real-time)
+- **RTO**: 1 hour or better (rapid recovery for service continuity)
+
+**Rationale**: Premium+ storage eliminates I/O bottlenecks. Zone-redundant replication ensures high availability without compromise. Continuous/near-real-time backups ensure critical data durability.
+
+#### AI/ML & Data Processing Workloads (Maximum Throughput)
+**Approved Storage Tiers**:
+- **Ultra Disk with Maximum Throughput**: RECOMMENDED
+  - 160,000 IOPS, 4,000 MB/s configuration
+  - High-throughput data pipelines
+- **Premium SSD P80** (32TB, max config): Alternative
+
+**Replication Strategy**:
+- **Zone-Redundant Storage (ZRS)**: REQUIRED
+- Automatic failover across zones ensures uninterrupted data access
+
+**Backup Retention**:
+- **Continuous real-time backup**: REQUIRED
+- **Retention**: 30+ days
+- **RPO**: <1 hour for near real-time recovery
+
+**Rationale**: Maximum throughput storage for data-intensive workloads. Continuous backups protect against data loss during processing. Zone redundancy ensures data pipeline resilience.
+
+#### Development/Test Workloads (Premium Tier for Accuracy)
+**Approved Storage Tiers**:
+- **Premium SSD P20-P30**: MINIMUM (must match production tier)
+  - P20: 512GB, 2,300 IOPS, 150 MB/s
+  - P30: 1TB, 5,000 IOPS, 200 MB/s (recommended)
+- Ensures dev/test performance matches production for accurate testing
+
+**Replication Strategy**:
+- **Zone-Redundant Storage (ZRS)**: RECOMMENDED
+- Matches production replication strategy for test accuracy
 
 **Backup Retention**:
 - **Daily backups**: REQUIRED
-- **Retention**: 7 days (short-term recovery)
-- **Long-term**: Optional (not required for non-critical)
+- **Retention**: 14 days (sufficient for dev/test testing cycles)
 - **RPO**: 24 hours
-- **RTO**: 8 hours (less stringent than critical)
 
-**Rationale**: Non-critical workloads tolerate brief outages. Standard SSD provides adequate performance at lower cost than Premium. Locally-redundant storage acceptable (single-zone deployment). 7-day backup retention balances recovery capability with storage costs.
+**Rationale**: Dev/test should use premium storage matching production to enable accurate performance testing. Prevents dev storage from becoming bottleneck.
 
-#### Development/Test Workloads (95% SLA)
-**Target**: Included in $20-50/month compute baseline  
-**Approved Storage Tiers**:
-- **Standard HDD (S10)** - RECOMMENDED for minimal cost
-  - S10: 128 GB, 500 IOPS, 60 MB/s
-- **Standard SSD (E6 or E10)** - Acceptable for performance-sensitive development
-  - E6: 64 GB, 500 IOPS, 60 MB/s
+### Storage Performance Optimization
 
-**Replication Strategy**:
-- **Locally Redundant Storage (LRS)** - REQUIRED for cost minimization
-- 3 copies within single datacenter
-- Durability: 99.999999999% (11 nines)
-
-**Backup Retention**:
-- **Backups**: OPTIONAL (on-demand snapshots only)
-- **Retention**: 7 days if backups configured
-- **RPO/RTO**: Not critical (can recreate dev/test environments)
-
-**Rationale**: Dev/test environments can tolerate data loss (can recreate from source control). Standard HDD provides minimum cost storage. Backups optional since environments are non-production. LRS replication sufficient.
-
-### Storage Cost Governance
-
-- **REQ-GOV-001**: Storage costs MUST NOT exceed compute cost baseline for workload tier
-- **REQ-GOV-002**: Premium SSD usage for non-critical/dev-test workloads REQUIRES documented justification
-- **REQ-GOV-003**: Zone-redundant storage (ZRS) for non-critical/dev-test workloads REQUIRES approval
-- **REQ-GOV-004**: Monthly storage cost reviews REQUIRED for workloads exceeding baseline
+- **REQ-OPT-001**: All storage SHOULD be monitored for throughput and IOPS utilization
+- **REQ-OPT-002**: Ultra Disk SHOULD be selected when workload requires >5,000 IOPS or >200 MB/s throughput
+- **REQ-OPT-003**: Zone-redundant replication SHOULD be standard (no cost constraints)
+- **REQ-OPT-004**: Continuous backup SHOULD be used for critical data (no retention cost optimization)
 
 ### Data Residency & Compliance
 
@@ -167,7 +190,7 @@ adhered-by: []
 **Data Retention** (from business/compliance-framework):
 - Application data: 7 years
 - Audit logs: 3 years (immutable storage)
-- Backup data: Per workload tier (30-day critical, 7-day non-critical, optional dev/test)
+- Backup data: 30+ days for production, 14 days for dev/test
 
 ## Change Log
 
@@ -175,30 +198,23 @@ adhered-by: []
 |---------|------|--------|------------|
 | 1.0.0-draft | 2026-02-07 | Initial infrastructure storage spec | Infrastructure Lead |
 | 2.0.0 | 2026-02-09 | **BREAKING**: Updated to align with business/cost v2.0.0; added storage tier selections per workload tier; added backup retention guidance; published | Infrastructure Lead (cascade from business/cost) |
+| 3.0.0 | 2026-02-10 | **BREAKING**: Shifted to performance-first strategy from business/cost v3.0.0; changed to premium-only storage (P30+ minimum, Ultra Disk for max throughput); zone-redundant replication standard; continuous backup for critical data; removed cost governance; prioritize IOPS/throughput over cost | Infrastructure Lead (cascade from business/cost) |
 
 ---
 
-**Spec Version**: 2.0.0  
-**Approved Date**: 2026-02-09  
-**Depends On**: business/cost-001 (v2.0.0), business/compliance-framework (comp-001), infrastructure/compute (compute-001 v2.0.0)  
+**Spec Version**: 3.0.0  
+**Approved Date**: 2026-02-10  
+**Depends On**: business/cost-001 (v3.0.0), business/compliance-framework (comp-001), infrastructure/compute (compute-001 v3.0.0)  
 **Artifacts Location**: artifacts/infrastructure/iac-modules/
-- Automatic deletion after retention period
+**Approved Date**: 2026-02-09  
+**Depends On**: business/cost-001 (v3.0.0), business/compliance-framework (comp-001), infrastructure/compute (compute-001 v3.0.0)  
+**Artifacts Location**: artifacts/infrastructure/iac-modules/
 
 ## Success Criteria
 
-- **SC-001**: All VMs use managed disks (100% adoption)
-- **SC-002**: Disk tier selection based on workload needs (documented)
-- **SC-003**: LRS replication used by default (cost optimization)
-- **SC-004**: All production disks backed up with 30-day retention
+- **SC-001**: All VMs use managed disks with Premium SSD P30+ minimum (100% adoption)
+- **SC-002**: Storage tier selection prioritizes performance (Ultra Disk for >5,000 IOPS workloads)
+- **SC-003**: Zone-redundant replication standard across all workloads
+- **SC-004**: All production disks backed up with continuous backup and 30+ day retention
 - **SC-005**: Zero data residency violations (all storage in approved regions)
-
-## Change Log
-
-| Version | Date | Change | Approved By |
-|---------|------|--------|------------|
-| 1.0.0-draft | 2026-02-07 | Initial storage spec | Infrastructure Lead |
-
----
-
-**Spec Version**: 1.0.0-draft  
-**Created**: 2026-02-07
+- **SC-006**: Storage throughput exceeds workload requirements (no bottlenecks at storage I/O layer)

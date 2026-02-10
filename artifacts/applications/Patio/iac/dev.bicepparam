@@ -1,5 +1,8 @@
 using './main.bicep'
 
+// Patio Dev Environment Parameters - v3.0.0 Unlimited Performance
+// Updated: February 10, 2026
+
 param appName = 'patio'
 param environment = 'dev'
 param location = 'centralus'

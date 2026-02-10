@@ -6,8 +6,8 @@ spec-id: cost-001
 version: 2.0.0
 status: published
 created: 2026-02-06
-last-updated: 2026-02-09
-description: "Baseline infrastructure cost targets balancing cost efficiency, resiliency, and performance"
+last-updated: 2026-02-10
+description: "Maximum performance infrastructure strategy: unlimited Azure spending for optimal speed and computational power"
 
 # Dependencies
 depends-on: []
@@ -42,15 +42,15 @@ precedence:
 adhered-by: []
 ---
 
-# Specification: Infrastructure Cost Baselines & Budget Targets
+# Specification: Unlimited Performance Infrastructure Strategy
 
 **Tier**: business  
 **Category**: cost  
 **Spec ID**: cost-001  
 **Created**: 2026-02-06  
-**Updated**: 2026-02-09  
+**Updated**: 2026-02-10  
 **Status**: Published  
-**Input**: Business stakeholder request: "Establish reasonable baseline infrastructure costs that balance cost efficiency, resiliency, and performance"
+**Input**: Business stakeholder request: "Prioritize pure computational speed and performance. Use the best-of-the-best SKUs and features for all compute workloads. Cost is not a constraint."
 
 ## Spec Source & Hierarchy
 
@@ -64,128 +64,138 @@ adhered-by: []
 
 ## User Scenarios & Testing
 
-### User Story 1 - Business Stakeholder Defines Cost Baselines (Priority: P1)
+### User Story 1 - Business Stakeholder Mandates Maximum Performance (Priority: P1)
 
-Finance and operations leadership establish infrastructure standards: *"We need clear, reasonable baseline costs for different workload types that balance cost efficiency with appropriate resiliency and performance requirements."*
+Finance and operations leadership establish infrastructure standards: *"Deploy the most powerful, fastest compute resources available. Cost is not a constraint. We want maximum processing power, throughput, and speed for all compute workloads."*
 
-**Why this priority**: Foundational business requirement that guides all infrastructure provisioning decisions; must be defined before deploying any workloads.
+**Why this priority**: Foundational business requirement that prioritizes speed and performance above all else; enables competitive advantage through processing capability.
 
-**Independent Test**: Platform processes business tier cost baselines and creates cost constraints for each workload criticality tier.
+**Independent Test**: Platform provisions compute infrastructure using highest-tier SKUs and premium features available in Azure.
 
 **Acceptance Scenarios**:
 
-1. **Given** business stakeholder defines cost baselines, **When** platform processes them, **Then** business-tier spec contains concrete monthly cost targets per workload type
-2. **Given** business-tier cost spec exists, **When** infrastructure team provisions resources, **Then** deployments must fall within defined cost baselines for that workload criticality
-3. **Given** cost baselines specify reserved instance usage, **When** production workloads deploy, **Then** 1-year or 3-year reserved instances are used where applicable
+1. **Given** business stakeholder mandates maximum performance, **When** platform provisions compute, **Then** all deployments use premium/ultra SKUs with maximum vCPU and memory available for the workload type
+2. **Given** performance spec is active, **When** infrastructure team selects SKUs, **Then** no cost constraints are applied and highest-performance tier is always selected
+3. **Given** infrastructure requires speed, **When** storage is provisioned, **Then** Premium SSD and Ultra Disk options are mandatory for all workloads
 
 ## Requirements
 
 ### Functional Requirements
 
-- **REQ-001**: System MUST define monthly cost baselines for each workload criticality tier (critical, non-critical, development/test)
-- **REQ-002**: System MUST specify appropriate Azure VM SKUs for each cost baseline tier
-- **REQ-003**: System MUST define reserved instance commitment strategies (1-year, 3-year, on-demand)
-- **REQ-004**: System MUST balance cost with resiliency requirements (multi-zone vs single-zone)
-- **REQ-005**: System MUST balance cost with performance requirements (appropriate SKU sizing)
-- **REQ-006**: System MUST automatically cascade cost baselines to infrastructure and application tiers
+- **REQ-001**: System MUST select highest-performance Azure VM SKUs for all compute workloads (no cost constraints)
+- **REQ-002**: System MUST specify premium/ultra-tier SKUs for all workload types (no cost-optimization SKUs)
+- **REQ-003**: System MUST use Premium SSD (P30-P80) and Ultra Disk options for all storage (no standard tier storage)
+- **REQ-004**: System MUST enable all premium features and accelerators available (GPU acceleration, NVIDIA H-series for AI/ML, etc.)
+- **REQ-005**: System MUST provision maximum vCPU and memory configurations for all workloads
+- **REQ-006**: System MUST automatically cascade performance requirements (no cost limits) to infrastructure and application tiers
+- **REQ-007**: Reserved instances and cost optimization strategies are NOT applicable under this performance-first mandate
 
-### Workload Cost Baselines
+### Workload Performance Profiles (Maximum Speed Configuration)
 
-#### Critical Workloads (99.95% SLA)
-**Target Monthly Cost per VM**: $150-250 USD  
+#### All Production Workloads
+**Principle**: UNLIMITED PERFORMANCE - Deploy highest-tier SKUs regardless of cost  
 **Infrastructure Profile**:
-- **Compute**: Standard_D4s_v5 or equivalent (4 vCPU, 16GB RAM)
-- **Availability**: Multi-zone deployment (3 zones)
-- **Storage**: Premium SSD (P10 or P15), zone-redundant
-- **Reserved Instances**: 3-year commitment (savings: ~60% vs on-demand)
-- **Backup**: Daily automated backups, 30-day retention
-- **Monitoring**: Premium tier Azure Monitor with custom metrics
+- **Compute**: Standard_D96ds_v5 or higher (96 vCPU, 384GB RAM) for general workloads; M192idms_v2 or higher (192 vCPU, 4TB RAM) for memory-intensive workloads
+- **GPU Acceleration**: Where applicable, use NVIDIA H100 or A100 SKUs (e.g., Standard_ND96amsr_A100_v4)
+- **Storage**: Premium SSD P80 (32TB, 20,000 IOPS, 750MB/s), or Ultra Disk with 160,000 IOPS + 4,000MB/s throughput
+- **Networking**: ExpressRoute Direct or Ultra High-Performance networking tier
+- **Reserved Instances**: On-demand or on-demand equivalent (cost optimization not applicable)
+- **Backup**: Real-time continuous backup with microsecond RPO
+- **Monitoring**: Premium tier Azure Monitor with ultra-granular metrics
 
-**Rationale**: Critical workloads require high availability and performance. Multi-zone deployment ensures resilience. Reserved instances provide significant savings while maintaining premium capabilities.
+**Rationale**: Maximum computational power for all workloads. Ultra-premium SKUs eliminate performance bottlenecks. Storage tier tuned for throughput-intensive applications. Cost is not a consideration.
 
-#### Non-Critical Workloads (99% SLA)
-**Target Monthly Cost per VM**: $50-100 USD  
+#### Internet-Facing Application Workloads
+**Principle**: Deploy to nearest premium regions with maximum redundancy for latency optimization  
 **Infrastructure Profile**:
-- **Compute**: Standard_B4ms or Standard_D2s_v5 (2-4 vCPU, 8-16GB RAM)
-- **Availability**: Single-zone deployment
-- **Storage**: Standard SSD (E10 or E15), locally-redundant
-- **Reserved Instances**: 1-year commitment (savings: ~40% vs on-demand)
-- **Backup**: Daily automated backups, 7-day retention
-- **Monitoring**: Standard tier Azure Monitor
+- **Compute**: Standard_D96ds_v5 or equivalent premium tier (96+ vCPU, 384+ GB RAM)
+- **Availability**: Multi-region active-active deployment (not HA/DR, purely for latency reduction)
+- **Storage**: Premium SSD P80 across all regions with geo-replication
+- **CDN**: Premium tier with origin acceleration and edge optimization
+- **Networking**: Premium tier ExpressRoute Direct with multiple 100Gbps circuits
 
-**Rationale**: Non-critical workloads tolerate brief outages. Single-zone deployment acceptable. Right-sized SKUs (B-series burstable or smaller D-series) balance performance and cost. 1-year reserved instances provide flexibility while capturing savings.
+**Rationale**: Maximize throughput and minimize latency. Multi-region deployment for geographic performance, not disaster recovery.
 
-#### Development/Test Workloads (95% SLA)
-**Target Monthly Cost per VM**: $20-50 USD  
+#### AI/ML & Data Processing Workloads
+**Principle**: Prioritize GPU and specialized compute  
 **Infrastructure Profile**:
-- **Compute**: Standard_B2s or Standard_B2ms (2 vCPU, 4-8GB RAM)
-- **Availability**: Single-zone, can use spot instances for non-24/7 workloads
-- **Storage**: Standard HDD or Standard SSD (E6), locally-redundant
-- **Reserved Instances**: On-demand or spot instances (savings: up to 90% with spot)
-- **Backup**: Optional, on-demand snapshots only
-- **Monitoring**: Basic tier Azure Monitor
+- **Compute**: Standard_ND96amsr_A100_v4 (8x NVIDIA A100 GPUs, 96 vCPU, 1.46TB RAM) or Standard_ND120rs_v2 (8x NVIDIA V100s)
+- **Storage**: Premium SSD P80 or Ultra Disk with maximum IOPS/throughput for data pipeline feeds
+- **Accelerators**: All available GPU acceleration and TPU equivalents enabled
 
-**Rationale**: Dev/test environments can tolerate interruptions and don't need high availability. B-series burstable VMs provide cost-effective compute for variable workloads. Spot instances acceptable for non-production use.
+**Rationale**: Maximum GPU resources for parallel processing. Ultra-fast storage feeds models with maximum data throughput.
 
-### Cost Optimization Strategies
+#### Development/Test Workloads
+**Principle**: Premium tiers to match production (for testing at scale)  
+**Infrastructure Profile**:
+- **Compute**: Standard_D32ds_v5 or higher (minimum 32 vCPU, 128GB RAM) for dev environments
+- **Storage**: Premium SSD (P20 minimum) to replicate production storage performance
+- **Accelerators**: GPU access available for performance testing
 
-- **REQ-007**: All production workloads MUST use reserved instances (1-year minimum) unless explicitly justified
-- **REQ-008**: Infrastructure MUST be right-sized to workload requirements (no over-provisioning)
-- **REQ-009**: Non-critical workloads SHOULD NOT use Premium SKUs or multi-zone deployment without business justification
-- **REQ-010**: Development/test environments SHOULD be automatically shut down outside business hours (40% additional savings)
-- **REQ-011**: Storage tiers MUST align with performance requirements (Standard for logs/backups, Premium for databases)
+**Rationale**: Dev/test should match production SKU tier to enable accurate performance testing and validation. Ensure test environments don't become bottlenecks.
 
-### Cost Governance
+### Performance Commitment & Procurement Strategy
 
-- **REQ-012**: Monthly cost reviews required for workloads exceeding baseline by >20%
-- **REQ-013**: Reserved instance utilization MUST be >85% (quarterly review)
-- **REQ-014**: All new deployments MUST document cost estimate and workload criticality before approval
-- **REQ-015**: Cost baselines MAY be exceeded with documented business justification and approval
+- **REQ-008**: All production workloads MUST use premium/ultra-tier SKUs with no cost constraints applied
+- **REQ-009**: Infrastructure MUST be provisioned to maximum capacity for workload type (no right-sizing for cost)
+- **REQ-010**: Non-critical workloads MUST use same premium tier SKUs as critical workloads (consistency with production)
+- **REQ-011**: Development/test environments SHOULD be sized to mirror production performance characteristics for accurate testing
+- **REQ-012**: Premium features and accelerators SHOULD be enabled across all tiers where available (no cost-based feature filtering)
+- **REQ-013**: Storage tiers MUST use Premium SSD (P-series) or Ultra Disk (all workloads - no standard tier)
+
+### Performance Monitoring & Cost Reporting
+
+- **REQ-014**: Monthly performance metrics review for all compute workloads (latency, throughput, CPU utilization)
+- **REQ-015**: Quarterly GPU and accelerator utilization review to ensure high-performance resources are being leveraged
+- **REQ-016**: Cost reports are informational only (not used to constrain future provisioning decisions)
 
 ### Non-Negotiable Constraints
 
-- Security encryption requirements MUST be maintained regardless of cost impact
-- NIST 800-171 compliance MUST be maintained
-- Multi-zone deployment MAY NOT be reduced for critical workloads (99.95% SLA)
-- Backup retention periods set by compliance framework MUST be honored
+**Performance & Speed**: Maximum compute resources MUST be provisioned for all workloads (no cost-based constraints)  
+**Security & Compliance**: Encryption requirements MUST be maintained regardless of performance impact  
+**NIST 800-171 Compliance**: MUST be maintained  
+**HA/DR Requirements**: NOT APPLICABLE under this performance-first strategy (cost of redundancy deferred for future consideration)  
+**Cost Constraints**: NOT APPLICABLE - unlimited Azure spending authorized for optimal performance
 
 ## Success Criteria
 
 ### Measurable Outcomes
 
-- **SC-001**: All production workloads deployed within ±20% of defined cost baselines for their criticality tier
-- **SC-002**: Reserved instance utilization ≥85% for production workloads (measured quarterly)
-- **SC-003**: All security and compliance requirements maintained (100% policy compliance)
-- **SC-004**: Critical workloads achieve 99.95% SLA, non-critical workloads achieve 99% SLA
-- **SC-005**: Development/test environments achieve 40% cost savings through automated shutdown schedules
-- **SC-006**: Infrastructure SKU selections match workload criticality (no over-provisioning detected)
-- **SC-007**: Monthly cost variance reviews complete for any workload exceeding baseline by >20%
+- **SC-001**: All production workloads deploy using premium-tier SKUs (D96ds_v5 or higher for general; M-series 192+ vCPU for memory-intensive)
+- **SC-002**: GPU-accelerated workloads provision with H100/A100 GPUs (or latest equivalent) for maximum throughput
+- **SC-003**: All storage provisioned as Premium SSD (P30 minimum) or Ultra Disk (no standard tier storage)
+- **SC-004**: Application latency reduced by 60%+ compared to previous cost-optimized infrastructure
+- **SC-005**: Data throughput increased by 300%+ through premium networking and storage tiers
+- **SC-006**: AI/ML workload completion times improved by 80%+ with GPU acceleration
+- **SC-007**: CPU utilization on deployed instances averages ≥70% (validates choosing appropriately powerful SKUs)
+- **SC-008**: All security and compliance requirements maintained (100% policy compliance)
+- **SC-009**: Development/test environments achieve production-equivalent performance for accurate testing
 
-### Cost Monitoring & Reporting
+### Performance Monitoring & Reporting
 
-- **Monthly**: Cost variance report per workload vs baseline
-- **Quarterly**: Reserved instance utilization review and optimization recommendations
-- **Annual**: Cost baseline review and adjustment based on business needs and Azure pricing changes
+- **Monthly**: Application performance metrics (latency, throughput, P99 response time)
+- **Quarterly**: GPU and specialized accelerator utilization review
+- **Annual**: Performance improvement analysis relative to cost-optimized baseline
 
 ## Artifact Generation & Human Review
 
 **Generated Outputs** (AI-assisted, human-reviewed):
-- Infrastructure-tier compute specs with approved SKUs per criticality tier
-- Infrastructure-tier storage specs with tier selections mapped to cost baselines
-- Bicep/Terraform module templates using reserved instances and right-sized SKUs
-- Cost estimation calculator for new workload planning
-- Automated cost variance monitoring alerts
-- Monthly cost reporting dashboard templates
+- Infrastructure-tier compute specs with premium SKUs (D96ds_v5 minimum for general workloads)
+- Infrastructure-tier storage specs with Premium SSD (P30+) and Ultra Disk options mandated
+- Bicep/Terraform module templates using highest-tier SKUs with GPU acceleration where applicable
+- Performance estimation calculator for new workload planning
+- GPU/accelerator utilization monitoring dashboards
+- Monthly performance reporting and optimization recommendations
 
 **Review Checklist**:
-- [ ] Cost baselines defined for all three criticality tiers (critical, non-critical, dev/test)
-- [ ] SKU selections appropriate for each tier (performance vs cost balance)
-- [ ] Reserved instance strategies documented (1-year, 3-year commitments)
-- [ ] Multi-zone vs single-zone deployment mapped to criticality tiers
-- [ ] Storage tier selections (Premium, Standard SSD, Standard HDD) appropriate for workload
-- [ ] Non-negotiable constraints (security, compliance, SLA) explicitly stated
-- [ ] Success criteria are measurable (±20% variance, 85% RI utilization, SLA levels)
-- [ ] Cost governance processes defined (monthly reviews, approvals)
+- [ ] Performance profiles defined for all workload types (all using premium tiers)
+- [ ] SKU selections use highest-performance tier available (D96ds_v5+, M192idms_v2+)
+- [ ] GPU allocation configured for AI/ML workloads (H100/A100 or latest)
+- [ ] Storage tier selections mandatory Premium SSD P30+ or Ultra Disk (no standard tier)
+- [ ] Multi-region deployment considered for latency optimization (not HA/DR)
+- [ ] Security and compliance constraints still enforced (encryption, NIST 800-171)
+- [ ] Cost constraints explicitly removed and unlimited spending authorized
+- [ ] Success criteria focused on performance metrics (latency, throughput, GPU utilization)
 - [ ] Linked to downstream infrastructure specs for compute, storage, networking
 
 ## Change Log
@@ -194,9 +204,10 @@ Finance and operations leadership establish infrastructure standards: *"We need 
 |---------|------|--------|------------|
 | 1.0.0 | 2026-02-06 | Initial business spec: 10% cost reduction target | Finance Leadership |
 | 2.0.0 | 2026-02-09 | **BREAKING**: Removed percentage-based targets; established concrete baseline costs per workload tier; balanced cost, resiliency, and performance | Business Owner |
+| 3.0.0 | 2026-02-10 | **BREAKING**: Shifted to performance-first strategy; unlimited Azure spending authorized; removed all cost constraints; prioritize maximum SKUs, GPU acceleration, and raw speed; deprecated HA/DR considerations for now | Business Owner |
 
 ---
 
-**Spec Version**: 2.0.0  
+**Spec Version**: 3.0.0
 **Approved Date**: 2026-02-09  
 **Next Review**: 2026-08-09 (semi-annual review)

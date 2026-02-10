@@ -1,0 +1,197 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.37.4.10188",
+      "templateHash": "18220351607727817892"
+    }
+  },
+  "parameters": {
+    "appName": {
+      "type": "string",
+      "metadata": {
+        "description": "Application name used for naming resources."
+      }
+    },
+    "environment": {
+      "type": "string",
+      "allowedValues": [
+        "dev",
+        "test",
+        "prod"
+      ],
+      "metadata": {
+        "description": "Deployment environment name (dev, test, prod)."
+      }
+    },
+    "location": {
+      "type": "string",
+      "allowedValues": [
+        "centralus",
+        "eastus"
+      ],
+      "metadata": {
+        "description": "Azure region for deployment. US regions only."
+      }
+    },
+    "workloadCriticality": {
+      "type": "string",
+      "allowedValues": [
+        "critical",
+        "non-critical",
+        "dev-test"
+      ],
+      "metadata": {
+        "description": "Workload criticality tier."
+      }
+    },
+    "costCenter": {
+      "type": "string",
+      "metadata": {
+        "description": "Optional cost center tag value."
+      }
+    },
+    "vmSku": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_D32ds_v5",
+        "Standard_D48ds_v5",
+        "Standard_D64ds_v5",
+        "Standard_D96ds_v5",
+        "Standard_M128ms",
+        "Standard_M192idms_v2",
+        "Standard_ND96amsr_A100_v4"
+      ],
+      "metadata": {
+        "description": "VM SKU for compute resources - Premium only (cost-001 v3.0.0)"
+      }
+    },
+    "storageSku": {
+      "type": "string",
+      "allowedValues": [
+        "Premium_LRS",
+        "Premium_ZRS",
+        "PremiumV2_LRS",
+        "PremiumV2_ZRS",
+        "UltraSSD_LRS"
+      ],
+      "metadata": {
+        "description": "Storage account SKU - Premium only (cost-001 v3.0.0)"
+      }
+    },
+    "enableGpuAcceleration": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Enable GPU acceleration for workload (ND96amsr_A100_v4)"
+      }
+    },
+    "enableUltraDisk": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Enable Ultra Disk for maximum throughput (160k IOPS, 4000 MB/s)"
+      }
+    },
+    "ultraDiskIops": {
+      "type": "int",
+      "defaultValue": 160000,
+      "metadata": {
+        "description": "Ultra Disk IOPS provisioning (160000 max)"
+      }
+    },
+    "ultraDiskThroughput": {
+      "type": "int",
+      "defaultValue": 4000,
+      "metadata": {
+        "description": "Ultra Disk throughput in MB/s (4000 max)"
+      }
+    },
+    "enableDiskEncryption": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable disk encryption for all environments (cost-001 v3.0.0 mandatory)"
+      }
+    },
+    "enableCmk": {
+      "type": "bool",
+      "defaultValue": "[equals(parameters('environment'), 'prod')]",
+      "metadata": {
+        "description": "Enable customer-managed encryption key (CMK) for production"
+      }
+    },
+    "costProfile": {
+      "type": "string",
+      "defaultValue": "unlimited-performance",
+      "allowedValues": [
+        "unlimited-performance",
+        "cost-optimized"
+      ],
+      "metadata": {
+        "description": "Cost profile strategy"
+      }
+    }
+  },
+  "variables": {
+    "namePrefix": "[format('{0}-{1}', parameters('appName'), parameters('environment'))]",
+    "tags": {
+      "application": "[parameters('appName')]",
+      "environment": "[parameters('environment')]",
+      "criticality": "[parameters('workloadCriticality')]",
+      "performanceSpec": "business/cost-001 v3.0.0",
+      "computeSpec": "infrastructure/compute-001 v3.0.0",
+      "storageSpec": "infrastructure/storage-001 v3.0.0",
+      "networkSpec": "infrastructure/networking-001 v3.0.0",
+      "iamSpec": "infrastructure/iac-modules-001 v2.0.0",
+      "costProfile": "[parameters('costProfile')]",
+      "compliance": "nist-800-171",
+      "costCenter": "[parameters('costCenter')]"
+    }
+  },
+  "resources": [],
+  "outputs": {
+    "namePrefix": {
+      "type": "string",
+      "value": "[variables('namePrefix')]"
+    },
+    "location": {
+      "type": "string",
+      "value": "[parameters('location')]"
+    },
+    "tags": {
+      "type": "object",
+      "value": "[variables('tags')]"
+    },
+    "vmSku": {
+      "type": "string",
+      "value": "[parameters('vmSku')]"
+    },
+    "storageSku": {
+      "type": "string",
+      "value": "[parameters('storageSku')]"
+    },
+    "enableGpuAcceleration": {
+      "type": "bool",
+      "value": "[parameters('enableGpuAcceleration')]"
+    },
+    "enableUltraDisk": {
+      "type": "bool",
+      "value": "[parameters('enableUltraDisk')]"
+    },
+    "enableDiskEncryption": {
+      "type": "bool",
+      "value": "[parameters('enableDiskEncryption')]"
+    },
+    "enableCmk": {
+      "type": "bool",
+      "value": "[parameters('enableCmk')]"
+    },
+    "costProfile": {
+      "type": "string",
+      "value": "[parameters('costProfile')]"
+    }
+  }
+}
