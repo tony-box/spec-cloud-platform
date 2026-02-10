@@ -1,0 +1,71 @@
+name: Deploy Patio Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+      workload_criticality:
+        description: Workload criticality tier
+        required: true
+        type: choice
+        options:
+          - critical
+          - non-critical
+          - dev-test
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      cost_estimate: ${{ steps.estimate.outputs.cost }}
+      variance_pct: ${{ steps.variance.outputs.pct }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Bicep
+        run: az bicep build --file artifacts/applications/Patio/iac/main.bicep
+      - name: Estimate Cost
+        id: estimate
+        shell: pwsh
+        run: |
+          $cost = ./artifacts/applications/Patio/scripts/cost-estimate.ps1 -ParamFile artifacts/applications/Patio/iac/${{ inputs.environment }}.bicepparam
+          "cost=$cost" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+      - name: Calculate Variance
+        id: variance
+        shell: pwsh
+        run: |
+          $baseline = switch ("${{ inputs.workload_criticality }}") {
+            'critical' { 200 }
+            'non-critical' { 75 }
+            'dev-test' { 35 }
+          }
+          $variance = [math]::Round(((${{ steps.estimate.outputs.cost }} - $baseline) / $baseline) * 100, 2)
+          "pct=$variance" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Azure Login
+        run: echo "Configure azure/login here"
+      - name: Deploy
+        run: |
+          echo "Deploying Patio infrastructure"
+          echo "Use az deployment group create with selected parameter file"
+
+  validate-deployment:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Tier Compliance
+        shell: pwsh
+        run: ./artifacts/applications/Patio/scripts/verify-tier-compliance.ps1 -Criticality "${{ inputs.workload_criticality }}"
