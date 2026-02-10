@@ -43,26 +43,27 @@ defines:
 
 **Solution**: Category-based spec system with tier-specific categories enabling:
 - **Granular versioning**: Change business/cost without affecting business/governance
-- **Explicit hierarchy**: business > security > infrastructure > platform > application
+- **Explicit hierarchy**: platform > business > security > infrastructure > devops > application
 - **Category-aware precedence**: Within tiers, categories have documented precedence rules
 - **Scalability**: Add new categories without restructuring existing ones
 
-**Impact**: Platform can scale from 5 monolithic specs to 15+ granular category specs with clear precedence and conflict resolution.
+**Impact**: Platform can scale from 5 monolithic specs to 18+ granular category specs with clear precedence and conflict resolution.
 
 ## Spec System Architecture
 
-### Tier Hierarchy (5 tiers)
+### Tier Hierarchy (6 tiers)
 
 **Tier precedence** (highest to lowest):
-1. **business** (priority 0): Cost, Governance, Compliance-Framework
-2. **security** (priority 1): Data-Protection, Access-Control, Audit-Logging
-3. **infrastructure** (priority 2): Compute, Networking, Storage, CI/CD-Pipeline
-4. **platform** (priority 3): Spec-System, IaC-Linting, Artifact-Org, Policy-as-Code
-5. **application** (priority 4): Individual applications adopting upstream specs
+1. **platform** (priority 0): Spec-System, IaC-Linting, Artifact-Org, Policy-as-Code
+2. **business** (priority 1): Cost, Governance, Compliance-Framework
+3. **security** (priority 2): Data-Protection, Access-Control, Audit-Logging
+4. **infrastructure** (priority 3): Compute, Networking, Storage, CI/CD-Pipeline, IaC-Modules
+5. **devops** (priority 4): Deployment-Automation, Observability, Environment-Management, CI/CD-Orchestration
+6. **application** (priority 5): Individual applications adopting upstream specs
 
-**Tier precedence rule**: Higher tier ALWAYS wins unless explicit exception documented.
+**Tier precedence rule**: Higher tier ALWAYS wins unless explicit exception documented. Platform tier is FOUNDATIONAL and cannot be overridden.
 
-### Category Structure (14 categories across 4 tiers)
+### Category Structure (18 categories across 5 content tiers)
 
 **Business Tier (3 categories)**:
 - **compliance-framework** (comp-001): Regulatory requirements, standards, data residency
@@ -74,11 +75,18 @@ defines:
 - **access-control** (ac-001): Authentication, authorization, RBAC, SSH keys
 - **audit-logging** (audit-001): Audit trails, monitoring, log retention
 
-**Infrastructure Tier (4 categories)**:
+**Infrastructure Tier (5 categories)**:
 - **compute** (compute-001): VM SKUs, autoscaling, reserved instances
 - **networking** (net-001): VNets, NSGs, load balancing, DNS
 - **storage** (stor-001): Disk types, replication, backup, retention
 - **cicd-pipeline** (cicd-001): Deployment automation, approval gates, rollback
+- **iac-modules** (iac-001): Centralized reusable IaC wrapper modules
+
+**DevOps Tier (4 categories)**:
+- **deployment-automation** (deploy-001): Deployment patterns, release strategies
+- **observability** (obs-001): Logging, metrics, tracing, alerting
+- **environment-management** (env-001): Environment definitions, secrets management
+- **ci-cd-orchestration** (cicd-orch-001): CI/CD workflow orchestration
 
 **Platform Tier (4 categories)**:
 - **spec-system** (spec-001): THIS SPEC - meta-specification framework
@@ -96,7 +104,7 @@ All category specs MUST include YAML frontmatter with these fields:
 ```yaml
 ---
 # Required fields
-tier: business | security | infrastructure | platform | application
+tier: platform | business | security | infrastructure | devops | application
 category: cost | governance | ... (see category list above)
 spec-id: unique-id (e.g., cost-001, dp-001)
 version: semver (e.g., 1.0.0, 1.0.0-draft)
@@ -146,15 +154,18 @@ adhered-by:
 ### Precedence Resolution Logic
 
 **Step 1: Check tier precedence**
-- If specs are at different tiers: Higher tier wins (business > security > infrastructure > platform > application)
-- Example: business/cost beats infrastructure/compute (business tier > infrastructure tier)
+- If specs are at different tiers: Higher tier wins (platform > business > security > infrastructure > devops > application)
+- Platform tier is FOUNDATIONAL and cannot be overridden by any other tier
+- Example: platform/iac-linting beats business/cost; business/cost beats infrastructure/compute
 
 **Step 2: Check explicit overrides**
 - If winning spec has `precedence.overrides` targeting losing spec: Override wins
+- Platform tier specs cannot be overridden (technical standards are non-negotiable)
 - Example: security/data-protection overrides business/cost (encryption non-negotiable)
 
 **Step 3: Check category precedence within tier**
 - Within same tier, use category precedence rules (documented in tier _categories.yaml)
+- Example: platform/spec-system and platform/iac-linting are roughly equal priority
 - Example: business/compliance-framework > business/governance > business/cost
 
 **Step 4: Check dependency order**
@@ -186,10 +197,11 @@ adhered-by:
 - `specs/specs.yaml`: Defines all tiers, categories, precedence rules, conflicts
 
 **Category Indexes**:
+- `specs/platform/_categories.yaml`: Platform tier categories
 - `specs/business/_categories.yaml`: Business tier categories
 - `specs/security/_categories.yaml`: Security tier categories
-- `specs/infrastructure/_categories.yaml`: Infrastructure tier categories  
-- `specs/platform/_categories.yaml`: Platform tier categories
+- `specs/infrastructure/_categories.yaml`: Infrastructure tier categories
+- `specs/devops/_categories.yaml`: DevOps tier categories
 - `specs/application/_index.yaml`: Application registry
 
 **Category Specs**:
@@ -208,11 +220,11 @@ adhered-by:
 
 ## Success Criteria
 
-- **SC-001**: All 14 category specs created with valid frontmatter
-- **SC-002**: Precedence rules documented for all 7 major conflicts
+- **SC-001**: All 18 category specs created with valid frontmatter (4 Platform, 3 Business, 3 Security, 5 Infrastructure, 4 DevOps)
+- **SC-002**: Precedence rules documented for all major conflicts with Platform tier foundational
 - **SC-003**: Validation tooling passes on all specs (zero errors)
-- **SC-004**: Hierarchy documentation complete with 10+ examples
-- **SC-005**: All applications migrated to reference category specs
+- **SC-004**: Hierarchy documentation complete with 10+ examples including DevOps tier
+- **SC-005**: All applications migrated to reference category specs including DevOps dependencies
 
 ## Change Log
 

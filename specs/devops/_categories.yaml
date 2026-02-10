@@ -1,0 +1,73 @@
+# DevOps Tier Category Index
+# Tier: devops (priority 3 - lower-middle content tier)
+# Purpose: Deployment automation, observability, CI/CD orchestration, environment management
+# Created: 2026-02-09
+
+tier:
+  name: devops
+  priority: 3
+  description: "Bridges infrastructure and applications with deployment automation, observability, and operational practices"
+
+categories:
+  - id: deployment-automation
+    spec-id: deploy-001
+    name: "Deployment Automation"
+    description: "Deployment patterns, blue-green deployments, canary releases, rollback strategies"
+    current-version: "1.0.0-placeholder"
+    status: "placeholder"
+    precedence-note: "Consumed by Application tier, constrained by Infrastructure tier"
+
+  - id: observability
+    spec-id: obs-001
+    name: "Observability"
+    description: "Logging, metrics, tracing, alerting, dashboards, SLI/SLO definitions"
+    current-version: "1.0.0-placeholder"
+    status: "placeholder"
+    precedence-note: "Required by Application tier (all apps must be observable)"
+    
+  - id: environment-management
+    spec-id: env-001
+    name: "Environment Management"
+    description: "Environment definitions (dev, staging, prod), configuration management, secrets management"
+    current-version: "1.0.0-placeholder"
+    status: "placeholder"
+    precedence-note: "Defines deployment targets for Application tier"
+
+  - id: ci-cd-orchestration
+    spec-id: cicd-orch-001
+    name: "CI/CD Orchestration"
+    description: "CI/CD workflow orchestration, build pipelines, test automation, deployment pipelines"
+    current-version: "1.0.0-placeholder"
+    status: "placeholder"
+    precedence-note: "Orchestrates how Application tier deploys"
+
+precedence-order:
+  note: "DevOps categories have interdependencies; precedence is context-dependent"
+  foundational:
+    - environment-management
+    - observability
+  dependent:
+    - ci-cd-orchestration
+    - deployment-automation
+
+upstream-dependencies:
+  infrastructure:
+    - iac-modules
+    - compute
+    - networking
+    - cicd-pipeline
+  security:
+    - data-protection
+    - access-control
+    - audit-logging
+  business:
+    - cost
+    - governance
+    - compliance-framework
+
+downstream-consumers:
+  platform:
+    - iac-linting
+    - artifact-org
+  application:
+    - all-applications

@@ -23,6 +23,12 @@ depends-on:
 
 # Precedence rules
 precedence:
+  loses-to:
+    - tier: platform
+      category: "*"
+      spec-id: "*"
+      reason: "Platform tier (technical standards, code quality, spec system) is foundational and cannot be overridden"
+  
   wins-over:
     - tier: infrastructure
       category: storage

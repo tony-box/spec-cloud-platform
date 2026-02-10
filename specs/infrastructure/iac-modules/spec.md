@@ -33,8 +33,12 @@ depends-on:
 
 # Precedence rules
 precedence:
-  note: "IaC modules implement upstream constraints from business/security/platform tiers"
+  note: "IaC modules implement upstream constraints from platform/business/security tiers"
   loses-to:
+    - tier: platform
+      category: "*"
+      spec-id: "*"
+      reason: "Platform tier (technical standards, code quality, spec system) is foundational and cannot be overridden"
     - tier: business
       category: cost
       spec-id: cost-001

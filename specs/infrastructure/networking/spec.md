@@ -23,6 +23,12 @@ depends-on:
 
 # Precedence rules
 precedence:
+  loses-to:
+    - tier: platform
+      category: "*"
+      spec-id: "*"
+      reason: "Platform tier (technical standards, code quality, spec system) is foundational and cannot be overridden"
+  
   note: "Networking priority varies by workload; latency-sensitive workloads elevate networking precedence"
 
 # Relationships

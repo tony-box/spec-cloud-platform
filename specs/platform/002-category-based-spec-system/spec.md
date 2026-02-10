@@ -11,8 +11,8 @@
 ## Spec Source & Hierarchy
 
 **Parent Tier Specs**:
-- business/cost (business specs require cost tracking; category system enables per-category versioning)
-- platform/001-application-artifact-organization (spec system is an extension of artifact organization)
+- None (Platform tier is foundational; no parent tiers)
+- Note: platform/001-application-artifact-organization provides artifact structure context
 
 **Derived Downstream Specs**:
 - (Future) platform/003-spec-validation-pipeline (validates spec hierarchy and dependencies)
@@ -76,12 +76,12 @@ Platform engineer needs: *"I want to organize specs by category (e.g., business/
 
 **Precedence Rules** (ordered):
 
-1. **Tier-level**: business > security > infrastructure > platform > application
+1. **Tier-level**: platform > business > security > infrastructure > devops > application
 2. **Category-aware**: Within same tier, if two categories conflict:
    - Check `precedence.overrides` field for explicit precedence
    - If none specified, first-applied-wins
 3. **Dependency order**: All dependencies must be satisfied before dependent spec
-4. **Downstream override**: Application specs cannot override upstream (business/security/infrastructure) decisions
+4. **Downstream override**: Application specs cannot override upstream tier decisions; Platform tier is foundational
 5. **Immutability**: Released specs (version 1.0.0+) cannot be modified; must create new version
 
 ---

@@ -17,6 +17,16 @@ depends-on:
 
 # Precedence rules
 precedence:
+  loses-to:
+    - tier: platform
+      category: "*"
+      spec-id: "*"
+      reason: "Platform tier (technical standards, code quality, spec system) is foundational and cannot be overridden"
+    - tier: security
+      category: access-control
+      spec-id: ac-001
+      reason: "Access control is foundational; governance includes break-glass exceptions"
+  
   wins-over:
     - tier: business
       category: cost
@@ -26,12 +36,6 @@ precedence:
       category: cicd-pipeline
       spec-id: cicd-001
       reason: "Production deployments require approval gates per governance"
-  
-  loses-to:
-    - tier: security
-      category: access-control
-      spec-id: ac-001
-      reason: "Access control is foundational; governance includes break-glass exceptions"
 
 # Relationships
 adhered-by:
