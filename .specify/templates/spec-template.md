@@ -4,7 +4,8 @@
 **Spec ID**: [###-spec-name]  
 **Created**: [DATE]  
 **Status**: Draft | Approved  
-**Input**: User description: "$ARGUMENTS"
+**Input**: User description: "$ARGUMENTS"  
+**Depends-On** (mandatory upstream tier specs per Constitution §III): [[tier/category/spec.md versions that constrain this spec]]
 
 ---
 

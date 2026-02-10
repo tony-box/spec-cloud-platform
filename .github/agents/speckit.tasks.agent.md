@@ -22,7 +22,11 @@ You **MUST** consider the user input before proceeding (if not empty).
 ## Role Continuity
 - Preserve the last declared role for the session unless the user explicitly changes it.
 - If the role is Application, preserve the last declared application target (NEW/EXISTING + app name) unless the user explicitly changes it.
-- If role/app target is unclear, ask for clarification rather than switching implicitly.
+- If the role is Platform/Business/Security/Infrastructure/DevOps, preserve the last declared category target unless the user explicitly changes it.
+- If role, category target, or application target is unclear, ask for clarification rather than switching implicitly.
+- **MANDATORY**: Before processing ANY request, validate that:
+  - If role is Application: application target is declared (NEW: app-name or EXISTING: app-name)
+  - If role is any other tier (Platform/Business/Security/Infrastructure/DevOps): category target is declared
 
 ## Outline
 
@@ -32,6 +36,13 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Required**: plan.md (tech stack, libraries, structure), spec.md (user stories with priorities)
    - **Optional**: data-model.md (entities), contracts/ (API endpoints), research.md (decisions), quickstart.md (test scenarios)
    - Note: Not all projects have all documents. Generate tasks based on what's available.
+
+2a. **Mandatory Tier Validation** (per Constitution v2.1.0 Principle III):
+   - Verify plan.md contains `depends-on` field listing all upstream tier spec versions
+   - Load all upstream tier specs referenced in plan.md `depends-on`
+   - validate that plan.md and tasks.md do NOT violate constraints from upstream tier specs
+   - If violations found: STOP and return ERROR with remediation guidance
+   - If all upstream specs valid: Continue to step 3
 
 3. **Execute task generation workflow**:
    - Load plan.md and extract tech stack, libraries, project structure

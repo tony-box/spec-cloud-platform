@@ -1,7 +1,8 @@
 # Implementation Plan: [FEATURE]
 
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]  
-**Input**: Feature specification from `/specs/[tier]/[category]/spec.md`
+**Input**: Feature specification from `/specs/[tier]/[category]/spec.md`  
+**Depends-On**: [List upstream tier specs & versions that constrain this plan]
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 
@@ -43,8 +44,21 @@ This plan was created via:
 
 ## Constitution Check: Tier Alignment & Spec Cascading
 
-*GATE: Must verify this spec aligns with parent tier constraints before Phase 0 research.*
+*GATE: Must verify this spec aligns with parent tier constraints before Phase 0 research. (Per Constitution §III)*
 
+**Upstream Tier Validation** (MANDATORY per Constitution §III):
+- [ ] **Load all upstream tier specs**: Use glob pattern `specs/<upstream-tier>/**/spec.md` for each upstream tier
+  - If Application role: Validate Platform → Business → Security → Infrastructure → DevOps specs
+  - If DevOps role: Validate Platform → Business → Security → Infrastructure specs
+  - If Infrastructure role: Validate Platform → Business → Security specs
+  - If Security role: Validate Platform → Business specs
+  - If Business role: Validate Platform specs
+  - If Platform role: No upstream validation required
+- [ ] **Verify no constraint violations**: This plan must NOT violate any rule/requirement in upstream tier specs
+- [ ] **Document depends-on field**: Add upstream spec versions to frontmatter `Depends-On` field
+- **Failure Protocol**: If violations found, STOP and report remediation guidance before proceeding
+
+**Spec-Tier Alignment**:
 - **Spec Tier**: [platform | business | security | infrastructure | devops | application]
 - **Parent Tier Specs**: [Reference to specs in next-higher tier that constrain this spec]
 - **Derived Constraints**: [List specific rules, limits, or requirements inherited from parent tier]

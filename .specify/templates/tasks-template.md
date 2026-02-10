@@ -7,7 +7,8 @@ description: "Task list template for platform artifact generation and implementa
 
 **Input**: Specification documents from `/specs/[TIER-NAME]/[CATEGORY-NAME]/`  
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md  
-**Tier**: [platform | business | security | infrastructure | devops | application]
+**Tier**: [platform | business | security | infrastructure | devops | application]  
+**Depends-On**: [List upstream tier specs & versions that constrain these tasks]
 
 ---
 
@@ -44,6 +45,15 @@ These tasks were created via:
 - **Configuration**: JSON schemas, parameter files, naming conventions
 
 All AI-generated artifacts MUST pass human review before promotion to production.
+
+## Constitution Check: Tier Alignment & Spec Cascading
+
+*GATE: Must verify tasks align with all parent tier constraints before execution. (Per Constitution §III)*
+
+**Upstream Tier Validation** (MANDATORY per Constitution §III):
+- [ ] **Load all upstream tier specs**: Reference plan.md `Depends-On` field for upstream spec versions
+- [ ] **Verify no constraint violations**: Each task output must NOT violate any rule in upstream tier specs
+- **Failure Protocol**: If violations found during task execution, HALT and report remediation guidance
 
 <!-- 
   ============================================================================

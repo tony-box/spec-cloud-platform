@@ -13,7 +13,11 @@ You **MUST** consider the user input before proceeding (if not empty).
 ## Role Continuity
 - Preserve the last declared role for the session unless the user explicitly changes it.
 - If the role is Application, preserve the last declared application target (NEW/EXISTING + app name) unless the user explicitly changes it.
-- If role/app target is unclear, ask for clarification rather than switching implicitly.
+- If the role is Platform/Business/Security/Infrastructure/DevOps, preserve the last declared category target unless the user explicitly changes it.
+- If role, category target, or application target is unclear, ask for clarification rather than switching implicitly.
+- **MANDATORY**: Before processing ANY request, validate that:
+  - If role is Application: application target is declared (NEW: app-name or EXISTING: app-name)
+  - If role is any other tier (Platform/Business/Security/Infrastructure/DevOps): category target is declared
 
 ## Outline
 
@@ -54,19 +58,26 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **REQUIRED**: Read tasks.md for the complete task list and execution plan
    - **REQUIRED**: Read plan.md for tech stack, architecture, and file structure
    - **IF EXISTS**: Read data-model.md for entities and relationships
+
+3a. **Mandatory Tier Validation Before Implementation** (per Constitution v2.1.0 Principle III):
+   - Verify that all upstream tier specifications are compliant
+   - Load plan.md `depends-on` field listing upstream tier specs and versions
+   - Load each upstream tier spec and verify implementation plan does NOT violate constraints
+   - For Application role: Validate against DevOps, Infrastructure, Security, Business, Platform specs
+   - If violations found: STOP and display remediation guidance (do not execute tasks)
+   - If all upstream specs valid: Continue to step 4
+
+4. **Load and analyze the implementation context (continued from step 3)**:
    - **IF EXISTS**: Read contracts/ for API specifications and test requirements
    - **IF EXISTS**: Read research.md for technical decisions and constraints
    - **IF EXISTS**: Read quickstart.md for integration scenarios
 
-4. **Project Setup Verification**:
+5. **Project Setup Verification**:
    - **REQUIRED**: Create/verify ignore files based on actual project setup:
 
-   **Detection & Creation Logic**:
-   - Check if the following command succeeds to determine if the repository is a git repo (create/verify .gitignore if so):
-
-     ```sh
-     git rev-parse --git-dir 2>/dev/null
-     ```
+   **Detection & Creation Logic** (based on plan.md tech stack):
+   - Examine the project type and technology stack from plan.md (Language/Version, Primary Dependencies)
+   - Create .gitignore if project uses version control (technology stack implies it)
 
    - Check if Dockerfile* exists or Docker in plan.md → create/verify .dockerignore
    - Check if .eslintrc* exists → create/verify .eslintignore
@@ -102,27 +113,27 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Terraform**: `.terraform/`, `*.tfstate*`, `*.tfvars`, `.terraform.lock.hcl`
    - **Kubernetes/k8s**: `*.secret.yaml`, `secrets/`, `.kube/`, `kubeconfig*`, `*.key`, `*.crt`
 
-5. Parse tasks.md structure and extract:
+6. Parse tasks.md structure and extract:
    - **Task phases**: Setup, Tests, Core, Integration, Polish
    - **Task dependencies**: Sequential vs parallel execution rules
    - **Task details**: ID, description, file paths, parallel markers [P]
    - **Execution flow**: Order and dependency requirements
 
-6. Execute implementation following the task plan:
+7. Execute implementation following the task plan:
    - **Phase-by-phase execution**: Complete each phase before moving to the next
    - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together  
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
    - **File-based coordination**: Tasks affecting the same files must run sequentially
    - **Validation checkpoints**: Verify each phase completion before proceeding
 
-7. Implementation execution rules:
+8. Implementation execution rules:
    - **Setup first**: Initialize project structure, dependencies, configuration
    - **Tests before code**: If you need to write tests for contracts, entities, and integration scenarios
    - **Core development**: Implement models, services, CLI commands, endpoints
    - **Integration work**: Database connections, middleware, logging, external services
    - **Polish and validation**: Unit tests, performance optimization, documentation
 
-8. Progress tracking and error handling:
+9. Progress tracking and error handling:
    - Report progress after each completed task
    - Halt execution if any non-parallel task fails
    - For parallel tasks [P], continue with successful tasks, report failed ones
@@ -130,7 +141,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Suggest next steps if implementation cannot proceed
    - **IMPORTANT** For completed tasks, make sure to mark the task off as [X] in the tasks file.
 
-9. Completion validation:
+10. Completion validation:
    - Verify all required tasks are completed
    - Check that implemented features match the original specification
    - Validate that tests pass and coverage meets requirements
