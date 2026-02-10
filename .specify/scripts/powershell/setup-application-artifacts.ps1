@@ -46,7 +46,10 @@ param(
 )
 
 # Configuration
-$RepoRoot = Split-Path -Parent (git rev-parse --show-toplevel 2>$null) -ErrorAction SilentlyContinue
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+. (Join-Path $ScriptDir 'common.ps1')
+
+$RepoRoot = Get-RepoRoot
 if (-not $RepoRoot) {
     $RepoRoot = (Get-Location).Path
 }

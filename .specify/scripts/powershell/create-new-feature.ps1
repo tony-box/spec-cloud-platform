@@ -11,6 +11,15 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
+function Get-GitDisabled {
+    if ($env:SPECIFY_DISABLE_GIT) {
+        return ($env:SPECIFY_DISABLE_GIT -notin @('0', 'false', 'False', 'FALSE', 'no', 'No'))
+    }
+    return $true
+}
+
+$gitDisabled = Get-GitDisabled
+
 # Show help if requested
 if ($Help) {
     Write-Host "Usage: ./create-new-feature.ps1 [-Json] [-ShortName <name>] [-Number N] <feature description>"
@@ -76,7 +85,9 @@ function Get-HighestNumberFromSpecs {
 
 function Get-HighestNumberFromBranches {
     param()
-    
+    if ($gitDisabled) {
+        return 0
+    }
     $highest = 0
     try {
         $branches = git branch -a 2>$null
@@ -104,11 +115,13 @@ function Get-NextBranchNumber {
         [string]$SpecsDir
     )
 
-    # Fetch all remotes to get latest branch info (suppress errors if no remotes)
-    try {
-        git fetch --all --prune 2>$null | Out-Null
-    } catch {
-        # Ignore fetch errors
+    if (-not $gitDisabled) {
+        # Fetch all remotes to get latest branch info (suppress errors if no remotes)
+        try {
+            git fetch --all --prune 2>$null | Out-Null
+        } catch {
+            # Ignore fetch errors
+        }
     }
 
     # Get highest number from ALL branches (not just matching short name)
@@ -135,16 +148,21 @@ if (-not $fallbackRoot) {
     exit 1
 }
 
-try {
-    $repoRoot = git rev-parse --show-toplevel 2>$null
-    if ($LASTEXITCODE -eq 0) {
-        $hasGit = $true
-    } else {
-        throw "Git not available"
-    }
-} catch {
+if ($gitDisabled) {
     $repoRoot = $fallbackRoot
     $hasGit = $false
+} else {
+    try {
+        $repoRoot = git rev-parse --show-toplevel 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            $hasGit = $true
+        } else {
+            throw "Git not available"
+        }
+    } catch {
+        $repoRoot = $fallbackRoot
+        $hasGit = $false
+    }
 }
 
 Set-Location $repoRoot
@@ -248,7 +266,7 @@ if ($hasGit) {
         Write-Warning "Failed to create git branch: $branchName"
     }
 } else {
-    Write-Warning "[specify] Warning: Git repository not detected; skipped branch creation for $branchName"
+    Write-Warning "[specify] Warning: Git disabled; skipped branch creation for $branchName"
 }
 
 $featureDir = Join-Path $specsDir $branchName

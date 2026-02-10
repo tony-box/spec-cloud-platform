@@ -1,7 +1,7 @@
 # Implementation Plan: [FEATURE]
 
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]  
-**Input**: Feature specification from `/specs/[tier]/[category]/spec.md`
+**Input**: Feature specification from `/specs/[tier]/[###-feature-name]/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 
@@ -10,12 +10,11 @@
 ## 🎯 IMPORTANT: Role Declaration Protocol (Per Constitution §II)
 
 This plan was created via:
-- **Role Declared**: [Platform | Business | Security | Infrastructure | DevOps | Application]
-- **Category Target** (required for non-application roles): [spec-system | iac-linting | artifact-org | policy-as-code | cost | data-protection | networking | observability | ...]
-- **Application Target** (required for Application role): [NEW: app-name | EXISTING: app-name]
+- **Role Declared**: [Platform | Business | Security | Infrastructure | Application]
+- **Application Target** (if Application role): [NEW: app-name | EXISTING: app-name]
 - **Source Tier Specs**: [List parent specs this plan implements]
 
-> Constitution §II requires ALL spec updates (and derived plans) to maintain role declaration context. Verify this plan's tier alignment and parent spec references.
+> Constitution §II requires ALL spec updates (and derived plans) to maintain role declaration context. Verify this plan's tier tier alignment and parent spec references.
 
 ---
 
@@ -45,7 +44,7 @@ This plan was created via:
 
 *GATE: Must verify this spec aligns with parent tier constraints before Phase 0 research.*
 
-- **Spec Tier**: [platform | business | security | infrastructure | devops | application]
+- **Spec Tier**: [business | security | infrastructure | application]
 - **Parent Tier Specs**: [Reference to specs in next-higher tier that constrain this spec]
 - **Derived Constraints**: [List specific rules, limits, or requirements inherited from parent tier]
 - **Artifact Traceability**: This spec will generate the following outputs (AI-assisted, human-reviewed):
@@ -53,10 +52,7 @@ This plan was created via:
 
 *Re-check after Phase 1 design to ensure generated artifacts align with all tier constraints.*
 
-## Spec Organization & Six-Tier Structure
-
-### Platform-Tier Specifications (`/specs/platform/`)
-Foundational standards, spec system rules, artifact organization, policy-as-code, linting.
+## Spec Organization & Four-Tier Structure
 
 ### Business-Tier Specifications (`/specs/business/`)
 Operational requirements, budgets, cost targets, SLAs, business objectives. Platform updates at this level cascade through all downstream tiers.
@@ -67,16 +63,13 @@ Compliance frameworks (NIST, ISO), policy-as-code rules, threat models. Derived 
 ### Infrastructure-Tier Specifications (`/specs/infrastructure/`)
 Azure landing zones, networking design, IaC module catalogs, pipeline templates, observability policies. Derived from business + security tiers; used by application teams.
 
-### DevOps-Tier Specifications (`/specs/devops/`)
-Deployment automation, observability, environment management, CI/CD orchestration.
-
 ### Application-Tier Specifications (`/specs/application/`)
 Application architecture, feature specs, performance SLAs, deployment patterns. Constrained by business, security, and infrastructure tiers.
 
 ### Documentation for This Specification
 
 ```text
-specs/[TIER-NAME]/[CATEGORY-NAME]/
+specs/[TIER-NAME]/[###-feature]/
 ├── plan.md              # This file (/speckit.plan command output)
 ├── spec.md              # Phase 0 output - Detailed specification & user stories
 ├── research.md          # Phase 0 output - Constraints from parent tier

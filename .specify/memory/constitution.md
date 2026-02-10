@@ -1,3 +1,42 @@
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+SYNC IMPACT REPORT: Constitution v2.0.0 → v2.1.0 (2026-02-09)
+═══════════════════════════════════════════════════════════════════════════════
+
+VERSION CHANGE:
+  Old: v2.0.0 (Platform-First Hierarchy & DevOps Tier - 6-Tier Restructure)
+  New: v2.1.0 (Category-Scoped Role Targeting)
+  Bump Rationale: MINOR - Added mandatory category targeting for all non-application roles
+                  and aligned templates with category-scoped spec paths
+
+MODIFIED SECTIONS:
+  1. Principle II: "Six-Tier Stakeholder Roles with Declared Role Protocol"
+     - Added mandatory category targeting for all non-application roles
+     - Added explicit spec path rule: /specs/<tier>/<category>/spec.md
+     - Clarified application role uses application target instead of category
+
+  2. Tier Specifications Organization
+     - Reinforced category-scoped spec paths and role targeting expectations
+
+ADDED SECTIONS: None (governance tightened, no new sections)
+
+REMOVED SECTIONS: None
+
+TEMPLATES REQUIRING UPDATES:
+  ✅ .specify/templates/spec-template.md - Added category target + devops/platform tiers
+  ✅ .specify/templates/plan-template.md - Added category target + 6-tier structure
+  ✅ .specify/templates/tasks-template.md - Added category target + devops/platform tiers
+
+FOLLOW-UP TODOS:
+  - Ensure /speckit.* commands enforce role + category targeting prompts
+
+PROPAGATION STATUS:
+  ✅ Constitution updated with category-scoped role targeting
+  ✅ Spec/plan/tasks templates aligned with category targeting
+
+═══════════════════════════════════════════════════════════════════════════════
+-->
+
 <!-- 
 ═══════════════════════════════════════════════════════════════════════════════
 SYNC IMPACT REPORT: Constitution v1.4.1 → v2.0.0 (2026-02-09)
@@ -383,10 +422,16 @@ All platform outputs MUST originate from and align with the six-tier specificati
 
 The platform defines six distinct stakeholder roles mapped to the 6-tier hierarchy, each interfacing via plain-English conversational prompts. ALL spec update requests MUST begin with an explicit role declaration.
 
+**Required Role Declaration Fields**:
+- **Role**: Platform | Business | Security | Infrastructure | DevOps | Application
+- **Category Target** (required for Platform/Business/Security/Infrastructure/DevOps): the category being modified (e.g., `spec-system`, `iac-linting`, `cost`, `data-protection`, `networking`, `observability`)
+- **Application Target** (required for Application): `NEW: app-name` or `EXISTING: app-name`
+- **Spec Path**: MUST map to `/specs/<tier>/<category>/spec.md` (non-application) or `/specs/application/<app-name>/spec.md` (application)
+
 **Role Declaration Protocol**:
 When any stakeholder requests a spec update, they MUST declare their role FIRST:
 
-1. **Platform**: (a) Updates **meta-governance framework** (.specify/, .github/, constitution, templates, tier definitions) — SUPERSEDES ALL TIERS per Principle 0, OR (b) Updates **platform-tier content specifications** (spec-system, iac-linting, artifact-org, policy-as-code) — **highest content tier (priority 0)**, foundational standards for all other tiers
+1. **Platform**: (a) Updates **meta-governance framework** (.specify/, .github/, constitution, templates, tier definitions) — SUPERSEDES ALL TIERS per Principle 0, OR (b) Updates **platform-tier content specifications** (spec-system, iac-linting, artifact-org, policy-as-code) — **highest content tier (priority 0)**, foundational standards for all other tiers. Category target required for content specs; meta-governance uses framework scope rather than a category spec file.
 2. **Business**: Updates business-tier category specifications (cost, governance, compliance-framework) — second-highest content tier (priority 1)
 3. **Security**: Updates security-tier category specifications (data-protection, access-control, audit-logging) — third-highest content tier (priority 2)
 4. **Infrastructure**: Updates infrastructure-tier category specifications (compute, networking, storage, cicd-pipeline, iac-modules) — upper-middle content tier (priority 3)
@@ -398,16 +443,17 @@ When any stakeholder requests a spec update, they MUST declare their role FIRST:
 - **Platform Role**: Has **dual scope** with distinct authority levels:
   - **(a) Meta-Governance** (Principle 0, supersedes all tiers): Exclusive control over `.specify/`, `.github/`, constitution, tier definitions, templates, role workflows, governance rules. Framework modifications are NOT subject to tier precedence.
   - **(b) Platform-Tier Content Specs** (priority 0, **highest content tier**): Manages platform-tier category specs (spec-system, iac-linting, artifact-org, policy-as-code) defining foundational technical standards that ALL other tiers must follow. Platform content specs are NOT subject to override by Business, Security, Infrastructure, DevOps, or Application tiers. **Rationale**: Code quality, directory structure, policy enforcement, and the spec system itself are non-negotiable technical foundations.
+  - **Category Target Requirement**: Platform content-spec updates MUST target a category spec at `/specs/platform/<category>/spec.md`.
   
-- **Business Role**: Defines operational requirements, budgets, cost targets, SLAs, and business objectives that drive business-tier specifications. Can have multiple specs per business area. **Second-highest content tier** (priority 1), constrained by Platform standards. **Cannot modify platform technical standards** (Platform priority 0 constrains Business).
+- **Business Role**: Defines operational requirements, budgets, cost targets, SLAs, and business objectives that drive business-tier specifications. Can have multiple specs per business area. **Second-highest content tier** (priority 1), constrained by Platform standards. **Cannot modify platform technical standards** (Platform priority 0 constrains Business). Category target required at `/specs/business/<category>/spec.md`.
 
-- **Security Role**: Translates business requirements into security policies, compliance standards (NIST, ISO), and security controls. Can have multiple specs per compliance domain. **Third-highest content tier** (priority 2) with override authority over business when security non-negotiable, but constrained by Platform standards.
+- **Security Role**: Translates business requirements into security policies, compliance standards (NIST, ISO), and security controls. Can have multiple specs per compliance domain. **Third-highest content tier** (priority 2) with override authority over business when security non-negotiable, but constrained by Platform standards. Category target required at `/specs/security/<category>/spec.md`.
 
-- **Infrastructure Role**: Designs Azure landing zones, networking, IaC modules (using Azure Verified Modules), base infrastructure patterns for DevOps and application teams. **Upper-middle content tier** (priority 3) constrained by Platform, Business, and Security.
+- **Infrastructure Role**: Designs Azure landing zones, networking, IaC modules (using Azure Verified Modules), base infrastructure patterns for DevOps and application teams. **Upper-middle content tier** (priority 3) constrained by Platform, Business, and Security. Category target required at `/specs/infrastructure/<category>/spec.md`.
 
-- **DevOps Role**: Defines deployment automation, CI/CD orchestration, observability standards, environment management, and operational practices that bridge infrastructure and applications. **Lower-middle content tier** (priority 4) constrained by Platform, Business, Security, and Infrastructure. DevOps tier consumes infrastructure IaC modules and defines how they are deployed, monitored, and operated.
+- **DevOps Role**: Defines deployment automation, CI/CD orchestration, observability standards, environment management, and operational practices that bridge infrastructure and applications. **Lower-middle content tier** (priority 4) constrained by Platform, Business, Security, and Infrastructure. DevOps tier consumes infrastructure IaC modules and defines how they are deployed, monitored, and operated. Category target required at `/specs/devops/<category>/spec.md`.
 
-- **Application Role**: Specifies application features, architecture, performance requirements, and deployment patterns constrained by DevOps, infrastructure, and security tiers. **Lowest content tier** (priority 5). MUST specify target application:
+- **Application Role**: Specifies application features, architecture, performance requirements, and deployment patterns constrained by DevOps, infrastructure, and security tiers. **Lowest content tier** (priority 5). Application target required (category target not applicable):
   - If **NEW application**: Platform MUST create a new application-specific directory (e.g., `/specs/application/[app-name]/`) containing that application's spec files, plans, and tasks (separate from other applications).
   - If **EXISTING application**: Platform MUST update spec files within that application's existing directory (e.g., update `/specs/application/web-app-001/` files). EXISTING applications are identified by checking if `/specs/application/[app-name]/` or `/artifacts/applications/[app-name]/` already exists; if so, changes are confined to the existing application's directory (no new directories created).
   - **Application Artifact Organization** (Per `specs/platform/001-application-artifact-organization/spec.md` v1.0.0):
@@ -490,7 +536,7 @@ All platform outputs (IaC modules, Bicep templates, GitHub Actions pipelines, po
 Every artifact (IaC module, pipeline, policy, application code deployment) MUST be traceable to its originating spec tier and linked specs. Bidirectional traceability required: spec → generated artifacts, artifacts → source specs. Version specs alongside artifacts; when a spec changes, mark dependent artifacts for regeneration review.
 
 ## Tier Specifications Organization
-implements a **category-based spec system** across 6 tiers, governed by a root manifest and tier-specific category indexes. Directory structure: `/specs/<tier>/<category>/spec.md`
+implements a **category-based spec system** across 6 tiers, governed by a root manifest and tier-specific category indexes. Directory structure: `/specs/<tier>/<category>/spec.md`. Role declarations MUST identify the target category for all non-application tiers.
 
 ### Root Manifest & Indexes
 
@@ -1018,4 +1064,4 @@ Issues discovered trigger spec/artifact regeneration or manual correction within
 
 ---
 
-**Version**: 2.0.0 | **Ratified**: 2026-02-05 | **Last Amended**: 2026-02-09 (Amendment: Platform-First Hierarchy & DevOps Tier - 6-Tier Restructure)
+**Version**: 2.1.0 | **Ratified**: 2026-02-05 | **Last Amended**: 2026-02-09 (Amendment: Category-Scoped Role Targeting)

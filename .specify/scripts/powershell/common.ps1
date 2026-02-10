@@ -1,17 +1,26 @@
 #!/usr/bin/env pwsh
 # Common PowerShell functions analogous to common.sh
 
-function Get-RepoRoot {
-    try {
-        $result = git rev-parse --show-toplevel 2>$null
-        if ($LASTEXITCODE -eq 0) {
-            return $result
-        }
-    } catch {
-        # Git command failed
+function Get-GitDisabled {
+    if ($env:SPECIFY_DISABLE_GIT) {
+        return ($env:SPECIFY_DISABLE_GIT -notin @('0', 'false', 'False', 'FALSE', 'no', 'No'))
     }
-    
-    # Fall back to script location for non-git repos
+    return $true
+}
+
+function Get-RepoRoot {
+    if (-not (Get-GitDisabled)) {
+        try {
+            $result = git rev-parse --show-toplevel 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                return $result
+            }
+        } catch {
+            # Git command failed
+        }
+    }
+
+    # Fall back to script location for non-git repos or when git is disabled
     return (Resolve-Path (Join-Path $PSScriptRoot "../../..")).Path
 }
 
@@ -21,14 +30,16 @@ function Get-CurrentBranch {
         return $env:SPECIFY_FEATURE
     }
     
-    # Then check git if available
-    try {
-        $result = git rev-parse --abbrev-ref HEAD 2>$null
-        if ($LASTEXITCODE -eq 0) {
-            return $result
+    # Then check git if available and not disabled
+    if (-not (Get-GitDisabled)) {
+        try {
+            $result = git rev-parse --abbrev-ref HEAD 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                return $result
+            }
+        } catch {
+            # Git command failed
         }
-    } catch {
-        # Git command failed
     }
     
     # For non-git repos, try to find the latest feature directory
@@ -59,6 +70,9 @@ function Get-CurrentBranch {
 }
 
 function Test-HasGit {
+    if (Get-GitDisabled) {
+        return $false
+    }
     try {
         git rev-parse --show-toplevel 2>$null | Out-Null
         return ($LASTEXITCODE -eq 0)
@@ -73,9 +87,9 @@ function Test-FeatureBranch {
         [bool]$HasGit = $true
     )
     
-    # For non-git repos, we can't enforce branch naming but still provide output
+    # For non-git repos or when git is disabled, skip branch validation
     if (-not $HasGit) {
-        Write-Warning "[specify] Warning: Git repository not detected; skipped branch validation"
+        Write-Output "[specify] Info: Git checks disabled; skipped branch validation"
         return $true
     }
     

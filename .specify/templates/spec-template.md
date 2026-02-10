@@ -1,6 +1,6 @@
 # Specification: [SPEC_NAME]
 
-**Tier**: [business | security | infrastructure | application]  
+**Tier**: [platform | business | security | infrastructure | devops | application]  
 **Spec ID**: [###-spec-name]  
 **Created**: [DATE]  
 **Status**: Draft | Approved  
@@ -11,8 +11,9 @@
 ## 🎯 IMPORTANT: Role Declaration Protocol (Per Constitution §II)
 
 This spec was created via:
-- **Role Declared**: [Platform | Business | Security | Infrastructure | Application]
-- **Application Target** (if Application role): [NEW: app-name | EXISTING: app-name]
+- **Role Declared**: [Platform | Business | Security | Infrastructure | DevOps | Application]
+- **Category Target** (required for non-application roles): [spec-system | iac-linting | artifact-org | policy-as-code | cost | data-protection | networking | observability | ...]
+- **Application Target** (required for Application role): [NEW: app-name | EXISTING: app-name]
 
 > Constitution §II requires ALL spec updates to begin with explicit role declaration. This ensures clarity on which tier is being modified and how the spec hierarchy is affected.
 

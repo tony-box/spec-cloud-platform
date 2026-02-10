@@ -5,17 +5,18 @@ description: "Task list template for platform artifact generation and implementa
 
 # Tasks: [SPEC_NAME]
 
-**Input**: Specification documents from `/specs/[TIER-NAME]/[###-spec-name]/`  
+**Input**: Specification documents from `/specs/[TIER-NAME]/[CATEGORY-NAME]/`  
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md  
-**Tier**: [business | security | infrastructure | application]
+**Tier**: [platform | business | security | infrastructure | devops | application]
 
 ---
 
 ## 🎯 IMPORTANT: Role Declaration Protocol (Per Constitution §II)
 
 These tasks were created via:
-- **Role Declared**: [Platform | Business | Security | Infrastructure | Application]
-- **Application Target** (if Application role): [NEW: app-name | EXISTING: app-name]
+- **Role Declared**: [Platform | Business | Security | Infrastructure | DevOps | Application]
+- **Category Target** (required for non-application roles): [spec-system | iac-linting | artifact-org | policy-as-code | cost | data-protection | networking | observability | ...]
+- **Application Target** (required for Application role): [NEW: app-name | EXISTING: app-name]
 - **Source Tier Spec**: [Reference to parent spec that generated these tasks]
 
 > Constitution §II requires ALL task generation (and specs) to maintain role declaration context. These tasks implement the spec from the [declared role] tier.
