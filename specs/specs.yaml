@@ -1,51 +1,91 @@
 ---
 # Root Specification Manifest
 # This file defines the complete category-based spec system structure
-# 
+# This is the CANONICAL source of truth for tier hierarchy and precedence.
+# All other files (_categories.yaml, constitution, spec-system/spec.md) derive from this.
+#
 # Specification: platform/002-category-based-spec-system/spec.md
-# Task: T101 - Create specs.yaml root manifest
 # Created: 2026-02-07
-# Version: 1.0.0-draft
+# Updated: 2026-03-16
+# Version: 2.0.0
 
 metadata:
   name: "Category-Based Specification System"
-  version: "1.0.0-draft"
-  description: "Root manifest defining all tiers, categories, and precedence rules for specifications"
+  version: "2.0.0"
+  description: "Root manifest defining all tiers, categories, precedence rules, authority scopes, and execution modes"
   created: "2026-02-07"
+  updated: "2026-03-16"
   owner: "Platform Engineering Team"
   status: "active"
 
-# Tier definitions (ordered by precedence: top = highest priority)
+# ============================================================================
+# CANONICAL TIER HIERARCHY (ordered by precedence: top = highest priority)
+#
+# Tier cascade: platform > business > security > infrastructure > devops > application
+#
+# Platform tier is FOUNDATIONAL. It defines the spec system, code quality,
+# artifact structure, and policy enforcement that ALL other tiers must follow.
+# Platform standards are non-negotiable technical foundations.
+# ============================================================================
 tiers:
+  - tier: platform
+    name: "Platform Tier"
+    description: "Foundational platform standards (spec system, linting, artifact org, policy-as-code)"
+    priority: 0
+    categories: 4
+    authority-scope: platform-meta-governance | platform-content-standards
+    authority-note: >
+      Platform has dual scope:
+      (a) platform-meta-governance: Framework control (.specify/, .github/, constitution,
+          templates, tier definitions). SUPERSEDES ALL TIERS. Cannot be overridden.
+      (b) platform-content-standards: Content-tier specs (spec-system, iac-linting,
+          artifact-org, policy-as-code). Highest content tier (priority 0).
+          Participates in normal cascade but is not overridden by lower tiers.
+
   - tier: business
     name: "Business Tier"
     description: "Business-level decisions (cost, governance, compliance)"
-    priority: 0
+    priority: 1
     categories: 3
+    authority-scope: content
     
   - tier: security
     name: "Security Tier"
     description: "Security-level requirements (access control, data protection, audit)"
-    priority: 1
+    priority: 2
     categories: 3
+    authority-scope: content
     
   - tier: infrastructure
     name: "Infrastructure Tier"
     description: "Infrastructure-level standards (compute, networking, storage, CI/CD, IaC modules)"
-    priority: 2
-    categories: 6
-    
-  - tier: platform
-    name: "Platform Tier"
-    description: "Platform-level standards (artifact organization, linting, policy-as-code, spec system)"
     priority: 3
-    categories: 4
+    categories: 6
+    authority-scope: content
     
+  - tier: devops
+    name: "DevOps Tier"
+    description: "Deployment automation, observability, environment management, CI/CD orchestration"
+    priority: 4
+    categories: 4
+    authority-scope: content
+
   - tier: application
     name: "Application Tier"
     description: "Application-level specifications (individual applications using upstream specs)"
-    priority: 4
+    priority: 5
     categories: null
+    authority-scope: content
+
+# Override mechanism: emergency changes that bypass normal cascade
+override-policy:
+  allowed: true
+  requires:
+    - declared-role: platform
+    - authority-scope: platform-meta-governance
+    - justification: "Mandatory written justification citing emergency condition"
+    - audit-entry: "Override must be logged with timestamp, actor, justification, and affected specs"
+  note: "Only platform-meta-governance authority can invoke emergency overrides. All overrides are auditable and time-limited."
 
 # Category tree structure
 categories:
@@ -143,36 +183,65 @@ categories:
       file: platform/spec-system/spec.md
       description: "Meta-specifications for spec format and system"
 
+  devops:
+    deployment-automation:
+      spec-id: deploy-001
+      version: "1.0.0-placeholder"
+      file: devops/deployment-automation/spec.md
+      description: "Deployment patterns, blue-green, canary, rollback strategies"
+
+    observability:
+      spec-id: obs-001
+      version: "1.0.0-placeholder"
+      file: devops/observability/spec.md
+      description: "Logging, metrics, tracing, alerting, SLI/SLO definitions"
+
+    environment-management:
+      spec-id: env-001
+      version: "1.0.0-placeholder"
+      file: devops/environment-management/spec.md
+      description: "Environment definitions, configuration management, secrets management"
+
+    ci-cd-orchestration:
+      spec-id: cicd-orch-001
+      version: "1.0.0-placeholder"
+      file: devops/ci-cd-orchestration/spec.md
+      description: "CI/CD workflow orchestration, build and deployment pipelines"
+
 # Precedence rules (tier-level primary, category-level secondary)
+# Must mirror the canonical tier hierarchy defined in the tiers section above.
 precedence:
   tier-order:
-    - business   # 0
-    - security   # 1
-    - infrastructure  # 2
-    - platform   # 3
-    - application    # 4
-  
+    - platform       # 0 — foundational, defines the spec system itself
+    - business       # 1 — cost, governance, compliance
+    - security       # 2 — access control, data protection, audit
+    - infrastructure # 3 — compute, networking, storage, IaC
+    - devops         # 4 — deployment, observability, environments, CI/CD orchestration
+    - application    # 5 — individual application specs (lowest precedence)
+
   # Category-level precedence within tiers
   category-rules:
+    platform:
+      order: [spec-system, iac-linting, artifact-org, policy-as-code]
+      rationale: "Spec-System (meta) ≈ IaC-Linting (technical standard) > Artifact-Org (structural) > Policy-as-Code (reactive)"
+
     business:
       order: [compliance-framework, governance, cost]
       rationale: "Compliance (regulatory) > Governance (approval) > Cost (optimization)"
-      
+
     security:
       order: [data-protection, access-control, audit-logging]
       rationale: "Data Protection (confidentiality) ≥ Access Control (foundation) > Audit (detection)"
       connection: "DP and AC roughly equal in priority, both above audit"
-      
+
     infrastructure:
-      # Compute and storage precedence depends on workload
-      # Compute usually wins (determines storage tier), but not always
-      order: [compute, storage, networking]
-      rationale: "Compute (workload-driven) > Storage (depends on workload) > Networking (independent)"
+      order: [compute, storage, networking, cicd-pipeline, iac-modules]
+      rationale: "Compute (workload-driven) > Storage (depends on workload) > Networking (independent) > CI/CD > IaC"
       workload-note: "For latency-sensitive workloads, networking may dominate; tier dynamically"
-      
-    platform:
-      order: [spec-system, iac-linting, artifact-org, policy-as-code]
-      rationale: "Spec-System (meta) ≈ IaC-Linting (technical standard) > Artifact-Org (structural) > Policy-as-Code (reactive)"
+
+    devops:
+      order: [observability, deployment-automation, environment-management, ci-cd-orchestration]
+      rationale: "Observability (detect issues first) > Deployment (ship safely) > Environments (config) > CI/CD Orchestration (pipeline glue)"
 
 # Formalized conflicts and resolution rules
 conflicts:
@@ -225,6 +294,20 @@ conflicts:
     winner: "dual-gate: cost + business SLA"
     rationale: "Availability target (from business SLA) drives network design within cost constraints"
 
+  - id: conflict-008
+    name: "Observability vs Cost"
+    description: "DevOps observability requirements (logging, tracing, metrics retention) vs business cost targets"
+    affected-specs: [obs-001, cost-001]
+    winner: cost-001
+    rationale: "Business cost constraints cap observability scope; minimum viable observability defined by SLA requirements"
+
+  - id: conflict-009
+    name: "Deployment-Automation vs Governance"
+    description: "DevOps deployment automation (continuous deployment, fast rollouts) vs business governance approval gates"
+    affected-specs: [deploy-001, gov-001]
+    winner: gov-001
+    rationale: "Production deployments require governance approval gates; non-production environments may auto-deploy"
+
 # Validation schema requirements
 validation:
   required-frontmatter-fields:
@@ -244,10 +327,9 @@ validation:
     all-specs: "Referenced specs must exist in specs.yaml"
     circular-deps: "Circular dependencies detected and rejected"
 
-# Registry of all application adopters
+# Application registry
+# Application lifecycle metadata is managed exclusively in specs/application/_index.yaml.
+# This section is a pointer only — do not duplicate app entries here.
 applications:
-  - app-id: mycoolapp
-    version: "1.0.0"
-    tier: application
-    depends-on: [cost-001, dp-001, ac-001, compute-001, net-001, artifact-001]
-    file: application/mycoolapp/spec.md
+  registry-file: application/_index.yaml
+  note: "All application registrations, lifecycle states, and retirement metadata live in the registry file only."

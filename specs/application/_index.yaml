@@ -1,33 +1,77 @@
 ---
 # Application Tier Registry
-# 
-# This file indexes all applications using the category-based spec system
+#
+# CANONICAL source of truth for all application lifecycle metadata.
+# All registration, lifecycle state, and retirement data lives HERE ONLY.
+# specs.yaml points to this file but does not duplicate entries.
+#
 # Specification: platform/002-category-based-spec-system/spec.md
-# Task: T106 - Create specs/application/_index.yaml registry
 # Created: 2026-02-07
-# Version: 1.0.0-draft
+# Updated: 2026-03-16
+# Version: 2.0.0
 
 metadata:
   tier: application
   name: "Application Registry"
   description: "All applications adopting category-based specifications"
-  version: "1.0.0-draft"
+  version: "2.0.0"
   created: "2026-02-07"
+  updated: "2026-03-16"
+  registry-state: empty-initialized
   application-count: 0
+
+# Lifecycle definitions
+lifecycle:
+  statuses:
+    - draft          # Initial registration; spec exists but is not yet adopted
+    - active         # Application is live and actively governed by upstream specs
+    - retired        # Soft-deleted; spec preserved, no longer enforced
+
+  transitions:
+    draft-to-active:
+      requires: "All required adheres-to dependencies resolved; spec frontmatter validated"
+    active-to-retired:
+      requires: "Retirement prompted and confirmed; retired-date and retired-reason recorded"
+    retired-to-active:
+      requires: "Re-activation explicitly confirmed; retired metadata cleared"
+
+  retirement:
+    default-action: soft-delete
+    soft-delete: "Sets status to 'retired', preserves spec file and registry entry"
+    hard-delete: "Manually remove the registry entry and spec file; must be a clean single-file action with no sidecar cleanup"
+
+# Required fields for every application entry
+required-fields:
+  - app-id          # Unique identifier (kebab-case, e.g. my-cool-app)
+  - app-name        # Human-readable name
+  - version         # Semver (1.0.0-draft, 1.0.0, etc.)
+  - status          # One of: draft, active, retired
+  - created         # ISO date (YYYY-MM-DD)
+  - tier            # Always "application"
+  - file            # Relative path to spec file from specs/application/
+  - description     # One-line description
+  - adheres-to      # Array of upstream spec dependencies
+
+# Optional fields (populated during lifecycle)
+optional-fields:
+  - updated         # ISO date of last update
+  - retired-date    # ISO date when retired (required for status: retired)
+  - retired-reason  # Justification for retirement (required for status: retired)
 
 # Application adopters
 applications: []
 
-# No applications currently registered
-# 
-# When applications are added, they will be listed here with their tier dependencies:
-# 
-# Example structure:
+# No applications currently registered.
+#
+# Applications are registered at spec creation time via:
+#   .specify/scripts/powershell/register-application.ps1
+#
+# Example entry:
 #   - app-id: example-app
 #     app-name: "Example Application"
-#     version: "1.0.0"
-#     status: "development"
-#     created: "YYYY-MM-DD"
+#     version: "1.0.0-draft"
+#     status: "draft"
+#     created: "2026-03-16"
 #     tier: application
 #     file: example-app/spec.md
 #     description: "Application description"

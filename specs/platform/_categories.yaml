@@ -116,5 +116,5 @@ relationships:
     description: "Policies automatically enforce business and security requirements"
     
   tier-ordering:
-    note: "Platform tier is foundational but doesn't override higher tiers (business > security > infrastructure > platform)"
-    precedence: "Platform defines standards that all lower tiers (platform, application) must follow, but cannot override business/security/infrastructure decisions"
+    note: "Platform tier has highest precedence (priority 0) in the canonical hierarchy: platform > business > security > infrastructure > devops > application"
+    precedence: "Platform defines foundational standards that all other tiers must follow. Platform-meta-governance authority supersedes all tiers; platform-content-standards participate as highest content tier."
