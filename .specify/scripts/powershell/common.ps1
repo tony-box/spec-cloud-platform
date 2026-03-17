@@ -1,6 +1,9 @@
 #!/usr/bin/env pwsh
 # Common PowerShell functions analogous to common.sh
 
+# Known spec tiers — used for tier-subdir autodiscovery
+$script:SpecTiers = @('platform', 'business', 'security', 'infrastructure', 'devops', 'application')
+
 function Get-RepoRoot {
     try {
         $result = git rev-parse --show-toplevel 2>$null
@@ -39,12 +42,21 @@ function Get-CurrentBranch {
         $latestFeature = ""
         $highest = 0
         
-        foreach ($dir in (Get-ChildItem -Path $specsDir -Directory)) {
-            if ($dir.Name -match '^(\d{3})-') {
-                $num = [int]$matches[1]
-                if ($num -gt $highest) {
-                    $highest = $num
-                    $latestFeature = $dir.Name
+        # Search top-level specs/ and all tier subdirectories
+        $searchDirs = @($specsDir)
+        foreach ($tier in $script:SpecTiers) {
+            $tierDir = Join-Path $specsDir $tier
+            if (Test-Path $tierDir -PathType Container) { $searchDirs += $tierDir }
+        }
+        
+        foreach ($searchDir in $searchDirs) {
+            foreach ($dir in (Get-ChildItem -Path $searchDir -Directory)) {
+                if ($dir.Name -match '^(\d{3})-') {
+                    $num = [int]$matches[1]
+                    if ($num -gt $highest) {
+                        $highest = $num
+                        $latestFeature = $dir.Name
+                    }
                 }
             }
         }
@@ -88,13 +100,35 @@ function Test-FeatureBranch {
 }
 
 function Get-FeatureDir {
-    param([string]$RepoRoot, [string]$Branch)
+    param([string]$RepoRoot, [string]$Branch, [string]$Tier)
+    # If tier explicitly provided, use it directly
+    if ($Tier) {
+        return Join-Path $RepoRoot "specs/$Tier/$Branch"
+    }
+    # Extract slug: strip leading NNN- so we can match renumbered dirs (e.g. branch
+    # 001-transcript-to-spec finds specs/platform/003-transcript-to-spec)
+    $slug = if ($Branch -match '^\d+-(.+)$') { $matches[1] } else { $null }
+
+    foreach ($t in $script:SpecTiers) {
+        $tierPath = Join-Path $RepoRoot "specs/$t"
+        # 1. Exact match
+        $candidate = Join-Path $tierPath $Branch
+        if (Test-Path $candidate -PathType Container) { return $candidate }
+        # 2. Slug match (same slug, different number prefix) — handles renaming on tier promotion
+        if ($slug) {
+            $slugMatch = Get-ChildItem -Path $tierPath -Directory -Filter "*-$slug" -ErrorAction SilentlyContinue |
+                Select-Object -First 1
+            if ($slugMatch) { return $slugMatch.FullName }
+        }
+    }
+    # Fallback: legacy flat layout specs/<branch>
     Join-Path $RepoRoot "specs/$Branch"
 }
 
 function Get-FeaturePathsEnv {
     param(
-        [string]$AppName
+        [string]$AppName,
+        [string]$Tier
     )
     $repoRoot = Get-RepoRoot
     $currentBranch = Get-CurrentBranch
@@ -103,7 +137,7 @@ function Get-FeaturePathsEnv {
     $featureDir = if ($resolvedAppName) {
         Join-Path $repoRoot "specs/application/$resolvedAppName"
     } else {
-        Get-FeatureDir -RepoRoot $repoRoot -Branch $currentBranch
+        Get-FeatureDir -RepoRoot $repoRoot -Branch $currentBranch -Tier $Tier
     }
     
     [PSCustomObject]@{

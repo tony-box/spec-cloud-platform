@@ -5,7 +5,8 @@
 param(
     [switch]$Json,
     [switch]$Help,
-    [string]$AppName
+    [string]$AppName,
+    [string]$Tier
 )
 
 $ErrorActionPreference = 'Stop'
@@ -23,7 +24,7 @@ if ($Help) {
 . "$PSScriptRoot/common.ps1"
 
 # Get all paths and variables from common functions
-$paths = Get-FeaturePathsEnv -AppName $AppName
+$paths = Get-FeaturePathsEnv -AppName $AppName -Tier $Tier
 
 # Check if we're on a proper feature branch (only for git repos)
 if (-not (Test-FeatureBranch -Branch $paths.CURRENT_BRANCH -HasGit $paths.HAS_GIT)) { 

@@ -64,8 +64,14 @@ function Get-HighestNumberFromSpecs {
     
     $highest = 0
     if (Test-Path $SpecsDir) {
-        Get-ChildItem -Path $SpecsDir -Directory | ForEach-Object {
-            if ($_.Name -match '^(\d+)') {
+        # Search top-level and all tier subdirectories
+        $dirsToSearch = @(Get-ChildItem -Path $SpecsDir -Directory)
+        foreach ($subDir in (Get-ChildItem -Path $SpecsDir -Directory)) {
+            $tierChild = Join-Path $SpecsDir $subDir.Name
+            $dirsToSearch += Get-ChildItem -Path $tierChild -Directory -ErrorAction SilentlyContinue
+        }
+        foreach ($dir in $dirsToSearch) {
+            if ($dir.Name -match '^(\d+)') {
                 $num = [int]$matches[1]
                 if ($num -gt $highest) { $highest = $num }
             }
