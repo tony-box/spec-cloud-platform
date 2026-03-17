@@ -157,7 +157,6 @@ if ($content -match 'applications:\s*\[\]') {
 }
 
 # Update application-count
-$lines = $updatedContent -split "`n"
 $appCount = ($updatedContent | Select-String -Pattern 'app-id:' -AllMatches).Matches.Count
 $updatedContent = $updatedContent -replace 'application-count:\s*\d+', "application-count: $appCount"
 

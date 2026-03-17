@@ -39,12 +39,12 @@ function Get-CurrentBranch {
         $latestFeature = ""
         $highest = 0
         
-        Get-ChildItem -Path $specsDir -Directory | ForEach-Object {
-            if ($_.Name -match '^(\d{3})-') {
+        foreach ($dir in (Get-ChildItem -Path $specsDir -Directory)) {
+            if ($dir.Name -match '^(\d{3})-') {
                 $num = [int]$matches[1]
                 if ($num -gt $highest) {
                     $highest = $num
-                    $latestFeature = $_.Name
+                    $latestFeature = $dir.Name
                 }
             }
         }

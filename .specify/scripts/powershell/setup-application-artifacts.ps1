@@ -114,19 +114,19 @@ function Initialize-ApplicationArtifacts {
         Write-Host ""
         
         # For existing apps, validate and update if needed
-        Validate-ExistingApplication
+        Assert-ExistingApplication
     } else {
         Write-Host "Mode: NEW APPLICATION" -ForegroundColor Cyan
         Write-Host "Action: Creating new standardized directory structure" -ForegroundColor Cyan
         Write-Host ""
         
         # For new apps, create full structure
-        Create-NewApplication
+        New-Application
     }
 }
 
 # Handle NEW application setup
-function Create-NewApplication {
+function New-Application {
     # Step 1: Create application directory structure
     Write-Host "📂 Creating new application directory structure..." -ForegroundColor Cyan
     & $TemplateScript -AppName $AppName -Force -Verbose:$Verbose
@@ -207,7 +207,7 @@ Per Constitution v1.1.0, all application artifacts MUST conform to this standard
 }
 
 # Handle EXISTING application setup
-function Validate-ExistingApplication {
+function Assert-ExistingApplication {
     # Step 1: Verify artifact directory exists
     if (-not (Test-Path $AppArtifactDir)) {
         Write-Host "⚠️  Artifact directory does not exist, creating..." -ForegroundColor Yellow
