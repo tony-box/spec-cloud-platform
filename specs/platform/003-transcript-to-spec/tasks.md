@@ -43,7 +43,7 @@ role-context:
 
 **Purpose**: Create file scaffolds for both deliverable artifacts
 
-- [ ] T001 Create `.specify/scripts/powershell/ingest-transcript.ps1` with CmdletBinding param block (`-TranscriptFile`, `-DryRun`, `-Force`, `-Json`, `-Help`), `$ErrorActionPreference = 'Stop'`, and `. $PSScriptRoot/common.ps1` source line
+- [ ] T001 Create `.specify/scripts/powershell/ingest-transcript.ps1` with CmdletBinding param block (`-TranscriptFile`, `-ManifestFile`, `-DryRun`, `-Force`, `-Json`, `-Help`), `$ErrorActionPreference = 'Stop'`, and `. $PSScriptRoot/common.ps1` source line
 - [ ] T002 [P] Create `.specify/templates/transcript-analysis-template.md` with frontmatter (`tier: platform`, `category: transcript-ingestion`, `spec-id: txin`, `artifact-type: template`, `execution-mode: spec-interpreted`) and top-level section headings
 
 ---
@@ -53,9 +53,11 @@ role-context:
 **Purpose**: Core helpers used by every user story; must be complete before Phase 3
 
 - [ ] T003 [P] Implement `-Help` display block in `.specify/scripts/powershell/ingest-transcript.ps1` — print usage, all parameters, invocation examples from contracts/ingest-transcript-cli.md, then `exit 0`
-- [ ] T004 [P] Implement `Build-CategoryCatalog` function in `.specify/scripts/powershell/ingest-transcript.ps1` — reads `specs/specs.yaml` via `Get-RepoRoot` (from `common.ps1`), iterates all `specs/<tier>/_categories.yaml` files, returns `CategoryCatalog` object with `Tiers`, `Categories`, and `SpecIds` arrays per data-model.md
+- [ ] T003a [P] Implement `Get-AnalysisPrompt` function in `.specify/scripts/powershell/ingest-transcript.ps1` — accepts a `TranscriptDocument` and `CategoryCatalog`, renders `.specify/templates/transcript-analysis-template.md` by substituting `{{TRANSCRIPT_CONTENT}}` with transcript text and `{{CATEGORY_CATALOG}}` with a formatted YAML summary of all known tiers and categories, and returns the composed prompt string; wire into the **Step 1 flow**: if `-ManifestFile` is absent (and not `-Help`), call `Get-AnalysisPrompt`, write prompt to stdout, print guidance line `"Paste the above into your AI agent, then re-run with -ManifestFile <path>"`, and `exit 0`
+- [ ] T003b [P] Implement **Step 2** manifest-input flow in `.specify/scripts/powershell/ingest-transcript.ps1` — when `-ManifestFile` is provided: read file content (or read from stdin if value is `-`); pass raw string to `ConvertFrom-IngestionManifest`; then call `Test-IngestionManifest`; `exit 1` with descriptive message on parse or validation failure; this gates all subsequent spec-writing logic — **Note**: JSON fields from the manifest are `snake_case` (e.g. `spec_entries`); map to `PascalCase` PowerShell properties at this boundary
+- [ ] T004 [P] Implement `Build-CategoryCatalog` function in `.specify/scripts/powershell/ingest-transcript.ps1` — reads `specs/specs.yaml` via `Get-RepoRoot` (from `common.ps1`), iterates all `specs/<tier>/_categories.yaml` files, returns `CategoryCatalog` object with `Tiers`, `Categories`, and `SpecIds` arrays per data-model.md — **Note**: T019 extends this function to handle missing `_categories.yaml` (bootstrap mode); use a graceful per-tier fallback pattern (empty array rather than throw) so T019 is a minimal delta
 - [ ] T005 [P] Implement `Get-TranscriptDocument` function in `.specify/scripts/powershell/ingest-transcript.ps1` — validates `-TranscriptFile` exists and is non-empty (≤500 000 chars), returns `TranscriptDocument` object with `FilePath`, `Content`, `InferredDate`, `Participants`, `Purpose` per data-model.md
-- [ ] T006 [P] Implement `ConvertFrom-IngestionManifest` function in `.specify/scripts/powershell/ingest-transcript.ps1` — extracts the first fenced ` ```json ` block from a string input and returns the deserialized object via `ConvertFrom-Json`; throws on parse failure
+- [ ] T006 [P] Implement `ConvertFrom-IngestionManifest` function in `.specify/scripts/powershell/ingest-transcript.ps1` — extracts the first fenced ` ```json ` block from a string input and returns the deserialized object via `ConvertFrom-Json`; throws on parse failure — **Note**: JSON schema uses `snake_case` (`spec_entries`, `new_categories`, `spec_id`, `is_new_category`) per research.md Decision 3; downstream PowerShell objects use `PascalCase` (data-model.md); map explicitly at this deserialization boundary rather than relying on implicit property access
 - [ ] T007 Implement `Test-IngestionManifest` validation function in `.specify/scripts/powershell/ingest-transcript.ps1` — validates: all `tier` values are in the 6 known tiers; all `spec_id` values match `^[a-z][a-z0-9-]{1,7}$`; `spec_entries` is non-empty; returns `$true`/`$false` with descriptive error messages
 
 ---
@@ -69,7 +71,7 @@ role-context:
 - [ ] T008 [P] [US1] Write tier signal vocabulary section in `.specify/templates/transcript-analysis-template.md` — include the full per-tier keyword table from research.md Decision 4 (all 19 tier/category signal rows)
 - [ ] T009 [P] [US1] Write extraction guidance sections in `.specify/templates/transcript-analysis-template.md` — Step 1: meeting metadata extraction (date, participants, purpose); Step 2: decision/requirement/constraint extraction per signal vocabulary; Step 3: tier+category mapping rules; Step 4: gap detection instructions
 - [ ] T010 [US1] Write `IngestionManifest` output schema and generation instructions in `.specify/templates/transcript-analysis-template.md` — include complete JSON schema from research.md Decision 3, fenced ` ```json ` block instruction, and field-level guidance for `spec_entries` and `new_categories`
-- [ ] T011 [P] [US1] Implement `New-GeneratedSpec` function in `.specify/scripts/powershell/ingest-transcript.ps1` — accepts a `SpecEntry` and returns a `GeneratedSpec` object with rendered YAML frontmatter (all required fields per spec-system: `tier`, `category`, `spec-id`, `version: "1.0.0-draft"`, `status: draft`, `compliance-state: current`, `role-context.requested-by: "transcript-ingestion"`, `role-context.decision-mode: autonomous`) and body markdown (Executive Summary from `summary`, Decisions list, Requirements list, Constraints list) per data-model.md
+- [ ] T011 [P] [US1] Implement `New-GeneratedSpec` function in `.specify/scripts/powershell/ingest-transcript.ps1` — accepts a `SpecEntry` (JSON-deserialized object; access fields via `snake_case` names e.g. `$entry.spec_id`) and returns a `GeneratedSpec` object (PowerShell `PascalCase`) with rendered YAML frontmatter (all required fields per spec-system: `tier`, `category`, `spec-id`, `version: "1.0.0-draft"`, `status: draft`, `compliance-state: current`, `role-context.requested-by: "transcript-ingestion"`, `role-context.decision-mode: autonomous`) and body markdown (Executive Summary from `summary`, Decisions list, Requirements list, Constraints list) per data-model.md
 - [ ] T012 [US1] Implement spec-writing loop in `.specify/scripts/powershell/ingest-transcript.ps1` — for each `SpecEntry` in manifest: resolve target path `specs/<tier>/<category>/spec.md`; skip with warning if file exists and `-Force` not set; otherwise create directory if needed and write `GeneratedSpec.FrontmatterYaml + GeneratedSpec.BodyMarkdown`; accumulate `IngestionResult` counters
 - [ ] T013 [P] [US1] Implement dry-run table display in `.specify/scripts/powershell/ingest-transcript.ps1` — when `-DryRun` is set (and `-Json` is not), print formatted table with columns `TIER`, `CATEGORY`, `SPEC-ID`, `ACTION` and summary line; then `exit 0`
 - [ ] T014 [US1] Implement text-mode `IngestionResult` summary output in `.specify/scripts/powershell/ingest-transcript.ps1` — when `-Json` is not set, print `[ingest-transcript] Complete: N created, N skipped, N failed` plus any warnings and errors, then exit 0 or 1 based on `IngestionResult.Success`
@@ -83,9 +85,9 @@ role-context:
 **Independent test**: Run on a transcript containing "disaster-recovery" language → with `-Force`, tool creates `specs/business/disaster-recovery/spec.md`, adds entry to `specs/business/_categories.yaml`, increments `category-count` in `specs/specs.yaml`
 
 - [ ] T015 [P] [US2] Implement `Test-CategoryNameValid` function in `.specify/scripts/powershell/ingest-transcript.ps1` — validates `category` against `^[a-z][a-z0-9-]+$`; validates `spec_id` against `^[a-z][a-z0-9-]{1,7}$`; checks `spec_id` is not already in `CategoryCatalog.SpecIds`; returns `$true`/`$false` with error text
-- [ ] T016 [US2] Implement `Update-CategoryYaml` function in `.specify/scripts/powershell/ingest-transcript.ps1` — reads `specs/<tier>/_categories.yaml`; checks if `spec_id` already present (idempotent); if not, appends new entry (`name`, `spec-id`, `description`) and increments `category-count`; writes file back
+- [ ] T016 [US2] Implement `Update-CategoryYaml` function in `.specify/scripts/powershell/ingest-transcript.ps1` — reads `specs/<tier>/_categories.yaml`; checks if `spec_id` already present (idempotent); if not, appends new entry (`name`, `spec-id`, `description`) and increments `category-count`; writes file back — **Note**: T020 extends this function for the case where the file does not yet exist; check existence before reading so T020 can slot in a file-creation branch without restructuring the function
 - [ ] T017 [P] [US2] Implement `Update-SpecsYamlCategoryCount` function in `.specify/scripts/powershell/ingest-transcript.ps1` — reads `specs/specs.yaml`; finds the tier block by name; increments `category-count` value; writes file back (idempotent: reads current count, compares before writing)
-- [ ] T018 [US2] Wire new-category flow in `.specify/scripts/powershell/ingest-transcript.ps1` — after manifest validation, for each entry in `manifest.new_categories`: call `Test-CategoryNameValid`; if `-Force` not set, prompt for confirmation or error in non-interactive mode; call `Update-CategoryYaml` then `Update-SpecsYamlCategoryCount`; create directory `specs/<tier>/<category>/`; accumulate `CategoriesCreated` count
+- [ ] T018 [US2] Wire new-category flow in `.specify/scripts/powershell/ingest-transcript.ps1` — after manifest validation, for each entry in `manifest.new_categories`: call `Test-CategoryNameValid`; if `-Force` not set and stdin **is** a TTY, prompt for confirmation; if `-Force` not set and stdin is **not** a TTY (non-interactive/CI mode — detect via `[System.Console]::IsInputRedirected`), treat each new-category proposal as a hard error: add to `Errors[]`, set `SpecsFailed++`, and continue to next entry (no deadlock); call `Update-CategoryYaml` then `Update-SpecsYamlCategoryCount` for confirmed/forced entries; create directory `specs/<tier>/<category>/`; accumulate `CategoriesCreated` count
 
 ---
 
@@ -121,7 +123,7 @@ role-context:
 - [ ] T026 [P] Register `ingest-transcript.ps1` in `specs/specs.yaml` toolkit-components scripts section — add entry with `purpose`, `contracts.input`, `contracts.output`, `contracts.idempotent: true` per the toolkit-registration block in contracts/ingest-transcript-cli.md
 - [ ] T027 [P] Create `specs/platform/transcript-ingestion/spec.md` — copy and promote the feature spec from `specs/platform/003-transcript-to-spec/spec.md`, update path references, set `status: ratified`, update `version-history`
 - [ ] T028 Run PSScriptAnalyzer on `.specify/scripts/powershell/ingest-transcript.ps1` and fix all errors — `Invoke-ScriptAnalyzer -Path .specify/scripts/powershell/ingest-transcript.ps1`; zero issues must remain
-- [ ] T029 End-to-end validation — run `ingest-transcript.ps1 -TranscriptFile specs/platform/003-transcript-to-spec/quickstart.md -DryRun` to confirm manifest output, then run without `-DryRun` on a scratch branch to confirm spec files are written correctly
+- [ ] T029 End-to-end validation — run `ingest-transcript.ps1 -TranscriptFile specs/platform/003-transcript-to-spec/quickstart.md -DryRun` to confirm manifest output, then run without `-DryRun` on a scratch branch to confirm spec files are written correctly; wrap the scaffolding + validation loop in `Measure-Command` and assert elapsed time is under 10 seconds (NFR-002) — exclude AI response time from measurement
 - [ ] T030 Commit, push, and tag — `git tag spec/txin/1.0.0-draft` after T025–T029 are complete
 
 ---
@@ -130,18 +132,20 @@ role-context:
 
 ```
 T001 ──┬──► T003
-       ├──► T004 ──► T007 ──► T011 ──► T012 ──► T013 ──► T022 ──► T023 ──► T024
-       ├──► T004 ──► T019 ──► T016 ──► T018               │
-       ├──► T005 ──┘                                       └──► T014
-       └──► T006 ──┘
-
-T002 ──►  T008 ─┐
-          T009 ─┴──► T010
-
-T015 ──► T016 ──► T018
-T017 ──────────► T018
+       ├──► T004 ──┬──► T003a ──┐
+       ├──► T005 ──┘            ├──► T012 ──┬──► T013 ──► T022 ──► T023 ──► T024
+       ├──► T006 ──► T003b ──► T007         │             │
+       └──► T011 ───────────────────────────┘             └──► T014
+       
+T001 ──► T004 ──► T019 ──► T016 ──► T018
+T015 ──────────► T016 ──► T018
+T017 ─────────────────────► T018
 T018 ──► T020 ──► T021
 
+T002 ──► T008 ─┐
+        T009 ──┴──► T010
+
+# Phase gate: T003a + T003b + T007 + T011 must be done before T012
 # US1 complete when: T010 + T012 + T014 done
 # US2 complete when: T018 done
 # US3 complete when: T019 + T020 + T021 done
@@ -156,14 +160,19 @@ T018 ──► T020 ──► T021
 ### US1 — Start in parallel after T001 and T002 complete
 
 ```
+# Round 1 — start all in parallel immediately after T001 + T002
 T003  ─── (help block in .ps1)
-T004  ─── (Build-CategoryCatalog in .ps1)       ← start all 5 in parallel
+T004  ─── (Build-CategoryCatalog in .ps1)
 T005  ─── (Get-TranscriptDocument in .ps1)
 T006  ─── (ConvertFrom-IngestionManifest in .ps1)
 T008  ─── (signal vocabulary in .md template)
 T009  ─── (extraction guidance in .md template)
 T011  ─── (New-GeneratedSpec in .ps1)
 T013  ─── (dry-run display in .ps1)
+
+# Round 2 — start once Round 1 preconditions met
+T003a ─── (Get-AnalysisPrompt + Step 1 flow)    ← needs T004 + T005 done
+T003b ─── (Step 2 manifest-reading flow)        ← needs T006 done
 ```
 
 ### US2 — Start T015 and T017 in parallel after US1 is done
