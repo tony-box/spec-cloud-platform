@@ -2,29 +2,41 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: devops
 category: environment-management
-spec-id: env-001
+spec-id: env
 version: 1.0.0-placeholder
 status: placeholder
 created: 2026-02-09
 description: "Environment definitions (dev, staging, prod), configuration management, secrets management"
 
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "1.0.0-placeholder"
+    date: "2026-02-07"
+    git-tag: spec/env/1.0.0-placeholder
+    summary: "Placeholder. Full environment management spec (dev/staging/prod definitions, secrets management) pending authoring."
+
 # Dependencies
 depends-on:
   - tier: infrastructure
     category: compute
-    spec-id: compute-001
+    spec-id: compute
+    version: "2.0.0"
     reason: "Environment sizing and resource allocation based on compute specs"
   - tier: security
     category: access-control
-    spec-id: ac-001
+    spec-id: ac
+    version: "1.0.0-draft"
     reason: "Environment access controls must comply with security policies"
   - tier: security
     category: data-protection
-    spec-id: dp-001
+    spec-id: dp
+    version: "1.0.0"
     reason: "Secrets management must comply with encryption and key management standards"
   - tier: business
     category: cost
-    spec-id: cost-001
+    spec-id: cost
+    version: "2.0.0"
     reason: "Environment sizing must comply with budget constraints"
 
 # Precedence rules
@@ -37,13 +49,13 @@ precedence:
       reason: "Platform tier (technical standards, code quality, spec system) is foundational and cannot be overridden"
     - tier: infrastructure
       category: compute
-      spec-id: compute-001
+      spec-id: compute
     - tier: security
       category: access-control
-      spec-id: ac-001
+      spec-id: ac
     - tier: security
       category: data-protection
-      spec-id: dp-001
+      spec-id: dp
 
 # Relationships
 adhered-by: []
@@ -54,7 +66,7 @@ adhered-by: []
 
 **Tier**: devops  
 **Category**: environment-management  
-**Spec ID**: env-001  
+**Spec ID**: env  
 **Created**: 2026-02-09  
 **Status**: Placeholder  
 

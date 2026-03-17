@@ -2,25 +2,36 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: devops
 category: deployment-automation
-spec-id: deploy-001
+spec-id: deploy
 version: 1.0.0-placeholder
 status: placeholder
 created: 2026-02-09
 description: "Deployment patterns, blue-green deployments, canary releases, rollback strategies"
 
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "1.0.0-placeholder"
+    date: "2026-02-07"
+    git-tag: spec/deploy/1.0.0-placeholder
+    summary: "Placeholder. Full deployment automation spec (blue-green, canary, rollback strategies) pending authoring."
+
 # Dependencies
 depends-on:
   - tier: infrastructure
     category: iac-modules
-    spec-id: iac-001
+    spec-id: iac
+    version: "1.0.0-draft"
     reason: "Deployment automation uses IaC modules for infrastructure provisioning"
   - tier: infrastructure
     category: cicd-pipeline
-    spec-id: cicd-001
+    spec-id: cicd
+    version: "2.0.0"
     reason: "Deployment patterns integrate with CI/CD pipeline infrastructure"
   - tier: business
     category: governance
-    spec-id: gov-001
+    spec-id: gov
+    version: "1.0.0-draft"
     reason: "Deployment workflows must comply with approval and change management policies"
 
 # Precedence rules
@@ -33,10 +44,10 @@ precedence:
       reason: "Platform tier (technical standards, code quality, spec system) is foundational and cannot be overridden"
     - tier: infrastructure
       category: iac-modules
-      spec-id: iac-001
+      spec-id: iac
     - tier: business
       category: governance
-      spec-id: gov-001
+      spec-id: gov
 
 # Relationships
 adhered-by: []
@@ -47,7 +58,7 @@ adhered-by: []
 
 **Tier**: devops  
 **Category**: deployment-automation  
-**Spec ID**: deploy-001  
+**Spec ID**: deploy  
 **Created**: 2026-02-09  
 **Status**: Placeholder  
 

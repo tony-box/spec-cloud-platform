@@ -2,25 +2,36 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: devops
 category: ci-cd-orchestration
-spec-id: cicd-orch-001
+spec-id: cicd-orch
 version: 1.0.0-placeholder
 status: placeholder
 created: 2026-02-09
 description: "CI/CD workflow orchestration, build pipelines, test automation, deployment pipelines"
 
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "1.0.0-placeholder"
+    date: "2026-02-07"
+    git-tag: spec/cicd-orch/1.0.0-placeholder
+    summary: "Placeholder. Full CI/CD orchestration spec (build pipelines, test automation, deployment pipelines) pending authoring."
+
 # Dependencies
 depends-on:
   - tier: infrastructure
     category: cicd-pipeline
-    spec-id: cicd-001
+    spec-id: cicd
+    version: "2.0.0"
     reason: "CI/CD orchestration uses infrastructure pipeline foundations"
   - tier: platform
     category: iac-linting
-    spec-id: lint-001
+    spec-id: lint
+    version: "1.0.0-draft"
     reason: "CI/CD pipelines enforce code quality gates via linting standards"
   - tier: business
     category: governance
-    spec-id: gov-001
+    spec-id: gov
+    version: "1.0.0-draft"
     reason: "Pipeline approval gates must comply with governance policies"
 
 # Precedence rules
@@ -33,10 +44,10 @@ precedence:
       reason: "Platform tier (technical standards, code quality, spec system) is foundational and cannot be overridden"
     - tier: infrastructure
       category: cicd-pipeline
-      spec-id: cicd-001
+      spec-id: cicd
     - tier: business
       category: governance
-      spec-id: gov-001
+      spec-id: gov
 
 # Relationships
 adhered-by: []
@@ -47,7 +58,7 @@ adhered-by: []
 
 **Tier**: devops  
 **Category**: ci-cd-orchestration  
-**Spec ID**: cicd-orch-001  
+**Spec ID**: cicd-orch  
 **Created**: 2026-02-09  
 **Status**: Placeholder  
 

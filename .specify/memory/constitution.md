@@ -56,14 +56,14 @@ MODIFIED SECTIONS:
      - Purpose: Deployment automation, observability, CI/CD orchestration, environment management
      - Priority: 3 (lower-middle content tier, between infrastructure and platform)
      - Categories (4 suggested):
-       1. deployment-automation (spec-id: deploy-001)
-       2. observability (spec-id: obs-001)
-       3. environment-management (spec-id: env-001)
-       4. ci-cd-orchestration (spec-id: cicd-orch-001)
+       1. deployment-automation (spec-id: deploy)
+       2. observability (spec-id: obs)
+       3. environment-management (spec-id: env)
+       4. ci-cd-orchestration (spec-id: cicd-orch)
      - All marked as "Placeholder (to be created)"
   
   8. Infrastructure Tier Section:
-     - Added 5th category: IaC-Modules (spec-id: iac-001) for clarity
+     - Added 5th category: IaC-Modules (spec-id: iac) for clarity
   
   9. Platform Tier Section:
      - Updated priority: 3→4
@@ -523,7 +523,7 @@ implements a **category-based spec system** across 6 tiers, governed by a root m
 **Rationale**: Code quality (iac-linting), directory structure (artifact-org), policy enforcement (policy-as-code), and the spec system itself (spec-system) are foundational technical requirements that cannot be overridden by Business, Security, Infrastructure, DevOps, or Application tiers.  
 **Categories** (4 total):
 
-1. **Spec-System** (`platform/spec-system/spec.md`, spec-id: `spec-001`, **META-SPEC**)
+1. **Spec-System** (`platform/spec-system/spec.md`, spec-id: `spec`, **META-SPEC**)
    - Purpose: Defines the category-based spec system itself (self-referential meta-specification)
    - Example: YAML frontmatter structure, 6-tier hierarchy, precedence algorithm, validation rules
    - Is-Meta: true (defines the system governing all specs)
@@ -531,21 +531,21 @@ implements a **category-based spec system** across 6 tiers, governed by a root m
    - Precedence: Cannot be overridden by any other tier
    - Status: Draft v1.0.0-draft
 
-2. **IaC-Linting** (`platform/iac-linting/spec.md`, spec-id: `lint-001`)
+2. **IaC-Linting** (`platform/iac-linting/spec.md`, spec-id: `lint`)
    - Purpose: Code quality standards for Bicep, PowerShell, YAML
    - Example: bicep build validation, PSScriptAnalyzer, yamllint, errors block PR merge
    - Dependencies: None (foundational platform standard)
    - Precedence: Cannot be overridden by any other tier (code quality non-negotiable)
    - Status: Draft v1.0.0-draft
 
-3. **Artifact-Org** (`platform/artifact-org/spec.md`, spec-id: `artifact-001`)
+3. **Artifact-Org** (`platform/artifact-org/spec.md`, spec-id: `artifact`)
    - Purpose: Directory structure, naming conventions, artifact organization
    - Example: /artifacts/applications/<appname>/{iac, scripts, pipelines, docs} structure
-   - Dependencies: spec-001 (follows spec system structure)
+   - Dependencies: spec (follows spec system structure)
    - Precedence: Cannot be overridden by any other tier (directory structure foundational)
    - Status: Published v1.0.0
 
-4. **Policy-as-Code** (`platform/policy-as-code/spec.md`, spec-id: `pac-001`)
+4. **Policy-as-Code** (`platform/policy-as-code/spec.md`, spec-id: `pac`)
    - Purpose: Azure Policy enforcement, remediation tasks, compliance dashboards
    - Example: Policies for encryption, data residency, tagging, SKU restrictions, automatic remediation
    - Dependencies: None (foundational platform standard, but integrates with compliance-framework and access-control)
@@ -558,21 +558,21 @@ implements a **category-based spec system** across 6 tiers, governed by a root m
 **Note**: Constrained by Platform tier standards (must follow code quality, directory structure, policy enforcement)  
 **Categories** (3 total):
 
-1. **Cost** (`business/cost/spec.md`, spec-id: `cost-001`)
+1. **Cost** (`business/cost/spec.md`, spec-id: `cost`)
    - Purpose: Budget targets, cost optimization, reserved instance strategies
    - Example: 10% year-over-year cost reduction, 3-year reserved instance commitments
    - Dependencies: None (top-level business requirement)
    - Precedence: Loses to platform/* (technical standards non-negotiable), security/data-protection (encryption non-negotiable), compliance-framework (regulatory binding)
    - Status: Published v1.0.0
 
-2. **Governance** (`business/governance/spec.md`, spec-id: `gov-001`)
+2. **Governance** (`business/governance/spec.md`, spec-id: `gov`)
    - Purpose: Approval workflows, SLA definitions, change management, break-glass procedures
    - Example: Production requires approval, 99.95% SLA critical workloads, 99% SLA non-critical
    - Dependencies: None (top-level business requirement)
    - Precedence: Loses to platform/* (technical standards non-negotiable), wins over cost, loses to security/access-control (foundational security)
    - Status: Draft v1.0.0-draft
 
-3. **Compliance-Framework** (`business/compliance-framework/spec.md`, spec-id: `comp-001`)
+3. **Compliance-Framework** (`business/compliance-framework/spec.md`, spec-id: `comp`)
    - Purpose: Regulatory requirements (NIST 800-171), data residency, retention policies, audit schedules
    - Example: US regions only, 7-year retention, annual compliance audits
    - Dependencies: None (top-level regulatory requirement)
@@ -585,21 +585,21 @@ implements a **category-based spec system** across 6 tiers, governed by a root m
 **Note**: Constrained by Platform tier standards, may override Business tier when security non-negotiable  
 **Categories** (3 total):
 
-1. **Data-Protection** (`security/data-protection/spec.md`, spec-id: `dp-001`)
+1. **Data-Protection** (`security/data-protection/spec.md`, spec-id: `dp`)
    - Purpose: Encryption standards (AES-256), key management, TLS requirements, data-at-rest/in-transit protection
    - Example: Azure Key Vault Premium (HSM), 90-day key rotation, TLS 1.2+ mandatory
    - Dependencies: None (foundational security)
    - Precedence: Loses to platform/* (technical standards non-negotiable), OVERRIDES business/cost (encryption non-negotiable even if costly)
    - Status: Published v1.0.0
 
-2. **Access-Control** (`security/access-control/spec.md`, spec-id: `ac-001`)
+2. **Access-Control** (`security/access-control/spec.md`, spec-id: `ac`)
    - Purpose: Authentication, authorization, RBAC, MFA, SSH key management
    - Example: SSH keys only (no passwords), MFA for privileged access, Azure RBAC role assignments
    - Dependencies: None (foundational security)
    - Precedence: Loses to platform/* (technical standards non-negotiable), OVERRIDES business/governance (access control foundational, non-negotiable)
    - Status: Draft v1.0.0-draft
 
-3. **Audit-Logging** (`security/audit-logging/spec.md`, spec-id: `audit-001`)
+3. **Audit-Logging** (`security/audit-logging/spec.md`, spec-id: `audit`)
    - Purpose: Audit trails, monitoring, log retention, immutability
    - Example: auditd on all Linux VMs, Azure Monitor integration, 3-year retention, immutable logs
    - Dependencies: access-control (monitors access events)
@@ -612,35 +612,35 @@ implements a **category-based spec system** across 6 tiers, governed by a root m
 **Note**: Constrained by Platform, Business, and Security tiers  
 **Categories** (5 total):
 
-1. **Compute** (`infrastructure/compute/spec.md`, spec-id: `compute-001`)
+1. **Compute** (`infrastructure/compute/spec.md`, spec-id: `compute`)
    - Purpose: VM SKUs, autoscaling, reserved instances, availability sets/zones
    - Example: Standard_B2s (dev), Standard_B4ms (prod), 3-year reserved instances, availability zones for critical workloads
-   - Dependencies: business/cost-001 (budget constraints), security/dp-001 (disk encryption)
+   - Dependencies: business/cost (budget constraints), security/dp (disk encryption)
    - Precedence: Loses to platform/* (technical standards non-negotiable), wins over storage (workload determines storage tier)
    - Status: Published v1.0.0
 
-2. **Networking** (`infrastructure/networking/spec.md`, spec-id: `net-001`)
+2. **Networking** (`infrastructure/networking/spec.md`, spec-id: `net`)
    - Purpose: VNet architecture, NSGs, load balancing, private DNS, ExpressRoute/VPN
    - Example: /16 VNets, NSGs on all subnets, Standard Load Balancer, private DNS zones
    - Dependencies: business/governance (SLA requirements for load balancer tier)
    - Precedence: Loses to platform/* (technical standards non-negotiable), dual-gate with cost (SLA + cost both constrain networking SKUs)
    - Status: Draft v1.0.0-draft
 
-3. **Storage** (`infrastructure/storage/spec.md`, spec-id: `stor-001`)
+3. **Storage** (`infrastructure/storage/spec.md`, spec-id: `stor`)
    - Purpose: Disk tiers, replication strategies, backup policies, retention
    - Example: Standard SSD default, LRS replication, 30-day backup retention, GRS for critical data
-   - Dependencies: compute-001 (workload determines tier), compliance-framework (retention requirements)
+   - Dependencies: compute (workload determines tier), compliance-framework (retention requirements)
    - Precedence: Loses to platform/* (technical standards non-negotiable), loses to compute (workload-driven), loses to compliance (retention binding)
    - Status: Draft v1.0.0-draft
 
-4. **CI/CD-Pipeline** (`infrastructure/cicd-pipeline/spec.md`, spec-id: `cicd-001`)
+4. **CI/CD-Pipeline** (`infrastructure/cicd-pipeline/spec.md`, spec-id: `cicd`)
    - Purpose: Deployment automation, approval gates, rollback procedures, pipeline security
    - Example: GitHub Actions, production approval gates, automated validation, rollback procedures
    - Dependencies: business/governance (approval workflow requirements), compute (deployment targets)
    - Precedence: Loses to platform/* (technical standards non-negotiable), loses to governance (approval gates non-negotiable)
    - Status: Draft v1.0.0-draft
 
-5. **IaC-Modules** (`infrastructure/iac-modules/spec.md`, spec-id: `iac-001`)
+5. **IaC-Modules** (`infrastructure/iac-modules/spec.md`, spec-id: `iac`)
    - Purpose: Centralized reusable IaC wrapper modules based on Azure Verified Modules
    - Example: Wrapper modules for VMs, VNets, Storage, Key Vault exposing only compliant parameters
    - Dependencies: business/cost (cost-optimized SKU defaults), security/data-protection (encryption standards), platform/iac-linting (code quality)
@@ -653,28 +653,28 @@ implements a **category-based spec system** across 6 tiers, governed by a root m
 **Note**: Constrained by Platform, Business, Security, and Infrastructure tiers. DevOps tier bridges infrastructure and applications, defining how infrastructure is deployed, monitored, and operated.  
 **Categories** (4 suggested):
 
-1. **Deployment-Automation** (`devops/deployment-automation/spec.md`, spec-id: `deploy-001`)
+1. **Deployment-Automation** (`devops/deployment-automation/spec.md`, spec-id: `deploy`)
    - Purpose: Deployment patterns, blue-green deployments, canary releases, rollback strategies
    - Example: Blue-green deployment for zero-downtime, automated rollback triggers, environment promotion workflows
    - Dependencies: infrastructure/iac-modules (uses IaC modules), infrastructure/cicd-pipeline (integrates with pipelines), platform/iac-linting (code quality)
    - Precedence: Loses to platform/* (technical standards non-negotiable), consumed by Application tier, constrained by Infrastructure tier
    - Status: Placeholder (to be created)
 
-2. **Observability** (`devops/observability/spec.md`, spec-id: `obs-001`)
+2. **Observability** (`devops/observability/spec.md`, spec-id: `obs`)
    - Purpose: Logging, metrics, tracing, alerting, dashboards, SLI/SLO definitions
    - Example: Azure Monitor integration, Application Insights, custom metrics, SLO: 99.9% uptime
    - Dependencies: security/audit-logging (audit log requirements), business/governance (SLA requirements), platform/* (observability standards)
    - Precedence: Loses to platform/* (technical standards non-negotiable), required by Application tier (all apps must be observable)
    - Status: Placeholder (to be created)
 
-3. **Environment-Management** (`devops/environment-management/spec.md`, spec-id: `env-001`)
+3. **Environment-Management** (`devops/environment-management/spec.md`, spec-id: `env`)
    - Purpose: Environment definitions (dev, staging, prod), configuration management, secrets management
    - Example: Dev/staging/prod environments, Azure Key Vault for secrets, environment-specific configurations
    - Dependencies: infrastructure/compute (environment sizing), security/access-control (environment access controls), platform/artifact-org (directory structure)
    - Precedence: Loses to platform/* (technical standards non-negotiable), defines deployment targets for Application tier
    - Status: Placeholder (to be created)
 
-4. **CI-CD-Orchestration** (`devops/ci-cd-orchestration/spec.md`, spec-id: `cicd-orch-001`)
+4. **CI-CD-Orchestration** (`devops/ci-cd-orchestration/spec.md`, spec-id: `cicd-orch`)
    - Purpose: CI/CD workflow orchestration, build pipelines, test automation, deployment pipelines
    - Example: GitHub Actions workflows, automated testing gates, deployment approvals
    - Dependencies: infrastructure/cicd-pipeline (pipeline infrastructure), platform/iac-linting (code quality gates)
@@ -687,26 +687,26 @@ implements a **category-based spec system** across 6 tiers, governed by a root m
 **Note**: Platform-tier **content specs** (listed below) follow tier precedence. Platform **framework governance** (Principle 0) supersedes all tiers and controls `.specify/`, `.github/`, constitution.  
 **Categories** (4 total):
 
-1. **Spec-System** (`platform/spec-system/spec.md`, spec-id: `spec-001`, **META-SPEC**)
+1. **Spec-System** (`platform/spec-system/spec.md`, spec-id: `spec`, **META-SPEC**)
    - Purpose: Defines the category-based spec system itself (self-referential meta-specification)
    - Example: YAML frontmatter structure, 6-tier hierarchy, precedence algorithm, validation rules
    - Is-Meta: true (defines the system governing all specs)
    - Dependencies: None (foundational platform standard)
    - Status: Draft v1.0.0-draft
 
-2. **Artifact-Org** (`platform/artifact-org/spec.md`, spec-id: `artifact-001`)
+2. **Artifact-Org** (`platform/artifact-org/spec.md`, spec-id: `artifact`)
    - Purpose: Directory structure, naming conventions, artifact organization
    - Example: /artifacts/applications/<appname>/{iac, scripts, pipelines, docs} structure
-   - Dependencies: spec-001 (follows spec system structure)
+   - Dependencies: spec (follows spec system structure)
    - Status: Published v1.0.0
 
-3. **IaC-Linting** (`platform/iac-linting/spec.md`, spec-id: `lint-001`)
+3. **IaC-Linting** (`platform/iac-linting/spec.md`, spec-id: `lint`)
    - Purpose: Code quality standards for Bicep, PowerShell, YAML
    - Example: bicep build validation, PSScriptAnalyzer, yamllint, errors block PR merge
    - Dependencies: None (foundational platform standard)
    - Status: Draft v1.0.0-draft
 
-4. **Policy-as-Code** (`platform/policy-as-code/spec.md`, spec-id: `pac-001`)
+4. **Policy-as-Code** (`platform/policy-as-code/spec.md`, spec-id: `pac`)
    - Purpose: Azure Policy enforcement, remediation tasks, compliance dashboards
    - Example: Policies for encryption, data residency, tagging, SKU restrictions, automatic remediation
    - Dependencies: compliance-framework (policies enforce compliance), access-control (policies enforce access rules)
@@ -736,7 +736,7 @@ ALL category specs MUST include YAML frontmatter with mandatory fields:
 ---
 tier: business | security | infrastructure | platform | application
 category: cost | governance | data-protection | compute | ... (14 categories)
-spec-id: unique-id (e.g., cost-001, dp-001, compute-001)
+spec-id: unique-id (e.g., cost, dp, compute)
 version: semver (1.0.0, 1.0.0-draft, etc.)
 status: draft | published | deprecated
 created: YYYY-MM-DD

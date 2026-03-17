@@ -20,7 +20,7 @@ metadata:
 categories:
   
   - category: compute
-    spec-id: compute-001
+    spec-id: compute
     version: "1.0.0"
     file: compute/spec.md
     name: "Compute"
@@ -34,12 +34,12 @@ categories:
     depends-on:
       - tier: business
         category: cost
-        spec-id: cost-001
+        spec-id: cost
         reason: "Compute SKU selection must satisfy cost targets"
     affected-by: [business/cost, business/governance]
     
   - category: storage
-    spec-id: stor-001
+    spec-id: stor
     version: "1.0.0-draft"
     file: storage/spec.md
     name: "Storage"
@@ -53,16 +53,16 @@ categories:
     depends-on:
       - tier: infrastructure
         category: compute
-        spec-id: compute-001
+        spec-id: compute
         reason: "Compute workload determines required storage tier"
       - tier: business
         category: compliance-framework
-        spec-id: comp-001
+        spec-id: comp
         reason: "Data residency and retention requirements constrain storage choices"
     depends-on-applies: "Storage tier is calculated as: Compute Workload -> Required IOPS/Throughput -> Storage SKU"
     
   - category: networking
-    spec-id: net-001
+    spec-id: net
     version: "1.0.0-draft"
     file: networking/spec.md
     name: "Networking"
@@ -76,12 +76,12 @@ categories:
     depends-on:
       - tier: business
         category: governance
-        spec-id: gov-001
+        spec-id: gov
         reason: "Network connectivity and SLA definitions from business governance"
     depends-on-applies: "Network availability target (from SLA) determines redundancy level"
     
   - category: cicd-pipeline
-    spec-id: cicd-001
+    spec-id: cicd
     version: "1.0.0-draft"
     file: cicd-pipeline/spec.md
     name: "CI/CD Pipeline"
@@ -94,15 +94,15 @@ categories:
     depends-on:
       - tier: business
         category: governance
-        spec-id: gov-001
+        spec-id: gov
         reason: "Production deployments require approval gates per business governance"
       - tier: infrastructure
         category: compute
-        spec-id: compute-001
+        spec-id: compute
         reason: "Deployment targets must exist per compute specifications"
 
   - category: iac-modules
-    spec-id: iac-001
+    spec-id: iac
     version: "1.0.0"
     file: iac-modules/spec.md
     name: "Infrastructure as Code Modules"
@@ -116,23 +116,23 @@ categories:
     depends-on:
       - tier: business
         category: cost
-        spec-id: cost-001
+        spec-id: cost
         reason: "Wrapper modules enforce cost-optimized SKU selections (B-series VMs, Burstable MySQL)"
       - tier: security
         category: data-protection
-        spec-id: dp-001
+        spec-id: dp
         reason: "Wrapper modules enforce encryption, TLS 1.2+, backup retention, soft delete"
       - tier: security
         category: access-control
-        spec-id: ac-001
+        spec-id: ac
         reason: "Wrapper modules enforce SSH keys, VNet integration, RBAC, managed identity"
       - tier: security
         category: compliance-framework
-        spec-id: comp-001
+        spec-id: comp
         reason: "Wrapper modules enforce US regions only, NIST 800-171 tagging"
       - tier: platform
         category: linting
-        spec-id: lint-001
+        spec-id: lint
         reason: "All modules pass bicep build, include README.md and parameters.json"
 
 # Category relationships

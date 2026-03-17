@@ -26,28 +26,28 @@ Discussion Prompts:
 
 ## 1A. Deterministic Script-Driven Controls (Platform-Meta)
 
-- [ ] Add a platform-meta decision policy: deterministic outputs must be script-driven.
-- [ ] Add a companion policy: interpretation-friendly outputs may be spec/template-driven.
-- [ ] Mirror Speckit split of responsibilities:
-- [ ] scripts own deterministic scaffolding, validation, and gating
-- [ ] templates own structured content guidance and human/AI interpretation zones
-- [ ] Create a classification matrix for each toolkit component:
-- [ ] `execution-mode: script-enforced` (no AI/user interpretation in output shape)
-- [ ] `execution-mode: spec-interpreted` (AI/user interpretation allowed within constraints)
-- [ ] Require every platform toolkit component to declare one execution mode in metadata.
-- [ ] Require every script-enforced component to provide:
-- [ ] deterministic input contract
-- [ ] deterministic output contract
-- [ ] idempotency behavior
-- [ ] validation checks
-- [ ] Add CI gate: fail if a script-enforced component is implemented via template-only flow.
-- [ ] Add CI gate: fail if component metadata is missing `execution-mode`.
-- [ ] Add script interface standard (aligned with Speckit patterns):
-- [ ] predictable CLI parameters (`-Json`, `-Help`, explicit required args)
-- [ ] deterministic machine-readable output mode (`-Json`)
-- [ ] prerequisite checks before mutation
-- [ ] explicit non-zero exit on gate failures
-- [ ] idempotent rerun behavior for same inputs
+- [x] Add a platform-meta decision policy: deterministic outputs must be script-driven.
+- [x] Add a companion policy: interpretation-friendly outputs may be spec/template-driven.
+- [x] Mirror Speckit split of responsibilities:
+- [x] scripts own deterministic scaffolding, validation, and gating
+- [x] templates own structured content guidance and human/AI interpretation zones
+- [x] Create a classification matrix for each toolkit component:
+- [x] `execution-mode: script-enforced` (no AI/user interpretation in output shape)
+- [x] `execution-mode: spec-interpreted` (AI/user interpretation allowed within constraints)
+- [x] Require every platform toolkit component to declare one execution mode in metadata.
+- [x] Require every script-enforced component to provide:
+- [x] deterministic input contract
+- [x] deterministic output contract
+- [x] idempotency behavior
+- [x] validation checks
+- [x] Add CI gate: fail if a script-enforced component is implemented via template-only flow.
+- [x] Add CI gate: fail if component metadata is missing `execution-mode`.
+- [x] Add script interface standard (aligned with Speckit patterns):
+- [x] predictable CLI parameters (`-Json`, `-Help`, explicit required args)
+- [x] deterministic machine-readable output mode (`-Json`)
+- [x] prerequisite checks before mutation
+- [x] explicit non-zero exit on gate failures
+- [x] idempotent rerun behavior for same inputs
 
 Mandatory Script-Enforced Example:
 - [x] Application registration is script-enforced only.
@@ -113,11 +113,11 @@ Discussion Prompts:
 
 ## 4. Standardize Role Context Metadata
 
-- [ ] Define a required role context block for specs, plans, and tasks.
-- [ ] Add fields: `declared-role`, `authority-scope`, `upstream-snapshot`, `cascade-run-id`.
-- [ ] Add fields: `change-intent`, `decision-mode`, `requested-by`, `approved-by` (optional for early phase).
-- [ ] Update templates so new artifacts always include role context metadata.
-- [ ] Backfill key existing files with the new metadata format.
+- [x] Define a required role context block for specs, plans, and tasks.
+- [x] Add fields: `declared-role`, `authority-scope`, `upstream-snapshot`, `cascade-run-id`.
+- [x] Add fields: `change-intent`, `decision-mode`, `requested-by`, `approved-by` (optional for early phase).
+- [x] Update templates so new artifacts always include role context metadata.
+- [x] Backfill key existing files with the new metadata format.
 
 Definition Clarifications:
 - `upstream-snapshot`: a pinned reference to upstream spec versions used during decision time (for reproducibility).

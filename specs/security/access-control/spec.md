@@ -2,11 +2,19 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: security
 category: access-control
-spec-id: ac-001
+spec-id: ac
 version: 1.0.0-draft
 status: draft
 created: 2026-02-07
 description: "Authentication, authorization, RBAC, SSH keys only (no passwords), MFA"
+
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "1.0.0-draft"
+    date: "2026-02-07"
+    git-tag: spec/ac/1.0.0-draft
+    summary: "Initial draft. Authentication, authorization, RBAC, SSH key requirements, and MFA standards."
 
 # Dependencies
 depends-on: []
@@ -22,7 +30,7 @@ precedence:
   overrides:
     - tier: business
       category: governance
-      spec-id: gov-001
+      spec-id: gov
       reason: "Access control is foundational; governance includes break-glass exceptions for security incidents"
 
 # Relationships
@@ -36,7 +44,7 @@ adhered-by:
 
 **Tier**: security  
 **Category**: access-control  
-**Spec ID**: ac-001  
+**Spec ID**: ac  
 **Created**: 2026-02-07  
 **Status**: Draft  
 

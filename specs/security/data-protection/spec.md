@@ -2,12 +2,32 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: security
 category: data-protection
-spec-id: dp-001
+spec-id: dp
 version: 1.0.0
 status: published
 created: 2026-02-06
 last-updated: 2026-02-07
 description: "Encryption (AES-256), key management, TLS 1.2+, HSM requirements"
+
+# Role Context (per governance v2.0.0)
+role-context:
+  declared-role: security
+  authority-scope: content
+  change-intent: "Define encryption, key management, and HSM requirements"
+  upstream-snapshot: []
+  cascade-run-id: null
+  decision-mode: approved
+  requested-by: "Platform Engineering Team"
+  approved-by: null
+
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "1.0.0"
+    date: "2026-02-06"
+    git-tag: spec/dp/1.0.0
+    summary: "Initial published version. Encryption standards (AES-256), key management, TLS 1.2+, and HSM requirements."
+# No upstream dependencies — security/data-protection is a root spec.
 
 # Dependencies
 depends-on: []
@@ -23,7 +43,7 @@ precedence:
   overrides:
     - tier: business
       category: cost
-      spec-id: cost-001
+      spec-id: cost
       reason: "Data protection requirements (HSM, AES-256, key rotation) are non-negotiable and override cost optimization"
 
 # Relationships
@@ -37,15 +57,15 @@ adhered-by:
 
 **Tier**: security  
 **Category**: data-protection  
-**Spec ID**: dp-001  
+**Spec ID**: dp  
 **Created**: 2026-02-05  
 **Status**: Published  
-**Derived From**: business/cost-001 (cost constraints), business/compliance-framework (NIST requirements)
+**Derived From**: business/cost (cost constraints), business/compliance-framework (NIST requirements)
 
 ## Spec Source & Hierarchy
 
 **Parent Tier Specs**:
-- **business/cost-001** (v1.0.0) - Drives cost considerations but security is non-negotiable
+- **business/cost** (v1.0.0) - Drives cost considerations but security is non-negotiable
 - **business/compliance-framework** (v1.0.0-draft) - NIST 800-171 compliance requirements
 
 **Derived Downstream Specs**:
@@ -144,5 +164,5 @@ Security architect reviews compliance requirements: *"We must maintain NIST 800-
 
 **Spec Version**: 1.0.0  
 **Approved Date**: 2026-02-05  
-**Overrides**: business/cost-001 (encryption is non-negotiable)  
+**Overrides**: business/cost (encryption is non-negotiable)  
 **Compliance**: NIST 800-171 (3.13.11, 3.13.8)

@@ -86,124 +86,237 @@ override-policy:
     - justification: "Mandatory written justification citing emergency condition"
     - audit-entry: "Override must be logged with timestamp, actor, justification, and affected specs"
   note: "Only platform-meta-governance authority can invoke emergency overrides. All overrides are auditable and time-limited."
+  script-enforced-bypass: "Emergency overrides CANNOT bypass script-enforced execution mode. Scripts must still run; only their inputs/thresholds may be overridden with audit justification."
+
+# ============================================================================
+# EXECUTION MODE POLICY (Platform-Meta Governance)
+#
+# Execution mode is inferred from file type — no per-file declaration needed:
+#   .ps1 files under .specify/scripts/  → script-enforced (deterministic)
+#   .md  files under .specify/templates/ → spec-interpreted (guided variation)
+#
+# This policy is owned by platform-meta-governance and cannot be overridden.
+#
+# script-enforced (.ps1):
+#   - Output shape is deterministic and non-interpretable
+#   - Must expose: -Json (machine output), -Help (usage)
+#   - Must perform prerequisite checks before mutations
+#   - Must exit non-zero on failures
+#   - Must be idempotent for identical inputs
+#
+# spec-interpreted (.md templates):
+#   - AI/user interpretation is allowed within template constraints
+#   - Template provides structure, placeholders, and governance guardrails
+#   - Output shape varies by context (that's the point)
+#
+# Decision rule: If output must always be consistent and non-interpretable,
+# implement as a script. If output benefits from variation, use a template.
+# ============================================================================
+execution-mode-policy:
+  authority: platform-meta-governance
+  mode-inference:
+    script-enforced: ".ps1 files under .specify/scripts/"
+    spec-interpreted: ".md files under .specify/templates/"
+    note: "Mode is determined by file type and location. No per-file declaration required."
+
+  script-enforced-requirements:
+    interface-standard:
+      - "Predictable CLI parameters (-Json, -Help, explicit required args)"
+      - "Deterministic machine-readable output mode via -Json"
+      - "Prerequisite checks before any mutation"
+      - "Explicit non-zero exit on gate failures"
+      - "Idempotent rerun behavior for identical inputs"
+    contracts:
+      - deterministic-input: "Documented input parameters with types and validation"
+      - deterministic-output: "Known output shape (file writes, JSON, exit codes)"
+      - idempotency: "Same inputs produce same outputs; no side effects on rerun"
+      - validation: "Self-validates inputs and preconditions before acting"
+
+  # Classification matrix: documents purpose and contracts for each component.
+  # Mode is implicit from file type — scripts are enforced, templates are interpreted.
+  toolkit-components:
+    scripts:
+      common.ps1:
+        purpose: "Shared helper functions (repo root, branch detection, git checks)"
+        contracts: { input: "none (library)", output: "function definitions", idempotent: true }
+
+      create-new-feature.ps1:
+        purpose: "Deterministic feature branch and directory scaffolding"
+        contracts: { input: "feature description, optional short-name/number", output: "branch + directory created", idempotent: true }
+
+      setup-plan.ps1:
+        purpose: "Copy plan template to feature directory"
+        contracts: { input: "feature path", output: "plan.md file created", idempotent: true }
+
+      setup-application-artifacts.ps1:
+        purpose: "Create/validate application artifact directory structure"
+        contracts: { input: "app-name, spec-tier", output: "directory structure created/validated", idempotent: true }
+
+      check-prerequisites.ps1:
+        purpose: "Prerequisite gate checks before downstream operations"
+        contracts: { input: "feature context", output: "pass/fail with -Json/-PathsOnly modes", idempotent: true }
+
+      update-agent-context.ps1:
+        purpose: "Update agent context files from plan data"
+        contracts: { input: "plan file path", output: "agent context file updated", idempotent: true }
+
+      register-application.ps1:
+        purpose: "Register new application in _index.yaml registry"
+        contracts: { input: "app-id, app-name, description", output: "registry entry added", idempotent: true }
+
+      validate-registry.ps1:
+        purpose: "CI-friendly registry integrity validation"
+        contracts: { input: "none (reads registry)", output: "pass/fail with -Json mode", idempotent: true }
+
+      validate-spec-versions.ps1:
+        purpose: "Detects version drift between downstream specs and upstream dependency pins"
+        contracts: { input: "none (scans specs/)", output: "drift report with -Json mode", idempotent: true }
+
+      validate-execution-modes.ps1:
+        purpose: "CI gate verifying toolkit components are registered and scripts meet interface standard"
+        contracts: { input: "none (scans .specify/)", output: "pass/fail with -Json mode", idempotent: true }
+
+    templates:
+      spec-template.md:
+        purpose: "Structured guidance for specification authoring"
+        interpretation-zones: "user scenarios, acceptance criteria, description, hierarchy references"
+
+      plan-template.md:
+        purpose: "Structured guidance for implementation planning"
+        interpretation-zones: "technical context, design decisions, phase breakdown, risk assessment"
+
+      tasks-template.md:
+        purpose: "Structured guidance for task generation"
+        interpretation-zones: "task descriptions, effort estimates, dependency ordering"
+
+      checklist-template.md:
+        purpose: "Structured guidance for review checklists"
+        interpretation-zones: "checklist items, acceptance gates, review criteria"
+
+      agent-file-template.md:
+        purpose: "Structured guidance for agent context files"
+        interpretation-zones: "agent instructions, context summaries, role directives"
 
 # Category tree structure
+# The version field on each entry is the AUTHORITATIVE latest published version for that spec.
+# This is the reference used by validate-spec-versions.ps1 for drift detection.
+# When a spec file version is bumped, update the version here in the same commit.
 categories:
   business:
     cost:
-      spec-id: cost-001
-      version: "1.0.0"
+      spec-id: cost
+      version: "2.0.0"
       file: business/cost/spec.md
       description: "Cost optimization and budget targets"
       
     governance:
-      spec-id: gov-001
+      spec-id: gov
       version: "1.0.0-draft"
       file: business/governance/spec.md
       description: "Approval workflows, SLAs, and governance processes"
       
     compliance-framework:
-      spec-id: comp-001
+      spec-id: comp
       version: "1.0.0-draft"
       file: business/compliance-framework/spec.md
       description: "Regulatory and compliance requirements (NIST, etc.)"
       
   security:
     access-control:
-      spec-id: ac-001
+      spec-id: ac
       version: "1.0.0-draft"
       file: security/access-control/spec.md
       description: "Authentication, authorization, and RBAC"
       
     data-protection:
-      spec-id: dp-001
+      spec-id: dp
       version: "1.0.0"
       file: security/data-protection/spec.md
       description: "Encryption, keys, and confidentiality"
       
     audit-logging:
-      spec-id: audit-001
+      spec-id: audit
       version: "1.0.0-draft"
       file: security/audit-logging/spec.md
       description: "Audit trails, monitoring, and logging"
       
   infrastructure:
     compute:
-      spec-id: compute-001
-      version: "1.0.0"
+      spec-id: compute
+      version: "2.0.0"
       file: infrastructure/compute/spec.md
       description: "VM SKUs, autoscaling, and compute resources"
       
     networking:
-      spec-id: net-001
+      spec-id: net
       version: "1.0.0-draft"
       file: infrastructure/networking/spec.md
       description: "VNets, NSGs, load balancing, and connectivity"
       
     storage:
-      spec-id: stor-001
+      spec-id: stor
       version: "1.0.0-draft"
       file: infrastructure/storage/spec.md
       description: "Disk types, replication, and backup"
       
     cicd-pipeline:
-      spec-id: cicd-001
+      spec-id: cicd
       version: "1.0.0-draft"
       file: infrastructure/cicd-pipeline/spec.md
       description: "Deployment automation, testing, and validation"
       
     iac-modules:
-      spec-id: iac-001
-      version: "1.0.0"
+      spec-id: iac
+      version: "1.0.0-draft"
       file: infrastructure/iac-modules/spec.md
       description: "Centralized reusable Bicep wrapper modules based on AVM"
       
   platform:
     artifact-org:
-      spec-id: artifact-001
+      spec-id: artifact
       version: "1.0.0"
       file: platform/artifact-org/spec.md
       description: "Artifact repository organization and structure"
       
     iac-linting:
-      spec-id: lint-001
+      spec-id: lint
       version: "1.0.0-draft"
       file: platform/iac-linting/spec.md
       description: "IaC code quality and linting standards"
       
     policy-as-code:
-      spec-id: pac-001
+      spec-id: pac
       version: "1.0.0-draft"
       file: platform/policy-as-code/spec.md
       description: "Azure Policy and governance automation"
       
     spec-system:
-      spec-id: spec-001
+      spec-id: spec
       version: "1.0.0-draft"
       file: platform/spec-system/spec.md
       description: "Meta-specifications for spec format and system"
 
   devops:
     deployment-automation:
-      spec-id: deploy-001
+      spec-id: deploy
       version: "1.0.0-placeholder"
       file: devops/deployment-automation/spec.md
       description: "Deployment patterns, blue-green, canary, rollback strategies"
 
     observability:
-      spec-id: obs-001
+      spec-id: obs
       version: "1.0.0-placeholder"
       file: devops/observability/spec.md
       description: "Logging, metrics, tracing, alerting, SLI/SLO definitions"
 
     environment-management:
-      spec-id: env-001
+      spec-id: env
       version: "1.0.0-placeholder"
       file: devops/environment-management/spec.md
       description: "Environment definitions, configuration management, secrets management"
 
     ci-cd-orchestration:
-      spec-id: cicd-orch-001
+      spec-id: cicd-orch
       version: "1.0.0-placeholder"
       file: devops/ci-cd-orchestration/spec.md
       description: "CI/CD workflow orchestration, build and deployment pipelines"
@@ -248,64 +361,64 @@ conflicts:
   - id: conflict-001
     name: "Cost vs Compute"
     description: "Business cost targets vs infrastructure performance preferences"
-    affected-specs: [cost-001, compute-001]
-    winner: cost-001
+    affected-specs: [cost, compute]
+    winner: cost
     rationale: "Business budget constrains infrastructure design"
     
   - id: conflict-002
     name: "Cost vs Data-Protection"
     description: "Business cost optimization vs security encryption/HSM requirements"
-    affected-specs: [cost-001, dp-001]
-    winner: dp-001
+    affected-specs: [cost, dp]
+    winner: dp
     rationale: "Security wins; encryption is non-negotiable"
     
   - id: conflict-003
     name: "Governance vs CI/CD"
     description: "Business approval gates vs infrastructure automation"
-    affected-specs: [gov-001, cicd-001]
-    winner: gov-001
+    affected-specs: [gov, cicd]
+    winner: gov
     rationale: "Production requires approval gates; dev can auto-deploy"
     
   - id: conflict-004
     name: "Compliance vs Storage Cost"
     description: "Business compliance vs infrastructure storage costs"
-    affected-specs: [comp-001, stor-001]
-    winner: comp-001
+    affected-specs: [comp, stor]
+    winner: comp
     rationale: "Regulatory requirements bind infrastructure decisions"
     
   - id: conflict-005
     name: "Access-Control vs Governance"
     description: "Security access control vs business governance processes"
-    affected-specs: [ac-001, gov-001]
-    winner: ac-001
+    affected-specs: [ac, gov]
+    winner: ac
     rationale: "Access control is foundational; governance includes break-glass exceptions"
     
   - id: conflict-006
     name: "Compute vs Storage"
     description: "Infrastructure compute SKUs vs storage tier decisions"
-    affected-specs: [compute-001, stor-001]
-    winner: compute-001
+    affected-specs: [compute, stor]
+    winner: compute
     rationale: "Workload characteristics determine storage tier"
     
   - id: conflict-007
     name: "Cost vs Networking"
     description: "Business cost optimization vs infrastructure availability/networking"
-    affected-specs: [cost-001, net-001]
+    affected-specs: [cost, net]
     winner: "dual-gate: cost + business SLA"
     rationale: "Availability target (from business SLA) drives network design within cost constraints"
 
   - id: conflict-008
     name: "Observability vs Cost"
     description: "DevOps observability requirements (logging, tracing, metrics retention) vs business cost targets"
-    affected-specs: [obs-001, cost-001]
-    winner: cost-001
+    affected-specs: [obs, cost]
+    winner: cost
     rationale: "Business cost constraints cap observability scope; minimum viable observability defined by SLA requirements"
 
   - id: conflict-009
     name: "Deployment-Automation vs Governance"
     description: "DevOps deployment automation (continuous deployment, fast rollouts) vs business governance approval gates"
-    affected-specs: [deploy-001, gov-001]
-    winner: gov-001
+    affected-specs: [deploy, gov]
+    winner: gov
     rationale: "Production deployments require governance approval gates; non-production environments may auto-deploy"
 
 # Validation schema requirements
@@ -316,9 +429,116 @@ validation:
     - spec-id
     - version
     - description
+
+  # Role context metadata — required on all specs, plans, and tasks (per Section 4 governance)
+  # Proves who made the change, under what authority, and against which upstream constraints.
+  role-context:
+    required-fields:
+      - declared-role       # platform | business | security | infrastructure | devops | application
+      - authority-scope     # platform-meta-governance | platform-content-standards | content
+      - change-intent       # Brief description of what this change aims to achieve
+    optional-fields:
+      - upstream-snapshot   # Array of {spec-id, version} pinned at decision time for reproducibility
+      - cascade-run-id      # Populated by automation when a cascade is triggered
+      - decision-mode       # autonomous | reviewed | approved
+      - requested-by        # Author or system that initiated the change
+      - approved-by         # Reviewer who approved (recommended for production-impacting changes)
+    valid-declared-roles:
+      - platform
+      - business
+      - security
+      - infrastructure
+      - devops
+      - application
+    valid-authority-scopes:
+      - platform-meta-governance
+      - platform-content-standards
+      - content
+    valid-decision-modes:
+      - autonomous    # No human review required (e.g., automated scaffolding)
+      - reviewed      # Human reviewed but no formal approval gate
+      - approved      # Formal approval required (e.g., production-impacting changes)
+    upstream-snapshot-format:
+      note: "Explicit version map — each entry is a {spec-id, version} pair"
+      example:
+        - spec-id: cost
+          version: "2.0.0"
+        - spec-id: dp
+          version: "1.0.0"
     
   version-format: "semver with -draft|-alpha|-beta|-rc suffixes"
-  
+
+  # ============================================================================
+  # VERSION COMPLIANCE SCHEMA
+  #
+  # Governs how downstream specs track and upgrade their compliance with upstream
+  # spec versions. Enables a structured upgrade path when upstream specs change.
+  #
+  # Example: iac-modules 1.2.0 is compliant with cost 2.5.0.
+  #          cost releases 3.0.0.
+  #          iac-modules compliance-state becomes "lagging".
+  #          When iac-modules upgrades to 1.3.0 (adopting cost 3.0.0),
+  #          compliance-state returns to "current".
+  # ============================================================================
+  version-compliance:
+    note: "The 'version' field in the categories map is the authoritative latest published version per spec-id."
+
+    depends-on-version:
+      required: true
+      meaning: "The upstream spec version this spec was written to comply with. Must be pinned — not a range."
+
+    compliance-state:
+      required: true
+      values:
+        current: "Compliant with the latest published version of all upstream specs"
+        lagging: "One or more upstream specs have newer versions; upgrade not yet started"
+        pending-upgrade: "Upgrade in progress; see upgrade-path for target versions and timeline"
+
+    upgrade-path:
+      required-when: "compliance-state is 'lagging' or 'pending-upgrade'"
+      meaning: "Documents the planned upgrade for each lagging upstream dependency"
+      fields:
+        - spec-id: "Upstream spec-id being upgraded toward"
+        - compliant-with-version: "Version this spec is currently pinned to"
+        - target-version: "Version being upgraded to"
+        - planned-date: "ISO date (optional)"
+        - notes: "Additional context (optional)"
+
+    semver-drift-policy:
+      major-version-bump: "ERROR — breaking change; downstream MUST upgrade to remain compliant"
+      minor-version-bump: "WARNING — additive change; downstream SHOULD upgrade"
+      patch-version-bump: "INFO — fix only; downstream may pick up opportunistically"
+      note: "semver IS the breaking-change flag. Major bump = breaking by definition. No separate field needed."
+
+  version-history:
+    note: >
+      Every spec carries an in-file version-history block recording each published version.
+      Each entry with a `git-tag` field is resolvable from git history.
+      Entries without a `git-tag` predate the tagging system and are not resolvable by tag.
+    required: true
+    entry-fields:
+      version:   "Semver string matching the version that was published (required)"
+      date:      "ISO-8601 date the version was published (required)"
+      git-tag:   "Git tag name in the form spec/<spec-id>/<version> (required for versions published after this system was established)"
+      summary:   "Human-readable description of changes. For major bumps, describe what broke and why. (required)"
+    git-tag-convention:
+      format: "spec/<spec-id>/<version>"
+      examples:
+        - "spec/cost/2.0.0"
+        - "spec/compute/2.0.0"
+        - "spec/lint/1.0.0-draft"
+      create: "git tag spec/<spec-id>/<version>  # run once when bumping version, before push"
+      resolve: "git show spec/<spec-id>/<version>:specs/<tier>/<category>/spec.md"
+      note: >
+        Tags point to commits, not individual files. Multiple spec tags may share a commit
+        (when two specs are bumped together). The tag name encodes spec-id and version;
+        the spec file path is always stable, so git show reliably retrieves any historical version.
+    validation-rules:
+      - "Every version listed in depends-on[].version must have a resolvable git tag"
+      - "Every version-history entry with a git-tag field must have a matching tag in git"
+      - "The current spec version must appear as the first entry in version-history"
+      - "Entries must be in descending version order (newest first)"
+
   dependencies:
     validation: "Directed acyclic graph; cycles not allowed"
     resolution: "All upstream dependencies must be satisfied before downstream use"

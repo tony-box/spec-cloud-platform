@@ -137,7 +137,7 @@ specs/application/mycoolapp/spec.md (was 001-cost-optimized-vm-deployment)
 - [ ] T201 [P] Migrate business/cost spec
   - From: business/001-cost-reduction-targets/spec.md
   - To: business/cost/spec.md
-  - Add: Frontmatter (tier, category, spec-id: cost-001, version: 1.0.0)
+  - Add: Frontmatter (tier, category, spec-id: cost, version: 1.0.0)
   - Add: depends-on, precedence fields
   - Preserve: All existing content
   - Output: business/cost/spec.md with frontmatter
@@ -157,7 +157,7 @@ specs/application/mycoolapp/spec.md (was 001-cost-optimized-vm-deployment)
 - [ ] T204 [P] Migrate infrastructure/compute spec
   - From: infrastructure/001-cost-optimized-compute-modules/spec.md
   - To: infrastructure/compute/spec.md
-  - Add: Frontmatter (spec-id: compute-001)
+  - Add: Frontmatter (spec-id: compute)
   - Add: depends-on business/cost, security/data-protection
   
 - [ ] T205 [P] Create infrastructure/networking spec
@@ -175,7 +175,7 @@ specs/application/mycoolapp/spec.md (was 001-cost-optimized-vm-deployment)
 - [ ] T207 [P] Migrate platform/artifact-org spec
   - From: platform/001-application-artifact-organization/spec.md
   - To: platform/artifact-org/spec.md
-  - Add: Frontmatter (spec-id: artifact-001)
+  - Add: Frontmatter (spec-id: artifact)
   - Preserve: All directory structure requirements
   
 - [ ] T208 [P] Create platform/iac-linting spec (new category)

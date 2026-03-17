@@ -24,7 +24,7 @@
 
 .PARAMETER AdheresTo
     Comma-separated list of upstream spec-ids this app depends on
-    (e.g. 'cost-001,dp-001,compute-001').
+    (e.g. 'cost,dp,compute').
 
 .PARAMETER Json
     Output result in JSON format for machine consumption.
@@ -33,7 +33,7 @@
     Show usage information and exit.
 
 .EXAMPLE
-    ./register-application.ps1 -AppId "payment-service" -AppName "Payment Service" -Description "Handles payment processing" -AdheresTo "cost-001,dp-001,compute-001"
+    ./register-application.ps1 -AppId "payment-service" -AppName "Payment Service" -Description "Handles payment processing" -AdheresTo "cost,dp,compute"
 
 .EXAMPLE
     ./register-application.ps1 -AppId "payment-service" -AppName "Payment Service" -Description "Handles payment processing" -Json

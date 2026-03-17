@@ -5,10 +5,10 @@ description: "Task list for Infrastructure as Code (IaC) Wrapper Modules impleme
 # Tasks: Infrastructure IaC Modules (Wrapper Modules based on AVM)
 
 **Input**: Specification documents from `/specs/infrastructure/iac-modules/`  
-**Prerequisites**: spec.md (required), upstream specs (cost-001, dp-001, ac-001, comp-001, lint-001)  
+**Prerequisites**: spec.md (required), upstream specs (cost, dp, ac, comp, lint)  
 **Tier**: infrastructure  
 **Category**: iac-modules  
-**Spec ID**: iac-001
+**Spec ID**: iac
 
 ---
 
@@ -16,7 +16,7 @@ description: "Task list for Infrastructure as Code (IaC) Wrapper Modules impleme
 
 These tasks were created via:
 - **Role Declared**: Infrastructure
-- **Source Tier Spec**: infrastructure/iac-modules (spec-id: iac-001)
+- **Source Tier Spec**: infrastructure/iac-modules (spec-id: iac)
 - **Purpose**: Create centralized reusable Bicep wrapper modules based on Azure Verified Modules (AVM)
 
 ---
@@ -32,7 +32,7 @@ These tasks were created via:
 **Success Criteria**:
 - ✅ All 8 wrapper modules pass `bicep build` validation
 - ✅ Test deployment succeeds in dev subscription
-- ✅ 100% compliance with upstream specs (cost-001, dp-001, ac-001, comp-001)
+- ✅ 100% compliance with upstream specs (cost, dp, ac, comp)
 - ✅ mycoolapp can migrate from inline Bicep to wrapper modules
 
 ---
@@ -50,7 +50,7 @@ These tasks were created via:
 **Purpose**: Create directory structure and validate alignment with upstream specs
 
 - [X] T001 setup Create `/artifacts/infrastructure/iac-modules/` directory structure ✅
-- [X] T002 setup Validate spec alignment with upstream dependencies (cost-001, dp-001, ac-001, comp-001, lint-001) ✅
+- [X] T002 setup Validate spec alignment with upstream dependencies (cost, dp, ac, comp, lint) ✅
 - [X] T003 setup [P] Document AVM module versions to use (create avm-versions.md tracking document) ✅
 - [X] T004 setup [P] Create module validation checklist template ✅
 
@@ -82,8 +82,8 @@ These tasks were created via:
 - `/artifacts/infrastructure/iac-modules/avm-wrapper-vnet/parameters.json`
 
 **Compliance**:
-- Location: US regions only (centralus/eastus) per comp-001
-- Address space: /16 CIDR per net-001
+- Location: US regions only (centralus/eastus) per comp
+- Address space: /16 CIDR per net
 - NSG association required
 - Tags: compliance=nist-800-171
 
@@ -103,7 +103,7 @@ These tasks were created via:
 - `/artifacts/infrastructure/iac-modules/avm-wrapper-nsg/parameters.json`
 
 **Compliance**:
-- SSH (22): Restricted to corporate VPN only (default deny per ac-001)
+- SSH (22): Restricted to corporate VPN only (default deny per ac)
 - HTTP (80), HTTPS (443): Allow from internet
 - Deny all other inbound traffic
 - Tags: compliance=nist-800-171
@@ -133,7 +133,7 @@ These tasks were created via:
 - Standard SKU (for zone redundancy)
 - Static allocation
 - DDoS Protection Standard
-- Location: US regions only per comp-001
+- Location: US regions only per comp
 
 ---
 
@@ -157,12 +157,12 @@ These tasks were created via:
 - `/artifacts/infrastructure/iac-modules/avm-wrapper-linux-vm/parameters.json`
 
 **Compliance**:
-- SKU: @allowed(['Standard_B2s', 'Standard_B4ms']) per cost-001
+- SKU: @allowed(['Standard_B2s', 'Standard_B4ms']) per cost
 - Image: Ubuntu 22.04 LTS
-- Authentication: SSH keys only (no passwords) per ac-001
-- Encryption: Azure Disk Encryption enabled per dp-001
+- Authentication: SSH keys only (no passwords) per ac
+- Encryption: Azure Disk Encryption enabled per dp
 - Managed identity: Enabled for Azure integration
-- Reserved instances: 3-year commitment for prod per cost-001
+- Reserved instances: 3-year commitment for prod per cost
 - Extensions: Azure Monitor VM Insights
 - cloud-init: LAMP stack provisioning support
 
@@ -182,10 +182,10 @@ These tasks were created via:
 - `/artifacts/infrastructure/iac-modules/avm-wrapper-managed-disk/parameters.json`
 
 **Compliance**:
-- Tier: Standard SSD (default per stor-001)
-- Replication: LRS (dev), ZRS (prod) per stor-001
-- Encryption: Enabled per dp-001
-- Location: US regions only per comp-001
+- Tier: Standard SSD (default per stor)
+- Replication: LRS (dev), ZRS (prod) per stor
+- Encryption: Enabled per dp
+- Location: US regions only per comp
 
 ---
 
@@ -203,12 +203,12 @@ These tasks were created via:
 - `/artifacts/infrastructure/iac-modules/avm-wrapper-key-vault/parameters.json`
 
 **Compliance**:
-- SKU: Premium (HSM-backed) for prod per dp-001, Standard for dev
+- SKU: Premium (HSM-backed) for prod per dp, Standard for dev
 - Authorization: Azure RBAC
 - Soft delete: Enabled (90-day retention)
-- Purge protection: Enabled for prod per dp-001
+- Purge protection: Enabled for prod per dp
 - Network rules: Azure services bypass, default deny
-- Location: US regions only per comp-001
+- Location: US regions only per comp
 
 ---
 
@@ -226,11 +226,11 @@ These tasks were created via:
 - `/artifacts/infrastructure/iac-modules/avm-wrapper-storage-account/parameters.json`
 
 **Compliance**:
-- Replication: Standard_LRS (dev), Standard_ZRS (prod) per stor-001
-- TLS: Minimum version 1.2 per dp-001
+- Replication: Standard_LRS (dev), Standard_ZRS (prod) per stor
+- TLS: Minimum version 1.2 per dp
 - Encryption: Microsoft-managed keys (default)
-- Blob soft delete: Enabled (30-day retention per comp-001)
-- Location: US regions only per comp-001
+- Blob soft delete: Enabled (30-day retention per comp)
+- Location: US regions only per comp
 
 ---
 
@@ -248,14 +248,14 @@ These tasks were created via:
 - `/artifacts/infrastructure/iac-modules/avm-wrapper-mysql-flexibleserver/parameters.json`
 
 **Compliance**:
-- SKU: Burstable_B1ms (dev), GeneralPurpose_D2ds_v4 (prod) per cost-001
+- SKU: Burstable_B1ms (dev), GeneralPurpose_D2ds_v4 (prod) per cost
 - MySQL version: 8.0 LTS
 - Storage: 20GB (dev), 32GB (prod) with auto-grow
-- High availability: Disabled (dev), Zone-redundant (prod) per gov-001 SLA requirements
-- Backup retention: 7 days (dev), 30 days (prod) per comp-001
-- SSL enforcement: Required (TLS 1.2+) per dp-001
-- Network: VNet integration only (no public access) per ac-001
-- Location: US regions only per comp-001
+- High availability: Disabled (dev), Zone-redundant (prod) per gov SLA requirements
+- Backup retention: 7 days (dev), 30 days (prod) per comp
+- SSL enforcement: Required (TLS 1.2+) per dp
+- Network: VNet integration only (no public access) per ac
+- Location: US regions only per comp
 
 ---
 
@@ -267,7 +267,7 @@ These tasks were created via:
 
 - [ ] T301 test Create integration test Bicep template using all 7 wrapper modules
 - [ ] T302 test Deploy integration test to dev subscription (full LAMP infrastructure)
-- [ ] T303 test Validate cost estimates match cost-001 targets (10% reduction)
+- [ ] T303 test Validate cost estimates match cost targets (10% reduction)
 - [ ] T304 test [P] Validate security compliance (encryption, SSH keys, US regions, TLS 1.2+)
 - [ ] T305 test [P] Validate NIST 800-171 compliance (tags, audit logging, retention)
 - [ ] T306 test [P] Run Azure Policy compliance scan on deployed resources
@@ -276,7 +276,7 @@ These tasks were created via:
 **Outputs**:
 - `/artifacts/infrastructure/iac-modules/tests/integration-test.bicep`
 - `/artifacts/infrastructure/iac-modules/tests/test-results.md`
-- Compliance report: All 7 modules satisfy cost-001, dp-001, ac-001, comp-001
+- Compliance report: All 7 modules satisfy cost, dp, ac, comp
 
 ---
 
@@ -289,7 +289,7 @@ These tasks were created via:
 - [X] T401 docs Create MODULE_CATALOG.md listing all 7 modules with descriptions and links
 - [X] T402 docs [P] Create GETTING_STARTED.md for application teams (how to consume modules)
 - [X] T403 docs [P] Create COMPLIANCE_MATRIX.md mapping modules to upstream spec requirements
-- [X] T404 docs [P] Update infrastructure/_categories.yaml to mark iac-001 as "published"
+- [X] T404 docs [P] Update infrastructure/_categories.yaml to mark iac as "published"
 - [X] T405 docs Create CHANGELOG.md for module version tracking
 
 **Outputs**:
@@ -310,7 +310,7 @@ These tasks were created via:
 - [ ] T502 migration Update mycoolapp/iac/main.bicep to reference wrapper modules
 - [ ] T503 migration Remove inline resource definitions from mycoolapp
 - [ ] T504 migration Test mycoolapp deployment in dev environment using wrapper modules
-- [ ] T505 migration Deploy mycoolapp to prod using wrapper modules (with approval gate per gov-001)
+- [ ] T505 migration Deploy mycoolapp to prod using wrapper modules (with approval gate per gov)
 - [ ] T506 migration Document migration lessons learned and update patterns
 
 **Outputs**:
@@ -453,4 +453,4 @@ These tasks were created via:
 **Document Version**: 1.0.0-draft  
 **Created**: 2026-02-07  
 **Owner**: Infrastructure Engineering Team  
-**Spec Reference**: infrastructure/iac-modules (iac-001)
+**Spec Reference**: infrastructure/iac-modules (iac)

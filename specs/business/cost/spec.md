@@ -2,14 +2,35 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: business
 category: cost
-spec-id: cost-001
+spec-id: cost
 version: 2.0.0
 status: published
 created: 2026-02-06
 last-updated: 2026-02-09
 description: "Baseline infrastructure cost targets balancing cost efficiency, resiliency, and performance"
 
-# Dependencies
+# Role Context (per governance v2.0.0)
+role-context:
+  declared-role: business
+  authority-scope: content
+  change-intent: "Establish baseline infrastructure cost targets per workload tier"
+  upstream-snapshot: []
+  cascade-run-id: null
+  decision-mode: approved
+  requested-by: "Platform Engineering Team"
+  approved-by: null
+
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "2.0.0"
+    date: "2026-02-09"
+    git-tag: spec/cost/2.0.0
+    summary: "Introduced per-workload-tier cost targets (Production/Staging/Dev), monthly budget baselines, AHUB discount targets, and spot instance policies for Dev tier. Breaking: budget units changed from annual to monthly — downstream spending targets must be recalculated."
+  - version: "1.0.0"
+    date: "2026-02-06"
+    summary: "Initial published version. Single-tier cost targets without workload criticality distinction. Pre-dates spec tagging system."
+# No upstream dependencies — business/cost is a root spec.
 depends-on: []
 
 # Precedence rules
@@ -21,21 +42,21 @@ precedence:
       reason: "Platform tier (technical standards, code quality, spec system) is foundational and cannot be overridden"
     - tier: security
       category: data-protection
-      spec-id: dp-001
+      spec-id: dp
       reason: "Security requirements (encryption, HSM) are non-negotiable and override cost optimization"
     - tier: business
       category: compliance-framework
-      spec-id: comp-001
+      spec-id: comp
       reason: "Regulatory compliance requirements override cost optimization"
   
   applies-to:
     - tier: infrastructure
       category: compute
-      spec-id: compute-001
+      spec-id: compute
       reason: "Cost baselines constrain infrastructure compute VM SKU selections"
     - tier: infrastructure
       category: storage
-      spec-id: stor-001
+      spec-id: stor
       reason: "Cost baselines influence storage tier selection within compliance boundaries"
 
 # Relationships
@@ -46,7 +67,7 @@ adhered-by: []
 
 **Tier**: business  
 **Category**: cost  
-**Spec ID**: cost-001  
+**Spec ID**: cost  
 **Created**: 2026-02-06  
 **Updated**: 2026-02-09  
 **Status**: Published  

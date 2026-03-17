@@ -129,7 +129,7 @@ Platform engineer needs: *"I want to organize specs by category (e.g., business/
 # metadata
 tier: business
 category: cost
-spec-id: cost-001
+spec-id: cost
 version: 1.0.0
 status: approved
 created: 2026-02-05
@@ -139,7 +139,7 @@ updated: 2026-02-07
 depends-on:
   - tier: security
     category: audit-logging
-    spec-id: audit-001
+    spec-id: audit
     reason: "cost changes must be auditable"
 
 # precedence: what this spec overrides

@@ -2,21 +2,31 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: platform
 category: policy-as-code
-spec-id: pac-001
+spec-id: pac
 version: 1.0.0-draft
 status: draft
 created: 2026-02-07
 description: "Azure Policy definitions, enforcement rules, remediation, compliance automation"
 
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "1.0.0-draft"
+    date: "2026-02-07"
+    git-tag: spec/pac/1.0.0-draft
+    summary: "Initial draft. Azure Policy definitions, enforcement rules, remediation automation, compliance reporting."
+
 # Dependencies
 depends-on:
   - tier: business
     category: compliance-framework
-    spec-id: comp-001
+    spec-id: comp
+    version: "1.0.0-draft"
     reason: "Policies implement business compliance requirements"
   - tier: security
     category: access-control
-    spec-id: ac-001
+    spec-id: ac
+    version: "1.0.0-draft"
     reason: "Policies enforce access control decisions"
 
 # Precedence rules
@@ -34,7 +44,7 @@ adhered-by:
 
 **Tier**: platform  
 **Category**: policy-as-code  
-**Spec ID**: pac-001  
+**Spec ID**: pac  
 **Created**: 2026-02-07  
 **Status**: Draft  
 

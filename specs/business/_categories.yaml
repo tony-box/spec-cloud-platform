@@ -19,7 +19,7 @@ metadata:
 categories:
   
   - category: compliance-framework
-    spec-id: comp-001
+    spec-id: comp
     version: "1.0.0-draft"
     file: compliance-framework/spec.md
     name: "Compliance Framework"
@@ -32,7 +32,7 @@ categories:
       wins-over: [governance, cost]
     
   - category: governance
-    spec-id: gov-001
+    spec-id: gov
     version: "1.0.0-draft"
     file: governance/spec.md
     name: "Governance"
@@ -46,7 +46,7 @@ categories:
       loses-to: [security/access-control]
     
   - category: cost
-    spec-id: cost-001
+    spec-id: cost
     version: "1.0.0"
     file: cost/spec.md
     name: "Cost Optimization"
@@ -61,11 +61,11 @@ categories:
     dependencies:
       - tier: security
         category: data-protection
-        spec-id: dp-001
+        spec-id: dp
         reason: "Security requirements are not subject to cost optimization"
       - tier: infrastructure
         category: compute
-        spec-id: compute-001
+        spec-id: compute
         reason: "Cost targets constrain compute VM SKU selections"
 
 # Category relationships

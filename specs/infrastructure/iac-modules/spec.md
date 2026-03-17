@@ -2,33 +2,46 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: infrastructure
 category: iac-modules
-spec-id: iac-001
+spec-id: iac
 version: 1.0.0-draft
 status: draft
 created: 2026-02-07
 description: "Centralized reusable IaC wrapper modules based on Azure Verified Modules"
 
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "1.0.0-draft"
+    date: "2026-02-07"
+    git-tag: spec/iac/1.0.0-draft
+    summary: "Initial draft. Centralized IaC wrapper module standards based on Azure Verified Modules."
+
 # Dependencies
 depends-on:
   - tier: business
     category: cost
-    spec-id: cost-001
+    spec-id: cost
+    version: 2.0.0
     reason: "Wrapper modules must enforce cost-optimized SKU defaults"
   - tier: security
     category: data-protection
-    spec-id: dp-001
+    spec-id: dp
+    version: 1.0.0
     reason: "Wrapper modules must enforce encryption and key management standards"
   - tier: security
     category: access-control
-    spec-id: ac-001
+    spec-id: ac
+    version: 1.0.0-draft
     reason: "Wrapper modules must enforce SSH key-based access (no passwords)"
   - tier: business
     category: compliance-framework
-    spec-id: comp-001
+    spec-id: comp
+    version: 1.0.0-draft
     reason: "Wrapper modules must enforce data residency (US regions only)"
   - tier: platform
     category: iac-linting
-    spec-id: lint-001
+    spec-id: lint
+    version: 1.0.0-draft
     reason: "Wrapper modules must follow Bicep code quality standards"
 
 # Precedence rules
@@ -41,13 +54,13 @@ precedence:
       reason: "Platform tier (technical standards, code quality, spec system) is foundational and cannot be overridden"
     - tier: business
       category: cost
-      spec-id: cost-001
+      spec-id: cost
     - tier: security
       category: data-protection
-      spec-id: dp-001
+      spec-id: dp
     - tier: security
       category: access-control
-      spec-id: ac-001
+      spec-id: ac
 
 # Relationships
 adhered-by:
@@ -61,7 +74,7 @@ adhered-by:
 
 **Tier**: infrastructure  
 **Category**: iac-modules  
-**Spec ID**: iac-001  
+**Spec ID**: iac  
 **Created**: 2026-02-07  
 **Status**: Draft  
 
@@ -96,11 +109,11 @@ Wrapper modules MUST expose only parameters necessary for application teams to c
 - **Hidden Parameters**: Security settings (encryption enabled by default), compliance settings (US regions only), prohibited SKU options
 - **Validation**: Use Bicep `@allowed` decorators to restrict parameter values to compliant options
 
-**Example**: VM wrapper module exposes `vmSku` parameter but restricts choices to `['Standard_B2s', 'Standard_B4ms']` per cost-001.
+**Example**: VM wrapper module exposes `vmSku` parameter but restricts choices to `['Standard_B2s', 'Standard_B4ms']` per cost.
 
 #### REQ-003: Compliant Default Parameters
 Wrapper modules MUST include default parameters that satisfy all upstream specifications:
-- **Cost Defaults** (from business/cost-001):
+- **Cost Defaults** (from business/cost):
   - VM SKUs: `Standard_B2s` (dev), `Standard_B4ms` (prod)
   - Storage: `Standard_LRS` replication
   - Reserved instances: 3-year commitment for production VMs
@@ -184,15 +197,15 @@ Initial module catalog MUST support mycoolapp LAMP stack deployment (Ubuntu 22.0
    - **AVM Source**: `br/public:avm/res/db-for-my-sql/flexible-server:X.Y.Z`
    - **Exposed Parameters**: `serverName`, `environment`, `administratorLogin`, `storageGB` (restricted to cost-optimized tiers)
    - **Enforced Defaults**:
-     - SKU: Burstable_B1ms (dev), GeneralPurpose_D2ds_v4 (prod) per cost-001
+     - SKU: Burstable_B1ms (dev), GeneralPurpose_D2ds_v4 (prod) per cost
      - MySQL version: 8.0 (latest LTS)
      - Storage: 20GB (dev), 32GB (prod) auto-grow enabled
      - High availability: Disabled (dev), Zone-redundant (prod) per governance-001 SLA
      - Backup retention: 7 days (dev), 30 days (prod) per compliance-001
-     - SSL enforcement: Required (TLS 1.2+) per dp-001
+     - SSL enforcement: Required (TLS 1.2+) per dp
      - Encryption: Microsoft-managed keys
-     - Public network access: Disabled (VNet integration only) per ac-001
-     - Location: US regions only per comp-001
+     - Public network access: Disabled (VNet integration only) per ac
+     - Location: US regions only per comp
      - Firewall rules: Azure services allowed, specific VNet subnet access only
    - **Outputs**: `serverId`, `fqdn`, `administratorLogin`
 
@@ -260,7 +273,7 @@ module vm '../../../infrastructure/iac-modules/avm-wrapper-linux-vm/main.bicep' 
   name: 'vm-deployment'
   params: {
     vmName: 'mycoolapp-prod-vm'
-    vmSku: 'Standard_B4ms'  // Only allowed options per cost-001
+    vmSku: 'Standard_B4ms'  // Only allowed options per cost
     sshPublicKey: keyVault.outputs.sshPublicKey
     adminUsername: 'azureuser'
     environment: 'prod'
@@ -339,7 +352,7 @@ All wrapper modules MUST include:
 - [ ] Test deployment of all modules succeeds in dev subscription
 - [ ] mycoolapp migrated from inline Bicep resources to wrapper modules (cost/effort: ~4 hours)
 - [ ] Application teams can deploy LAMP infrastructure using wrapper modules without manual compliance checks
-- [ ] 100% of deployed resources satisfy cost-001, dp-001, ac-001, comp-001 constraints
+- [ ] 100% of deployed resources satisfy cost, dp, ac, comp constraints
 
 ## Migration Path
 
@@ -363,7 +376,7 @@ All wrapper modules MUST include:
 ## Related Specifications
 
 - **Upstream Dependencies**:
-  - business/cost-001 (SKU restrictions and cost optimization)
+  - business/cost (SKU restrictions and cost optimization)
   - security/data-protection-001 (encryption and key management)
   - security/access-control-001 (authentication and RBAC)
   - business/compliance-framework-001 (data residency and retention)

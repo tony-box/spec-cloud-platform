@@ -2,27 +2,40 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: infrastructure
 category: storage
-spec-id: stor-001
+spec-id: stor
 version: 2.0.0
 status: published
 created: 2026-02-07
 last-updated: 2026-02-09
 description: "Storage tier selections, backup retention, and replication strategies aligned with cost baselines per workload tier"
 
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "2.0.0"
+    date: "2026-02-09"
+    git-tag: spec/stor/2.0.0
+    summary: "Storage tier and backup retention now vary by workload tier per cost v2.0.0 and compute v2.0.0. Production: Premium SSD with ZRS. Dev: Standard HDD with 7-day retention. Breaking: storage tier selection is now workload-tier-constrained."
+  - version: "1.0.0"
+    date: "2026-02-07"
+    summary: "Initial published version. Single-tier storage guidelines. Pre-dates spec tagging system."
+
 # Dependencies
 depends-on:
   - tier: business
     category: cost
-    spec-id: cost-001
+    spec-id: cost
     version: 2.0.0
     reason: "Storage tier selections must align with cost baselines per workload tier"
   - tier: infrastructure
     category: compute
-    spec-id: compute-001
+    spec-id: compute
+    version: "2.0.0"
     reason: "Compute workload determines required storage tier"
   - tier: business
     category: compliance-framework
-    spec-id: comp-001
+    spec-id: comp
+    version: "1.0.0-draft"
     reason: "Data residency and retention requirements constrain storage choices"
 
 # Precedence rules
@@ -34,7 +47,7 @@ precedence:
       reason: "Platform tier (technical standards, code quality, spec system) is foundational and cannot be overridden"
     - tier: infrastructure
       category: compute
-      spec-id: compute-001
+      spec-id: compute
       reason: "Workload characteristics (compute) drive storage tier selection"
 
 # Relationships
@@ -45,11 +58,11 @@ adhered-by: []
 
 **Tier**: infrastructure  
 **Category**: storage  
-**Spec ID**: stor-001  
+**Spec ID**: stor  
 **Created**: 2026-02-07  
 **Updated**: 2026-02-09  
 **Status**: Published  
-**Derived From**: business/cost-001 v2.0.0 (cost baselines per tier) + business/compliance-framework  
+**Derived From**: business/cost v2.0.0 (cost baselines per tier) + business/compliance-framework  
 
 ## Executive Summary
 
@@ -180,7 +193,7 @@ adhered-by: []
 
 **Spec Version**: 2.0.0  
 **Approved Date**: 2026-02-09  
-**Depends On**: business/cost-001 (v2.0.0), business/compliance-framework (comp-001), infrastructure/compute (compute-001 v2.0.0)  
+**Depends On**: business/cost (v2.0.0), business/compliance-framework (comp), infrastructure/compute (compute v2.0.0)  
 **Artifacts Location**: artifacts/infrastructure/iac-modules/
 - Automatic deletion after retention period
 

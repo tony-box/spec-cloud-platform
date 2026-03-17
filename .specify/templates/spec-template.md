@@ -1,20 +1,51 @@
+---
+# YAML Frontmatter
+tier: [business | security | infrastructure | devops | application]
+category: [category-name]
+spec-id: [###-spec-name]
+version: "1.0.0-draft"
+status: draft
+created: [DATE]
+last-updated: [DATE]
+description: "[One-line description]"
+
+# Role Context (per governance v2.0.0)
+# Proves who made this change, under what authority, and against which upstream constraints.
+role-context:
+  declared-role: [platform | business | security | infrastructure | devops | application]
+  authority-scope: [platform-meta-governance | platform-content-standards | content]
+  change-intent: "[Brief description of what this spec aims to achieve]"
+  upstream-snapshot:
+    # Pinned upstream spec versions at decision time (for reproducibility)
+    # - spec-id: cost
+    #   version: "2.0.0"
+  cascade-run-id: null
+  decision-mode: [autonomous | reviewed | approved]
+  requested-by: "[author or system]"
+  approved-by: null  # Recommended for production-impacting changes
+
+# Version compliance
+compliance-state: current  # current | lagging | pending-upgrade
+version-history:
+  - version: "1.0.0-draft"
+    date: "[DATE]"
+    git-tag: spec/[spec-id]/1.0.0-draft  # create with: git tag spec/[spec-id]/[version]
+    summary: "Initial draft."
+  # When bumping version, prepend a new entry here (newest first):
+  # - version: "2.0.0"
+  #   date: "[DATE]"
+  #   git-tag: spec/[spec-id]/2.0.0
+  #   summary: "What changed. For major bumps, describe what broke and why."
+---
+
 # Specification: [SPEC_NAME]
 
-**Tier**: [business | security | infrastructure | application]  
-**Spec ID**: [###-spec-name]  
+**Tier**: [tier]  
+**Category**: [category]  
+**Spec ID**: [spec-id]  
 **Created**: [DATE]  
 **Status**: Draft | Approved  
 **Input**: User description: "$ARGUMENTS"
-
----
-
-## 🎯 IMPORTANT: Role Declaration Protocol (Per Constitution §II)
-
-This spec was created via:
-- **Role Declared**: [Platform | Business | Security | Infrastructure | Application]
-- **Application Target** (if Application role): [NEW: app-name | EXISTING: app-name]
-
-> Constitution §II requires ALL spec updates to begin with explicit role declaration. This ensures clarity on which tier is being modified and how the spec hierarchy is affected.
 
 ---
 

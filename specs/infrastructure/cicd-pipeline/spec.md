@@ -2,27 +2,40 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: infrastructure
 category: cicd-pipeline
-spec-id: cicd-001
+spec-id: cicd
 version: 2.0.0
 status: published
 created: 2026-02-07
 last-updated: 2026-02-09
 description: "CI/CD pipeline standards with cost governance gates, workload criticality validation, and approval workflows"
 
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "2.0.0"
+    date: "2026-02-09"
+    git-tag: spec/cicd/2.0.0
+    summary: "Pipelines now enforce cost governance gates and workload criticality validation per cost v2.0.0. Production deployments require tiered approval gates; automated deployments restricted to Dev/Staging. Breaking: pipelines without workload criticality classification will fail cost governance gates."
+  - version: "1.0.0"
+    date: "2026-02-07"
+    summary: "Initial published version. Pipeline standards without workload criticality validation. Pre-dates spec tagging system."
+
 # Dependencies
 depends-on:
   - tier: business
     category: cost
-    spec-id: cost-001
+    spec-id: cost
     version: 2.0.0
     reason: "Deployment pipelines must enforce cost baselines and validate workload criticality"
   - tier: business
     category: governance
-    spec-id: gov-001
+    spec-id: gov
+    version: "1.0.0-draft"
     reason: "Production deployments require approval gates per business governance"
   - tier: infrastructure
     category: compute
-    spec-id: compute-001
+    spec-id: compute
+    version: "2.0.0"
     reason: "Deployment targets must exist per compute specifications"
 
 # Precedence rules
@@ -34,7 +47,7 @@ precedence:
       reason: "Platform tier (technical standards, code quality, spec system) is foundational and cannot be overridden"
     - tier: business
       category: governance
-      spec-id: gov-001
+      spec-id: gov
       reason: "Governance approval gates override automation for production"
 
 # Relationships
@@ -45,11 +58,11 @@ adhered-by: []
 
 **Tier**: infrastructure  
 **Category**: cicd-pipeline  
-**Spec ID**: cicd-001  
+**Spec ID**: cicd  
 **Created**: 2026-02-07  
 **Updated**: 2026-02-09  
 **Status**: Published  
-**Derived From**: business/cost-001 v2.0.0 (cost baselines) + business/governance (approval gates)  
+**Derived From**: business/cost v2.0.0 (cost baselines) + business/governance (approval gates)  
 
 ## Executive Summary
 
@@ -319,5 +332,5 @@ jobs:
 
 **Spec Version**: 2.0.0  
 **Approved Date**: 2026-02-09  
-**Depends On**: business/cost-001 (v2.0.0), business/governance (gov-001)  
+**Depends On**: business/cost (v2.0.0), business/governance (gov)  
 **Artifacts Location**: artifacts/infrastructure/iac-modules/, .github/workflows/

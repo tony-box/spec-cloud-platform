@@ -78,5 +78,5 @@ applications: []
 #     adheres-to:
 #       - tier: business
 #         category: cost
-#         spec-id: cost-001
+#         spec-id: cost
 #         reason: "Reason for dependency"

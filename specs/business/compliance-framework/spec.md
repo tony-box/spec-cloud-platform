@@ -2,11 +2,19 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: business
 category: compliance-framework
-spec-id: comp-001
+spec-id: comp
 version: 1.0.0-draft
 status: draft
 created: 2026-02-07
 description: "Regulatory and compliance requirements (NIST 800-171, data residency, retention)"
+
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "1.0.0-draft"
+    date: "2026-02-07"
+    git-tag: spec/comp/1.0.0-draft
+    summary: "Initial draft. Regulatory compliance requirements (NIST 800-171), data residency rules, retention policies."
 
 # Dependencies
 depends-on: []
@@ -22,11 +30,11 @@ precedence:
   overrides:
     - tier: business
       category: cost
-      spec-id: cost-001
+      spec-id: cost
       reason: "Regulatory compliance requirements override cost optimization"
     - tier: infrastructure
       category: storage
-      spec-id: stor-001
+      spec-id: stor
       reason: "Data residency and retention requirements constrain storage decisions"
 
 # Relationships
@@ -40,7 +48,7 @@ adhered-by:
 
 **Tier**: business  
 **Category**: compliance-framework  
-**Spec ID**: comp-001  
+**Spec ID**: comp  
 **Created**: 2026-02-07  
 **Status**: Draft  
 

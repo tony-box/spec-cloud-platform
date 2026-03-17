@@ -1,24 +1,34 @@
 ---
+# YAML Frontmatter
+tier: [business | security | infrastructure | devops | application]
+category: [category-name]
+spec-id: [###-spec-name]
+artifact-type: tasks
+version: "1.0.0-draft"
+description: "Task list for [SPEC_NAME]"
+created: [DATE]
+last-updated: [DATE]
 
-description: "Task list template for platform artifact generation and implementation"
+# Role Context (per governance v2.0.0)
+role-context:
+  declared-role: [platform | business | security | infrastructure | devops | application]
+  authority-scope: [platform-meta-governance | platform-content-standards | content]
+  change-intent: "[Brief description of what these tasks implement]"
+  upstream-snapshot:
+    # Pinned upstream spec versions these tasks were derived from
+    # - spec-id: cost
+    #   version: "2.0.0"
+  cascade-run-id: null
+  decision-mode: [autonomous | reviewed | approved]
+  requested-by: "[author or system]"
+  approved-by: null
 ---
 
 # Tasks: [SPEC_NAME]
 
 **Input**: Specification documents from `/specs/[TIER-NAME]/[###-spec-name]/`  
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md  
-**Tier**: [business | security | infrastructure | application]
-
----
-
-## 🎯 IMPORTANT: Role Declaration Protocol (Per Constitution §II)
-
-These tasks were created via:
-- **Role Declared**: [Platform | Business | Security | Infrastructure | Application]
-- **Application Target** (if Application role): [NEW: app-name | EXISTING: app-name]
-- **Source Tier Spec**: [Reference to parent spec that generated these tasks]
-
-> Constitution §II requires ALL task generation (and specs) to maintain role declaration context. These tasks implement the spec from the [declared role] tier.
+**Tier**: [tier]
 
 ---
 

@@ -2,21 +2,31 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: devops
 category: observability
-spec-id: obs-001
+spec-id: obs
 version: 1.0.0-placeholder
 status: placeholder
 created: 2026-02-09
 description: "Logging, metrics, tracing, alerting, dashboards, SLI/SLO definitions"
 
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "1.0.0-placeholder"
+    date: "2026-02-07"
+    git-tag: spec/obs/1.0.0-placeholder
+    summary: "Placeholder. Full observability spec (logging, metrics, tracing, alerting, SLO definitions) pending authoring."
+
 # Dependencies
 depends-on:
   - tier: security
     category: audit-logging
-    spec-id: audit-001
+    spec-id: audit
+    version: "1.0.0-draft"
     reason: "Observability must integrate with security audit logging requirements"
   - tier: business
     category: governance
-    spec-id: gov-001
+    spec-id: gov
+    version: "1.0.0-draft"
     reason: "SLO definitions must align with business SLA requirements"
 
 # Precedence rules
@@ -29,10 +39,10 @@ precedence:
       reason: "Platform tier (technical standards, code quality, spec system) is foundational and cannot be overridden"
     - tier: security
       category: audit-logging
-      spec-id: audit-001
+      spec-id: audit
     - tier: business
       category: governance
-      spec-id: gov-001
+      spec-id: gov
 
 # Relationships
 adhered-by: []
@@ -43,7 +53,7 @@ adhered-by: []
 
 **Tier**: devops  
 **Category**: observability  
-**Spec ID**: obs-001  
+**Spec ID**: obs  
 **Created**: 2026-02-09  
 **Status**: Placeholder  
 

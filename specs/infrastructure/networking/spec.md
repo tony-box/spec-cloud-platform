@@ -2,23 +2,35 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: infrastructure
 category: networking
-spec-id: net-001
+spec-id: net
 version: 2.0.0
 status: published
 created: 2026-02-07
 last-updated: 2026-02-09
 description: "Network architecture patterns aligned with cost baselines: multi-zone vs single-zone deployment, load balancer tiers, cost optimization"
 
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "2.0.0"
+    date: "2026-02-09"
+    git-tag: spec/net/2.0.0
+    summary: "Network architecture varies by workload tier per cost v2.0.0. Production requires multi-zone deployment and Standard SKU load balancers; Dev/Staging may use single-zone and Basic SKU. Breaking: single-zone Production configurations are no longer compliant."
+  - version: "1.0.0"
+    date: "2026-02-07"
+    summary: "Initial published version. Single-tier network architecture guidelines. Pre-dates spec tagging system."
+
 # Dependencies
 depends-on:
   - tier: business
     category: cost
-    spec-id: cost-001
+    spec-id: cost
     version: 2.0.0
     reason: "Network architecture (multi-zone vs single-zone, load balancer tier) must align with cost baselines per workload tier"
   - tier: business
     category: governance
-    spec-id: gov-001
+    spec-id: gov
+    version: "1.0.0-draft"
     reason: "Network connectivity and SLA definitions from business governance"
 
 # Precedence rules
@@ -39,11 +51,11 @@ adhered-by: []
 
 **Tier**: infrastructure  
 **Category**: networking  
-**Spec ID**: net-001  
+**Spec ID**: net  
 **Created**: 2026-02-07  
 **Updated**: 2026-02-09  
 **Status**: Published  
-**Derived From**: business/cost-001 v2.0.0 (cost baselines per tier) + business/governance  
+**Derived From**: business/cost v2.0.0 (cost baselines per tier) + business/governance  
 
 ## Executive Summary
 
@@ -179,5 +191,5 @@ adhered-by: []
 
 **Spec Version**: 2.0.0  
 **Approved Date**: 2026-02-09  
-**Depends On**: business/cost-001 (v2.0.0), business/governance (gov-001)  
+**Depends On**: business/cost (v2.0.0), business/governance (gov)  
 **Artifacts Location**: artifacts/infrastructure/iac-modules/

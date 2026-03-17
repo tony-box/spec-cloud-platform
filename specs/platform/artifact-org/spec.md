@@ -2,18 +2,27 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: platform
 category: artifact-org
-spec-id: artifact-001
+spec-id: artifact
 version: 1.0.0
 status: published
 created: 2026-02-06
 last-updated: 2026-02-07
 description: "Artifact repository organization, directory structure, naming conventions"
 
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "1.0.0"
+    date: "2026-02-07"
+    git-tag: spec/artifact/1.0.0
+    summary: "Initial published version. Artifact repository directory structure, naming conventions, and organization standards."
+
 # Dependencies
 depends-on:
   - tier: platform
     category: spec-system
-    spec-id: spec-001
+    spec-id: spec
+    version: "1.0.0-draft"
     reason: "Artifact organization follows specification system structure"
 
 # Relationships
@@ -27,7 +36,7 @@ adhered-by:
 
 **Tier**: platform  
 **Category**: artifact-org  
-**Spec ID**: artifact-001  
+**Spec ID**: artifact  
 **Created**: 2026-02-05  
 **Status**: Published  
 **Approved By**: Platform Team  

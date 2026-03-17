@@ -2,17 +2,26 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: business
 category: governance
-spec-id: gov-001
+spec-id: gov
 version: 1.0.0-draft
 status: draft
 created: 2026-02-07
 description: "Approval workflows, change management, SLA definitions, decision gates"
 
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "1.0.0-draft"
+    date: "2026-02-07"
+    git-tag: spec/gov/1.0.0-draft
+    summary: "Initial draft. Approval workflows, change management gates, SLA definitions."
+
 # Dependencies
 depends-on:
   - tier: business
     category: compliance-framework
-    spec-id: comp-001
+    spec-id: comp
+    version: "1.0.0-draft"
     reason: "Governance processes must enforce compliance requirements"
 
 # Precedence rules
@@ -24,17 +33,17 @@ precedence:
       reason: "Platform tier (technical standards, code quality, spec system) is foundational and cannot be overridden"
     - tier: security
       category: access-control
-      spec-id: ac-001
+      spec-id: ac
       reason: "Access control is foundational; governance includes break-glass exceptions"
   
   wins-over:
     - tier: business
       category: cost
-      spec-id: cost-001
+      spec-id: cost
       reason: "Governance approval gates override cost optimization for critical changes"
     - tier: infrastructure
       category: cicd-pipeline
-      spec-id: cicd-001
+      spec-id: cicd
       reason: "Production deployments require approval gates per governance"
 
 # Relationships
@@ -48,7 +57,7 @@ adhered-by:
 
 **Tier**: business  
 **Category**: governance  
-**Spec ID**: gov-001  
+**Spec ID**: gov  
 **Created**: 2026-02-07  
 **Status**: Draft  
 

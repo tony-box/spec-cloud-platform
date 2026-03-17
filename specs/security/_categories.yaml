@@ -19,7 +19,7 @@ metadata:
 categories:
   
   - category: data-protection
-    spec-id: dp-001
+    spec-id: dp
     version: "1.0.0"
     file: data-protection/spec.md
     name: "Data Protection"
@@ -33,11 +33,11 @@ categories:
     overrides:
       - tier: business
         category: cost
-        spec-id: cost-001
+        spec-id: cost
         reason: "Data protection requirements (HSM, AES-256, key rotation) are non-negotiable and override cost optimization"
     
   - category: access-control
-    spec-id: ac-001
+    spec-id: ac
     version: "1.0.0-draft"
     file: access-control/spec.md
     name: "Access Control"
@@ -52,7 +52,7 @@ categories:
     connection: "Access Control and Data Protection are roughly equal; both precede Audit-Logging"
     
   - category: audit-logging
-    spec-id: audit-001
+    spec-id: audit
     version: "1.0.0-draft"
     file: audit-logging/spec.md
     name: "Audit Logging"

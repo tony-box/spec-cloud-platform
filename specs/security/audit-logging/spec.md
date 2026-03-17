@@ -2,17 +2,26 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: security
 category: audit-logging
-spec-id: audit-001
+spec-id: audit
 version: 1.0.0-draft
 status: draft
 created: 2026-02-07
 description: "Audit trails (auditd), Azure Monitor logging, retention policies, compliance logging"
 
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "1.0.0-draft"
+    date: "2026-02-07"
+    git-tag: spec/audit/1.0.0-draft
+    summary: "Initial draft. Audit trail requirements (auditd), Azure Monitor logging, retention policies."
+
 # Dependencies
 depends-on:
   - tier: security
     category: access-control
-    spec-id: ac-001
+    spec-id: ac
+    version: "1.0.0-draft"
     reason: "Audit logging monitors access control events"
 
 # Precedence rules
@@ -24,7 +33,7 @@ precedence:
       reason: "Platform tier (technical standards, code quality, spec system) is foundational and cannot be overridden"
     - tier: security
       category: data-protection
-      spec-id: dp-001
+      spec-id: dp
       reason: "Audit logging is detection; data protection is prevention (higher priority)"
 
 # Relationships
@@ -38,7 +47,7 @@ adhered-by:
 
 **Tier**: security  
 **Category**: audit-logging  
-**Spec ID**: audit-001  
+**Spec ID**: audit  
 **Created**: 2026-02-07  
 **Status**: Draft  
 

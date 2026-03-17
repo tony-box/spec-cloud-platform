@@ -10,7 +10,7 @@ tier:
 
 categories:
   - id: deployment-automation
-    spec-id: deploy-001
+    spec-id: deploy
     name: "Deployment Automation"
     description: "Deployment patterns, blue-green deployments, canary releases, rollback strategies"
     current-version: "1.0.0-placeholder"
@@ -18,7 +18,7 @@ categories:
     precedence-note: "Consumed by Application tier, constrained by Infrastructure tier"
 
   - id: observability
-    spec-id: obs-001
+    spec-id: obs
     name: "Observability"
     description: "Logging, metrics, tracing, alerting, dashboards, SLI/SLO definitions"
     current-version: "1.0.0-placeholder"
@@ -26,7 +26,7 @@ categories:
     precedence-note: "Required by Application tier (all apps must be observable)"
     
   - id: environment-management
-    spec-id: env-001
+    spec-id: env
     name: "Environment Management"
     description: "Environment definitions (dev, staging, prod), configuration management, secrets management"
     current-version: "1.0.0-placeholder"
@@ -34,7 +34,7 @@ categories:
     precedence-note: "Defines deployment targets for Application tier"
 
   - id: ci-cd-orchestration
-    spec-id: cicd-orch-001
+    spec-id: cicd-orch
     name: "CI/CD Orchestration"
     description: "CI/CD workflow orchestration, build pipelines, test automation, deployment pipelines"
     current-version: "1.0.0-placeholder"

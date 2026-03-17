@@ -2,11 +2,19 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: platform
 category: iac-linting
-spec-id: lint-001
+spec-id: lint
 version: 1.0.0-draft
 status: draft
 created: 2026-02-07
 description: "IaC code quality standards for Bicep, Terraform, PowerShell, YAML"
+
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "1.0.0-draft"
+    date: "2026-02-07"
+    git-tag: spec/lint/1.0.0-draft
+    summary: "Initial draft. IaC code quality standards for Bicep, Terraform, PowerShell, and YAML."
 
 # Dependencies
 depends-on: []
@@ -26,7 +34,7 @@ adhered-by:
 
 **Tier**: platform  
 **Category**: iac-linting  
-**Spec ID**: lint-001  
+**Spec ID**: lint  
 **Created**: 2026-02-07  
 **Status**: Draft  
 

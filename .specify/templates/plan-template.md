@@ -1,20 +1,34 @@
+---
+# YAML Frontmatter
+tier: [business | security | infrastructure | devops | application]
+category: [category-name]
+spec-id: [###-spec-name]
+artifact-type: plan
+version: "1.0.0-draft"
+created: [DATE]
+last-updated: [DATE]
+
+# Role Context (per governance v2.0.0)
+role-context:
+  declared-role: [platform | business | security | infrastructure | devops | application]
+  authority-scope: [platform-meta-governance | platform-content-standards | content]
+  change-intent: "[Brief description of what this plan aims to achieve]"
+  upstream-snapshot:
+    # Pinned upstream spec versions this plan was derived from
+    # - spec-id: cost
+    #   version: "2.0.0"
+  cascade-run-id: null
+  decision-mode: [autonomous | reviewed | approved]
+  requested-by: "[author or system]"
+  approved-by: null
+---
+
 # Implementation Plan: [FEATURE]
 
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]  
 **Input**: Feature specification from `/specs/[tier]/[###-feature-name]/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
-
----
-
-## 🎯 IMPORTANT: Role Declaration Protocol (Per Constitution §II)
-
-This plan was created via:
-- **Role Declared**: [Platform | Business | Security | Infrastructure | Application]
-- **Application Target** (if Application role): [NEW: app-name | EXISTING: app-name]
-- **Source Tier Specs**: [List parent specs this plan implements]
-
-> Constitution §II requires ALL spec updates (and derived plans) to maintain role declaration context. Verify this plan's tier tier alignment and parent spec references.
 
 ---
 

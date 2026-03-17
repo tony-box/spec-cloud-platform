@@ -20,7 +20,7 @@ metadata:
 categories:
   
   - category: spec-system
-    spec-id: spec-001
+    spec-id: spec
     version: "1.0.0-draft"
     file: spec-system/spec.md
     name: "Specification System"
@@ -34,7 +34,7 @@ categories:
       note: "Roughly equal priority with IaC-Linting; both foundational for platform"
     
   - category: iac-linting
-    spec-id: lint-001
+    spec-id: lint
     version: "1.0.0-draft"
     file: iac-linting/spec.md
     name: "IaC Linting & Quality"
@@ -47,7 +47,7 @@ categories:
     applies-to: [infrastructure, artifacts]
     
   - category: artifact-org
-    spec-id: artifact-001
+    spec-id: artifact
     version: "1.0.0"
     file: artifact-org/spec.md
     name: "Artifact Organization"
@@ -60,15 +60,15 @@ categories:
     depends-on:
       - tier: platform
         category: spec-system
-        spec-id: spec-001
+        spec-id: spec
         reason: "Artifact organization follows specification system structure"
       - tier: platform
         category: iac-linting
-        spec-id: lint-001
+        spec-id: lint
         reason: "Artifacts in repository must follow linting standards"
     
   - category: policy-as-code
-    spec-id: pac-001
+    spec-id: pac
     version: "1.0.0-draft"
     file: policy-as-code/spec.md
     name: "Policy as Code"
@@ -82,11 +82,11 @@ categories:
     depends-on:
       - tier: business
         category: compliance-framework
-        spec-id: comp-001
+        spec-id: comp
         reason: "Policies implement business compliance requirements"
       - tier: security
         category: access-control
-        spec-id: ac-001
+        spec-id: ac
         reason: "Policies enforce access control decisions"
 
 # Category relationships

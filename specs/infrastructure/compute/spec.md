@@ -2,23 +2,50 @@
 # YAML Frontmatter - Category-Based Spec System
 tier: infrastructure
 category: compute
-spec-id: compute-001
+spec-id: compute
 version: 2.0.0
 status: published
 created: 2026-02-06
 last-updated: 2026-02-09
 description: "Approved VM SKUs per workload tier aligned with cost baselines, reserved instance strategies, multi-zone deployment guidance"
 
+# Role Context (per governance v2.0.0)
+role-context:
+  declared-role: infrastructure
+  authority-scope: content
+  change-intent: "Define approved VM SKUs per workload tier aligned with cost baselines"
+  upstream-snapshot:
+    - spec-id: cost
+      version: "2.0.0"
+    - spec-id: dp
+      version: "1.0.0"
+  cascade-run-id: null
+  decision-mode: approved
+  requested-by: "Platform Engineering Team"
+  approved-by: null
+
+# Version compliance
+compliance-state: current
+version-history:
+  - version: "2.0.0"
+    date: "2026-02-09"
+    git-tag: spec/compute/2.0.0
+    summary: "Introduced workload-tier SKU matrix (Production/Staging/Dev) aligned with cost v2.0.0. Added AHUB requirements for Production, reserved instance minimums, and spot instance policy for Dev. Breaking: VM SKU selection is now tier-constrained; previously-approved SKUs may be invalid in higher tiers."
+  - version: "1.0.0"
+    date: "2026-02-06"
+    summary: "Initial published version. Single-tier VM SKU allowlist without workload criticality classification. Pre-dates spec tagging system."
+
 # Dependencies
 depends-on:
   - tier: business
     category: cost
-    spec-id: cost-001
+    spec-id: cost
     version: 2.0.0
     reason: "Compute SKU selection must align with cost baselines per workload tier ($150-250 critical, $50-100 non-critical, $20-50 dev/test)"
   - tier: security
     category: data-protection
-    spec-id: dp-001
+    spec-id: dp
+    version: 1.0.0
     reason: "Compute resources must support encryption requirements"
 
 # Precedence rules
@@ -32,7 +59,7 @@ precedence:
   wins-over:
     - tier: infrastructure
       category: storage
-      spec-id: stor-001
+      spec-id: stor
       reason: "Workload characteristics (determined by compute) drive storage tier selection"
 
 # Relationships
@@ -43,16 +70,16 @@ adhered-by: []
 
 **Tier**: infrastructure  
 **Category**: compute  
-**Spec ID**: compute-001  
+**Spec ID**: compute  
 **Created**: 2026-02-06  
 **Updated**: 2026-02-09  
 **Status**: Published  
-**Derived From**: business/cost-001 v2.0.0 (cost baselines per tier) + security/data-protection
+**Derived From**: business/cost v2.0.0 (cost baselines per tier) + security/data-protection
 
 ## Spec Source & Hierarchy
 
 **Parent Tier Specs**:
-- **business/cost-001** (v2.0.0) - Concrete cost baselines per workload tier
+- **business/cost** (v2.0.0) - Concrete cost baselines per workload tier
   - Critical: $150-250/month per VM (99.95% SLA, multi-zone, 3-year RI)
   - Non-Critical: $50-100/month per VM (99% SLA, single-zone, 1-year RI)
   - Dev/Test: $20-50/month per VM (95% SLA, single-zone, spot instances)
@@ -205,5 +232,5 @@ Application team planning deployment: *"My application needs moderate compute re
 
 **Spec Version**: 2.0.0  
 **Approved Date**: 2026-02-09  
-**Depends On**: business/cost-001 (v2.0.0), security/data-protection (v1.0.0)  
+**Depends On**: business/cost (v2.0.0), security/data-protection (v1.0.0)  
 **Artifacts Location**: artifacts/infrastructure/iac-modules/
