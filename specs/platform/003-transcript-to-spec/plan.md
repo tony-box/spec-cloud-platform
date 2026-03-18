@@ -4,7 +4,7 @@ tier: platform
 category: transcript-ingestion
 spec-id: txin
 artifact-type: plan
-version: "1.1.0-draft"
+version: "1.2.0-draft"
 created: 2026-03-17
 last-updated: 2026-03-17
 
@@ -12,7 +12,7 @@ last-updated: 2026-03-17
 role-context:
   declared-role: platform
   authority-scope: platform-meta-governance
-  change-intent: "Add semantic category matching with hysteresis bias to the transcripttospecs agent and back-fill the requirements into spec.md"
+  change-intent: "Add semantic category matching with hysteresis bias to the transcripttospecs agent and back-fill the requirements into spec.md; add Phase 6 implementation plan with verification procedures and T031 smoke test"
   upstream-snapshot:
     - spec-id: spec
       version: "1.0.0-draft"
@@ -134,3 +134,141 @@ Append a new section "Hysteresis Category Matching" to the existing research.md 
 - `register-category.ps1` — script behavior unchanged
 - `write-spec.ps1` — script behavior unchanged
 - `transcript-analysis-template.md` — template unchanged (hysteresis is agent-level logic, not template vocabulary)
+
+---
+
+## Phase 2: Implementation Plan — Phase 6 (Hysteresis Category Matching)
+
+**Status of T026–T028**: Already implemented in `.github/agents/transcripttospecs.agent.md` (commit `9d68f7e`). Phase 6 is in **verify-and-test** state. No new agent file changes are required unless a gap is found in T029/T030.
+
+### Pre-Implementation State Audit
+
+Before running any verification task, confirm the following sections exist in the agent file:
+
+| Check | Location in agent file | Expected content |
+|---|---|---|
+| 4-tier classifier table | Step 3 "Semantic category matching" | Rows for EXACT / CLOSE / AMBIGUOUS / NO MATCH |
+| Hysteresis rule | Step 3 "Hysteresis rule" | Conditions (a), (b), (c) explicitly listed |
+| AMBIGUOUS display format | Step 5 grouping plan | Option A shown as default; user must enter `B` to override |
+| CLOSE MATCH rationale display | Step 5 grouping plan | Inline `*(close match: N% concept overlap — ...)*` shown per group |
+| NEW CATEGORY hysteresis justification | New Category Discovery section | Fields: "Why a new category" + "Closest existing category considered" |
+| `merge-into` response handling | New Category Discovery section | Redirect to UPDATE flow when user responds `merge-into <category>` |
+
+### T029 — Verification Procedure (REQ-018 vs research.md Decision 7)
+
+**Goal**: Confirm the agent's classifier logic produces the same outcome as the worked example in `research.md` Decision 7.
+
+**Input** (from Decision 7 worked example):
+- Transcript topic: *"cost-allocation tags on all new resource groups, flag untagged resources monthly"*
+- Tier: `platform`
+- Existing same-tier categories: `governance`, `spec-system`, `artifact-org`, `transcript-ingestion`
+
+**Expected agent classification**:
+1. Evaluate `governance` — shared subject: policy mandate, compliance enforcement, resource tagging → concept overlap ≥60% → `CLOSE MATCH`
+2. Check split conditions: (a) same lifecycle as existing governance requirements (ongoing enforcement) — does NOT meet condition (a); (b) same actor (platform governance) — does NOT meet condition (b); (c) normative overlap exists — does NOT meet condition (c)
+3. Action: mark as `UPDATE specs/platform/governance/spec.md`
+4. Grouping plan entry: `UPDATE specs/platform/governance/spec.md` *(close match: ~65% concept overlap — adding cost-allocation tagging enforcement)*
+5. **NOT** proposed as new category `platform/cost-tagging` or `platform/cost-governance`
+
+**Pass criteria**: Agent output for this input matches the above. If agent proposes a new category instead → gap in T026/T027 implementation.
+
+### T030 — Verification Procedure (AMBIGUOUS default bias)
+
+**Goal**: Confirm A (extend existing) is always the default for AMBIGUOUS groups and that no new category is created without explicit user choice.
+
+**Test scenario**:
+- Transcript topic: *"we should define a process for rotating platform team access credentials"*
+- Existing same-tier categories: `governance`, `spec-system`
+- Expected classification: `AMBIGUOUS` (same platform-governance domain, but credential rotation could be orthogonal security-operations concern or could extend `governance`)
+
+**Expected agent behavior**:
+1. Does NOT immediately propose a new category `platform/access-rotation`
+2. Presents an inline A/B choice in the grouping plan with A as the explicit default
+3. If user does not respond or responds `yes` → agent proceeds with A (extend `governance`)
+4. Only if user explicitly enters `B` → agent proceeds to propose new category (subject to hysteresis conditions check)
+
+**Pass criteria for AMBIGUOUS default**:
+- [ ] Grouping plan shows Option A labeled as "Default"
+- [ ] Agent processes Group as UPDATE if user confirms grouping plan without specifying B
+- [ ] Agent does NOT call `register-category.ps1` for an AMBIGUOUS group unless user chose B
+
+### T031 — Smoke Test Procedure (US4 Disaster-Recovery Scenario)
+
+**Goal**: End-to-end test of the complete hysteresis evaluation path, including the `merge-into` shortcut, using the scenario from spec.md User Story 4.
+
+#### Test Transcript
+
+Save the following as `meetings/test-hysteresis-dr-2026-03-17.md`:
+
+```markdown
+# Q1 Business Resilience Review — 2026-03-17
+Attendees: Alice (CTO), Bob (Platform Lead), Carol (Business Continuity Lead)
+
+Alice: We need to formally define our disaster recovery strategy.
+       Recovery Point Objective should be 4 hours and Recovery Time Objective 8 hours.
+
+Bob: We should also require that all tier-1 services have a validated failover runbook
+     before going to production. That runbook needs to be reviewed quarterly.
+
+Carol: Agreed. And we need an owner assigned to each failover path,
+       separate from the normal on-call rotation.
+
+Alice: Let's also revisit our cost governance for reserved instances.
+       We're paying for capacity we don't use and should set a quarterly right-sizing review.
+```
+
+#### Expected Agent Behavior at Each Step
+
+**Step 2 — Catalog load**: Agent reads `specs/<tier>/_categories.yaml` for all 6 tiers.
+
+**Step 3 — Extraction and classification**:
+
+Extracted groups and expected classifications:
+
+| Group | Tier | Extracted topic | Expected classification | Expected action |
+|---|---|---|---|---|
+| A | business | Disaster recovery: RPO 4h, RTO 8h, failover runbook, quarterly review, owner per failover path | `NO MATCH` after hysteresis → NEW CATEGORY | Propose `business/disaster-recovery` (spec-id `dr`) — cite condition (a): distinct lifecycle phase (incident response/recovery) not present in any existing business category |
+| B | business | Reserved instance cost governance, quarterly right-sizing review | `CLOSE MATCH` with `business/cost` | UPDATE `specs/business/cost/spec.md` — match rationale: reserved instance right-sizing is an existing cost-management concern |
+
+**Step 5 — Grouping plan** (expected display):
+
+```
+Here is my proposed grouping plan:
+
+1. UPDATE specs/business/cost/spec.md
+   (close match: ~70% concept overlap — reserved-instance right-sizing is a cost management requirement)
+
+2. 🆕 NEW CATEGORY: business/disaster-recovery (spec-id: dr)
+   Closest evaluated: business/governance — rejected: distinct lifecycle phase (incident response/recovery) not present in governance
+   Hysteresis condition met: (a) distinct lifecycle phase
+   Confirm? (yes / no / merge-into governance)
+```
+
+**T031 pass/fail checklist**:
+- [ ] Group A classified as NEW CATEGORY with condition (a) cited
+- [ ] Group B classified as CLOSE MATCH with `business/cost` (not proposed as new category)
+- [ ] Grouping plan shows "Closest evaluated: business/governance — rejected: distinct lifecycle phase"
+- [ ] Grouping plan shows `merge-into governance` as a valid response option
+- [ ] When user responds `merge-into governance`: agent reclassifies Group A as UPDATE and routes through Existing Spec Handling (does NOT call `register-category.ps1`)
+- [ ] When user confirms Group A as-is: agent calls `register-category.ps1 -Tier business -CategoryName disaster-recovery -SpecId dr` and then `write-spec.ps1`
+- [ ] Session summary correctly identifies 1 new category registered and 1 spec updated
+
+#### Cleanup After T031
+
+```powershell
+# Remove test artifacts if created during smoke test
+Remove-Item -Path "specs/business/disaster-recovery" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "meetings/test-hysteresis-dr-2026-03-17.md" -ErrorAction SilentlyContinue
+# Revert any _categories.yaml changes
+git checkout HEAD -- "specs/business/_categories.yaml" "specs/specs.yaml"
+```
+
+### Phase 6 Completion Gate
+
+Phase 6 is complete when:
+1. T029 verification: researched worked example matches agent classification ✓
+2. T030 verification: AMBIGUOUS default is A in all tested cases ✓
+3. T031 smoke test: all 7 checklist items pass ✓
+4. No gaps found that require agent file changes → tasks T026/T027/T028 can be marked `[X]`
+
+If gaps are found during T029/T030: document the specific deviation, update the agent file to close the gap, re-run the relevant sub-check before marking complete.

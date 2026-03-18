@@ -29,6 +29,7 @@ PowerShell 7+ (pwsh) — consistent with all existing toolkit scripts: Follow st
 
 ## Recent Changes
 - 003-transcript-to-spec: Added PowerShell 7 (scripts — unchanged), Markdown (agent definition) + Existing `.specify/` toolkit scripts (`register-category.ps1`, `write-spec.ps1`), `transcript-analysis-template.md` — no new dependencies
+- 003-transcript-to-spec: Added PowerShell 7 (scripts — unchanged), Markdown (agent definition) + Existing `.specify/` toolkit scripts (`register-category.ps1`, `write-spec.ps1`), `transcript-analysis-template.md` — no new dependencies
 
 - 001-transcript-to-spec: Added PowerShell 7+ (pwsh) — consistent with all existing toolkit scripts + `common.ps1` (shared helpers: repo root, branch, paths), `specs.yaml` reader (regex/string parsing, no external YAML library), PSScriptAnalyzer (CI validation)
 

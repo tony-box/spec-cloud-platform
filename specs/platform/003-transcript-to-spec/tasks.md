@@ -1,18 +1,22 @@
 ---
+# YAML Frontmatter
 tier: platform
 category: transcript-ingestion
 spec-id: txin
 artifact-type: tasks
-version: "1.0.0-draft"
-description: "Task list for AI Transcript Ingestion for Spec Generation"
+version: "1.1.0-draft"
+description: "Task list for AI Transcript Ingestion — transcripttospecs agent + hysteresis category matching (plan v1.2.0-draft)"
 created: 2026-03-17
 last-updated: 2026-03-17
 
+# Role Context (per governance v2.0.0)
 role-context:
   declared-role: platform
   authority-scope: platform-meta-governance
-  change-intent: "Implement transcript-to-specs VS Code agent mode + toolkit scripts (register-category.ps1, write-spec.ps1) + signal vocabulary template + platform category registration"
+  change-intent: "Implement transcripttospecs agent, toolkit scripts, analysis template, and hysteresis category matching (REQ-018/019/020)"
   upstream-snapshot:
+    - spec-id: txin
+      version: "1.0.0-draft"
     - spec-id: spec
       version: "1.0.0-draft"
     - spec-id: artifact
@@ -23,142 +27,217 @@ role-context:
   approved-by: null
 ---
 
-# Tasks: AI Transcript Ingestion for Spec Generation
+# Tasks: AI Transcript Ingestion — transcripttospecs Agent
 
-**Input**: `specs/platform/003-transcript-to-spec/`  
-**Prerequisites**: plan.md, spec.md, research.md, data-model.md  
-**Tier**: platform | **Spec ID**: txin | **Branch**: `003-transcript-to-spec`
-
----
-
-## Format: `[ID] [P?] [Story?] Description with file path`
-
-- **[P]**: Parallelizable — different files or independent functions, no incomplete dependencies
-- **[US#]**: Story label — maps to user stories in spec.md
-- No test tasks — TDD not requested in spec
+**Input**: `specs/platform/003-transcript-to-spec/` (spec.md v1.0.0-draft, plan.md v1.1.0-draft)
+**Prerequisites**: spec.md ✅  plan.md ✅  research.md ✅  data-model.md ✅  contracts/ingest-transcript-cli.md ✅
+**Tier**: platform
 
 ---
 
-## Phase 1: Scaffolding
+## Format: `[ID] [P?] [Story] [Type] Description`
 
-**Purpose**: Create skeleton files for all deliverable artifacts before any logic is implemented
-
-- [X] T001 Create `.github/agents/transcript-to-specs.md` with YAML frontmatter (`name`, `description`, `tools`, `version`) and top-level section headings: Overview, Invocation, Workflow, Conflict Resolution, Toolkit Script Integration, Constraints
-- [X] T002 [P] Create `.specify/templates/transcript-analysis-template.md` with frontmatter (`tier: platform`, `category: transcript-ingestion`, `spec-id: txin`, `artifact-type: template`, `execution-mode: spec-interpreted`) and top-level section headings: Purpose, Tier Signal Vocabulary, Extraction Guidance, Grouping Rules, Output Format
-- [X] T003 [P] Create `.specify/scripts/powershell/register-category.ps1` with `CmdletBinding` param block (`-Tier`, `-CategoryName`, `-SpecId`, `-Description`), `$ErrorActionPreference = 'Stop'`, and `. $PSScriptRoot/common.ps1` source line
-- [X] T004 [P] Create `.specify/scripts/powershell/write-spec.ps1` with `CmdletBinding` param block (`-Tier`, `-Category`, `-SpecId`, `-FrontmatterJson`, `-BodyMarkdown`, `-Force`), `$ErrorActionPreference = 'Stop'`, and `. $PSScriptRoot/common.ps1` source line
+- **[P]**: Can run in parallel (no file-level dependency on another in-flight task)
+- **[Story]**: US1–US5 maps to User Stories 1–5 in spec.md
+- **[Type]**: `artifact-gen` (create/update file), `review` (human validation), `test` (smoke/validation)
 
 ---
 
-## Phase 2: Signal Vocabulary & Analysis Template (spec-interpreted)
+## Phase 0: Foundation — Analysis Template & Category Catalog Load (US1, US3, US4, US5)
 
-**Purpose**: Author the `transcript-analysis-template.md` so the agent has a complete, accurate signal vocabulary and extraction algorithm
+**Goal**: Deliver the tier-signal vocabulary template and the catalog-loading step that every subsequent agent behavior depends on.
 
-- [X] T005 [P] [US1] Write tier signal vocabulary table in `.specify/templates/transcript-analysis-template.md` — include per-tier keyword signal rows for all six tiers: business (cost, budget, ROI, SLA, compliance, policy), security (zero-trust, encryption, RBAC, audit, threat, access-control), infrastructure (landing zone, VM, networking, storage, IAC, region), devops (CI/CD, pipeline, deployment, automation, observability, GitOps), platform (spec-system, framework, catalog, module, registry, scaffold), application (API, feature, SLA, deployment-strategy); include negative signals (keywords that appear in multiple tiers and require disambiguation by context)
-- [X] T006 [P] [US1] Write extraction guidance sections in `.specify/templates/transcript-analysis-template.md` — Step 1: extract meeting metadata (date, participants, purpose); Step 2: extract raw decision/requirement/constraint statements; Step 3: map each statement to exactly one tier+category using signal vocabulary; Step 4: identify gaps (topics that cannot be confidently mapped — surface these as clarifying questions); Step 5: identify conflicts with existing specs (check by reading referenced spec files)
-- [X] T007 [US1] Write grouping and output format sections in `.specify/templates/transcript-analysis-template.md` — grouping rule: one spec per tier-category pair, merge multiple statements into one spec body; output format: describe the proposed grouping plan format the agent presents to the user (numbered list with tier/category/rationale per group); describe the session summary format (markdown table: spec path, action, conflict-flag Y/N)
+**Review Checkpoint**: T002 review must pass before any Phase 1 work begins.
 
----
-
-## Phase 3: Toolkit Scripts (script-enforced)
-
-**Purpose**: Implement the deterministic file operation scripts that the agent calls for all writes
-
-### `register-category.ps1`
-
-- [X] T008 Implement parameter validation in `.specify/scripts/powershell/register-category.ps1` — validate `-Tier` is one of the 6 known tiers (from `$script:SpecTiers` in `common.ps1`); validate `-CategoryName` against `^[a-z][a-z0-9-]+$`; validate `-SpecId` against `^[a-z][a-z0-9-]{1,7}$`; exit 1 with descriptive message on any failure
-- [X] T009 [P] Implement spec-id uniqueness check in `.specify/scripts/powershell/register-category.ps1` — call `Build-CategoryCatalog` (from `common.ps1`); check if `-SpecId` already exists in the global spec-id set; exit 1 with message listing the conflict if duplicate found
-- [X] T010 Implement `_categories.yaml` upsert in `.specify/scripts/powershell/register-category.ps1` — if `specs/<tier>/_categories.yaml` does not exist, write bootstrap skeleton; otherwise read existing file; check if `spec-id` already present (idempotent — exit 0 silently if already registered); append new entry (`name`, `spec-id`, `description`) and increment `category-count`; write back; atomic write (write to temp file, rename)
-- [X] T011 [P] Implement `specs.yaml` category-count increment in `.specify/scripts/powershell/register-category.ps1` — read `specs/specs.yaml`; find tier entry; increment `category-count`; write back; idempotent (only increments if the category was actually new per T010)
-- [X] T012 [P] Implement PSScriptAnalyzer compliance pass on `register-category.ps1` — all functions use approved verbs (`Register-`, `Build-`, `Test-`, `Write-`); no declared-but-unused variables; pass `Invoke-ScriptAnalyzer` with zero errors
-
-### `write-spec.ps1`
-
-- [X] T013 Implement parameter validation in `.specify/scripts/powershell/write-spec.ps1` — validate `-Tier`, `-Category`, `-SpecId`, `-FrontmatterJson` (must be parseable via `ConvertFrom-Json`); validate target path resolves within repo root (no path traversal); exit 1 with descriptive message on any failure
-- [X] T014 Implement YAML frontmatter generation in `.specify/scripts/powershell/write-spec.ps1` — accept `-FrontmatterJson`, deserialize, validate all required fields are present (`tier`, `category`, `spec-id`, `version`, `status`, `compliance-state`, `role-context`), render as valid YAML block with `---` delimiters; enforce `status: draft`, `compliance-state: current`, `requested-by: "transcript-to-specs"`, `decision-mode: autonomous`
-- [X] T015 [P] Implement spec file write in `.specify/scripts/powershell/write-spec.ps1` — resolve target path `specs/<tier>/<category>/spec.md`; create directory if needed; if file exists and `-Force` not set, exit 2 (skip, not error) with message; write frontmatter + body markdown; validate written file is non-empty and YAML frontmatter block opens the file; exit 0 on success
-- [X] T016 Implement conflict-flag injection in `.specify/scripts/powershell/write-spec.ps1` — if `-FrontmatterJson` includes a `conflict-flags` array, add `conflict-flags:` block to generated YAML frontmatter and prepend a `## ⚠️ Conflict Flags` section to the body listing each flagged upstream spec and reason
-- [X] T017 [P] Implement PSScriptAnalyzer compliance pass on `write-spec.ps1` — approved verbs (`Write-`, `New-`, `Test-`, `ConvertTo-`); no declared-but-unused variables; pass `Invoke-ScriptAnalyzer` with zero errors
+- [X] T001 artifact-gen [US1] Create `.specify/templates/transcript-analysis-template.md` — include full tier signal vocabulary (one sub-section per tier), signal keywords per tier, example phrases, mapping guidance, and a blank `IngestionManifest` JSON skeleton the agent fills at runtime
+- [X] T002 review [US1] Validate `transcript-analysis-template.md` against REQ-003: each of the 6 tiers has signal keywords; JSON skeleton matches `IngestionManifest` fields in `data-model.md`; template contains no implementation details
+- [X] T003 [P] artifact-gen [US1] Confirm `specs/specs.yaml` and all `specs/<tier>/_categories.yaml` files exist and are parseable; document any missing `_categories.yaml` skeletons needed for US5
 
 ---
 
-## Phase 4: Agent Mode — Core Workflow (US1 P1)
+## Phase 1: Toolkit Scripts — register-category.ps1 (US1, US4, US5)
 
-**Purpose**: Author `transcript-to-specs.md` workflow steps for the single-session analysis-to-write flow
+**Goal**: Deliver a working, PSScriptAnalyzer-clean `register-category.ps1` per contract in `contracts/ingest-transcript-cli.md`.
 
-- [X] T018 [P] [US1] Write Overview and Invocation sections in `.github/agents/transcript-to-specs.md` — describe: how the user invokes the agent (Copilot Chat with transcript file path), what the agent does at a high level, which toolkit scripts it calls and when, what user confirmations are required at each gate
-- [X] T019 [US1] Write Workflow section in `.github/agents/transcript-to-specs.md` — define the 7-step sequential flow: (1) Accept transcript path, read file; (2) Load category catalog (read `specs.yaml` + all `_categories.yaml`); (3) Run transcript extraction using signal vocabulary from `transcript-analysis-template.md`; (4) Build proposed grouping plan (one spec per tier-category pair); (5) Present grouping plan to user in chat and wait for confirmation; (6) For each confirmed group: process conflicts, process existing-spec checks, then write via `write-spec.ps1`; (7) Post session summary
-- [X] T020 [P] [US1] Write Toolkit Script Integration section in `.github/agents/transcript-to-specs.md` — document the exact PowerShell call signature for each script the agent uses, the expected exit codes and outputs, and how the agent interprets those (e.g., exit 2 from `write-spec.ps1` = skip, not error); document that the agent MUST NOT perform direct `spec.md` writes — all spec file writes go through `write-spec.ps1` and all category registrations go through `register-category.ps1`; **exception**: amendment proposal files (`spec-amendment-*.md`) are written directly by the agent using its file editing tools, as they require contextual interpretation not suitable for a script
-- [X] T021 [P] [US1] Write Constraints section in `.github/agents/transcript-to-specs.md` — enumerate all behavioral constraints from spec.md Constraints & Guardrails section; add agent-operational constraints: max 5 clarifying questions per session, always present grouping plan before any write, never write an existing spec without user confirmation
+**Review Checkpoint**: T006 exits 0 with PSScriptAnalyzer; T007 passes all acceptance checks.
 
----
-
-## Phase 5: Agent Mode — Conflict Resolution (US2 P1)
-
-**Purpose**: Author the per-conflict interactive resolution workflow section of the agent file
-
-- [X] T022 [US2] Write Conflict Resolution section in `.github/agents/transcript-to-specs.md` — define the detection algorithm: before writing each spec for target tier T, the agent reads all existing specs whose tier has a **lower priority number** than T per the constitution hierarchy (Platform=0 > Business=1 > Security=2 > Infrastructure=3 > DevOps=4 > Application=5; e.g., for a `devops` spec, check all `platform`, `business`, `security`, and `infrastructure` specs); a **conflict** is any MUST, MUST NOT, SHALL, or SHALL NOT normative statement in those higher-authority specs that directly contradicts a requirement or behavior in the proposed spec; define the exact 3-option prompt format the agent presents to the user (Block / Write-with-flag / Propose-amendment); define agent behavior for each choice: Block = log to session summary with reason, skip write; Write-with-flag = call `write-spec.ps1` with `conflict-flags` in frontmatter JSON; Propose-amendment = write new spec AND compose an amendment proposal markdown file targeting the upstream spec **directly using the agent's file editing tools** (not via `write-spec.ps1` — amendment proposals require contextual interpretation)
-- [X] T023 [P] [US2] Write amendment-proposal format in `.github/agents/transcript-to-specs.md` — define the format of the companion amendment-proposal file: path `specs/<upstream-tier>/<upstream-category>/spec-amendment-<new-spec-id>.md` (filed in the **upstream** spec's own directory, named by the spec-id of the spec proposing the change); the agent writes this file **directly using its file editing tools** — amendment proposals require free-form interpretation and contextual reasoning that is not suitable for script enforcement; frontmatter (`artifact-type: amendment-proposal`, `targets-spec-id`, `targets-version`, `proposed-by: "transcript-to-specs"`), body sections (Conflict Description, Proposed Change, Rationale)
+- [X] T004 artifact-gen [US1] Create `.specify/scripts/powershell/register-category.ps1`:
+  - Parameters: `-Tier` (required), `-CategoryName` (required), `-SpecId` (required), `-Description` (required)
+  - Validates: tier is one of 6 known values; spec-id matches `^[a-z][a-z0-9-]{1,7}$`; spec-id is globally unique across all `_categories.yaml` files
+  - Idempotent: if spec-id already exists, exits 0 silently
+  - On success: appends entry to `specs/<tier>/_categories.yaml` (creates skeleton if missing); increments `category-count` in `specs/specs.yaml`
+  - Non-zero exit on any validation failure with a descriptive error message (REQ-016)
+- [X] T005 review [US1] Validate `register-category.ps1` against contract (parameters, exit codes, idempotency); check edge cases: duplicate spec-id, invalid tier, spec-id at min/max length boundary
+- [X] T006 test [US1] Run `Invoke-ScriptAnalyzer register-category.ps1` — must exit with 0 errors (REQ-015, NFR-001)
+- [X] T007 test [US1] Smoke test: register new category `business/test-reg` spec-id `tr`; verify `_categories.yaml` entry and `specs.yaml` count; re-run (idempotent); verify count did not change; then clean up test entry
 
 ---
 
-## Phase 6: Agent Mode — Existing Spec Updates & New Categories (US3/US4 P2)
+## Phase 2: Toolkit Scripts — write-spec.ps1 (US1, US2, US3)
 
-**Purpose**: Author the additive-update and new-category-registration workflows in the agent file
+**Goal**: Deliver a working, PSScriptAnalyzer-clean `write-spec.ps1` per contract in `contracts/ingest-transcript-cli.md`.
 
-- [X] T024 [US3] Write existing-spec handling section in `.github/agents/transcript-to-specs.md` — define the 4-step flow: (a) read the existing `spec.md` body in full; (b) compare newly extracted items against existing requirements — a transcript item is **additive** if it introduces a net-new requirement, constraint, decision, or rationale not semantically equivalent to any already-present item in the existing spec; (c) if net-new items exist, present them to user in chat with the question "Add these X items to `<path>`?"; (d) if user confirms, build the **full merged body** (original spec body with new requirements appended to the Requirements section) and pass the complete merged body to `write-spec.ps1 -Force`; the script replaces the file wholesale, so the agent is responsible for providing the complete merged content, not just the delta; if no net-new items, log "already covered" in session summary and skip
-- [X] T025 [US4] Write new-category-discovery section in `.github/agents/transcript-to-specs.md` — define the detection trigger (no existing category in catalog matches the topic), the confirmation prompt format (present proposed category name, spec-id, tier, and 1-sentence description to user), and the write sequence: (a) user confirms; (b) agent calls `register-category.ps1`; (c) agent calls `write-spec.ps1` to write the spec into the newly registered directory; if user declines, log to session summary and skip this topic
+**Review Checkpoint**: T011 exits 0 with PSScriptAnalyzer; T012 passes all acceptance checks.
+
+- [X] T008 artifact-gen [US1] Create `.specify/scripts/powershell/write-spec.ps1`:
+  - Parameters: `-Tier`, `-Category`, `-SpecId`, `-FrontmatterJson`, `-BodyMarkdown`, `-Force` (switch)
+  - Enforces `status: draft` regardless of what `-FrontmatterJson` provides (REQ-010)
+  - Enforces `requested-by: "transcripttospecs"` and `decision-mode: autonomous` (REQ-011)
+  - Without `-Force`: errors if `spec.md` already exists
+  - With `-Force`: overwrites existing `spec.md` (required for additive updates in US3)
+  - Injects `conflict-flags:` frontmatter block when `FrontmatterJson` contains `conflict_flags` array (REQ-012)
+  - Creates parent directory if it does not exist; validates JSON before writing
+  - Non-zero exit on missing required params or validation failure (REQ-016)
+- [X] T009 review [US1] Validate `write-spec.ps1` against contract; check: `status: draft` enforcement, `conflict-flags:` injection, `-Force` overwrite behavior, directory creation, exit codes
+- [X] T010 [P] review [US3] Verify `-Force` is used for merged bodies only (original content + new items appended), never for wholesale overwrites that lose existing content; document merge contract
+- [X] T011 test [US1] Run `Invoke-ScriptAnalyzer write-spec.ps1` — must exit with 0 errors (REQ-015, NFR-001)
+- [X] T012 test [US1] Smoke test: write a new spec to `specs/business/test-write/spec.md`; verify all YAML frontmatter fields; verify `status: draft`; verify `requested-by: "transcripttospecs"`; clean up
 
 ---
 
-## Phase 7: Platform Registration & Validation
+## Phase 3: Agent Mode — US1 Core Flow (Multi-tier Spec Generation)
 
-**Purpose**: Register the new `transcript-ingestion` category; lint all scripts; end-to-end test; tag
+**Goal**: Deliver the `transcripttospecs` agent handling the standard multi-tier analysis-to-write session.
 
-- [X] T026 [P] Add `transcript-ingestion` entry to `specs/platform/_categories.yaml` — add entry: `name: "Transcript Ingestion"`, `spec-id: txin`, `description: "AI-assisted meeting transcript ingestion to generate categorized spec drafts"`, increment `category-count`
-- [X] T027 [P] Update `specs/specs.yaml` — confirm `category-count` for `platform` tier is correct after T026
-- [X] T028 [P] Run `Invoke-ScriptAnalyzer` on `register-category.ps1` and `write-spec.ps1` — zero errors required; fix any `PSUseApprovedVerbs` or `PSUseDeclaredVarsMoreThanAssignments` violations before proceeding
-- [X] T029 End-to-end smoke test — manually invoke the `transcript-to-specs` agent in VS Code Copilot Chat using the sample transcript from `research.md`; verify: grouping plan is presented before any write, all written specs have `status: draft` and `requested-by: "transcript-to-specs"`, session summary is posted in chat
-- [X] T030 [P] Create git tag `spec/txin/1.0.0-draft` on the final commit of this branch
+**Review Checkpoint**: T017 smoke test uses the Q2 Planning Meeting example from `quickstart.md`.
+
+- [X] T013 artifact-gen [US1] Create/update `.github/agents/transcripttospecs.agent.md` — implement Steps 1–6:
+  - **Step 1**: Accept transcript file path; read file; validate non-empty (REQ-001)
+  - **Step 2**: Load category catalog — read `specs.yaml` + all `_categories.yaml` (REQ-002); build in-memory `CategoryCatalog` per `data-model.md`
+  - **Step 3**: Extract decisions/requirements/constraints using tier signal vocabulary from `transcript-analysis-template.md` (REQ-003); produce draft `IngestionManifest` JSON
+  - **Step 4**: Present proposed grouping plan — one entry per tier-category pair; wait for explicit user confirmation before any file operations (REQ-004)
+  - **Step 5**: Ask up to 5 clarifying questions for unresolvable topics, one at a time (REQ-005)
+  - **Step 6**: For each proposed spec, check all higher-authority tier specs for normative conflicts; for each conflict pause and present Block / Write-with-flag / Propose amendment options (REQ-007); honor user choice per conflict before continuing
+- [X] T014 review [US1] Validate agent Steps 1–6 against US1 acceptance criteria: grouping plan before any writes; max 5 clarifying questions; correct YAML frontmatter in output; session summary lists every action (REQ-014)
+- [X] T015 [P] review [US1] Verify agent never writes a file before user confirms grouping plan (REQ-004); verify agent never embeds API keys or makes direct LLM API calls from scripts (Constraints)
+- [X] T016 [P] artifact-gen [US1] Register the `transcript-ingestion` platform category: run `register-category.ps1 -Tier platform -CategoryName "Transcript Ingestion" -SpecId txin -Description "AI-assisted meeting transcript ingestion for automatic spec generation"`; verify `_categories.yaml` entry
+- [ ] T017 test [US1] Smoke test using `quickstart.md` Q2 Planning Meeting walkthrough: invoke `@transcripttospecs` on a sample multi-tier transcript; verify grouping plan appears before writes; verify each output spec has `status: draft`, `requested-by: "transcripttospecs"`, `decision-mode: autonomous`; verify session summary
 
 ---
 
-## Phase Ordering & Parallelization
+## Phase 4: Agent Mode — US2 Conflict Detection & Resolution
 
-### Dependency graph
+**Goal**: Agent correctly surfaces normative conflicts with higher-tier specs and honors all three resolution choices.
 
-```
-Phase 1 (scaffold) — unblocks all phases
-  ├── Phase 2 (template) — T005, T006, T007 all in parallel
-  ├── Phase 3 (scripts)
-  │   ├── T008, T009 parallel → T010 → T011, T012 parallel
-  │   └── T013, T014 parallel → T015 → T016, T017 parallel
-  └── Phase 4 (agent core)
-        ├── T018, T019 parallel
-        └── T020, T021 parallel (after T019)
-            └── Phase 5 (conflict) — T022, T023 parallel (after T020)
-                └── Phase 6 (updates/categories) — T024, T025 parallel
-                    └── Phase 7 (registration) — T026-T030
-```
+**Review Checkpoint**: T021 smoke test reproduces the CI/CD vs security/access-control conflict from US2.
 
-### Quick-start parallel set (after T001-T004 complete)
+- [X] T018 artifact-gen [US2] Extend agent Step 6 with full conflict detection and resolution:
+  - Conflict definition: a MUST/MUST NOT/SHALL/SHALL NOT in a higher-authority tier spec directly contradicting a proposed requirement (REQ-007)
+  - Present conflict with: upstream spec-id, version, violated requirement reference, proposed spec name
+  - Choice 1 (Block): log to session summary, skip write
+  - Choice 2 (Write-with-flag): pass `conflict_flags` array into `write-spec.ps1 -FrontmatterJson`; verify output has `conflict-flags:` frontmatter + `## ⚠️ Conflict Flags` inline section (REQ-012)
+  - Choice 3 (Propose amendment): write draft spec AND generate companion amendment proposal at `specs/<upstream-tier>/<upstream-category>/spec-amendment-<new-spec-id>.md`
+- [X] T019 review [US2] Validate against US2 acceptance criteria: correct upstream spec-id/version/requirement cited; all three choices honored; Write-with-flag output has correct frontmatter block; amendment proposal targets the correct upstream spec
+- [X] T020 [P] review [US2] Verify conflict resolution is always interactive — no silent skip, no silent block (Constraints: "Conflict resolution MUST be per-conflict and interactive")
+- [ ] T021 test [US2] Smoke test: process a transcript proposing zero-friction CI/CD deployment against a stubbed `security/access-control` spec with a change-board approval MUST; verify conflict is surfaced; verify Write-with-flag output includes `conflict-flags:` in frontmatter
 
-All of these can run simultaneously:
-- T005, T006, T007 — template sections
-- T008, T009, T013, T014 — script parameter validation and frontmatter generation in parallel across the two scripts
-- T018, T019 — agent overview and workflow (can be drafted in parallel with scripts)
+---
 
-### MVP delivery
+## Phase 5: Agent Mode — US3 Additive Update to Existing Spec
 
-Complete Phase 3 (T008–T017) + Phase 4 (T018–T021) to have a working agent with toolkit scripts. US1 is end-to-end testable from this point. Phase 5/6 add conflict resolution and update handling. Phase 7 finalizes registration and tagging.
+**Goal**: Agent reads existing specs, identifies net-new content, and merges rather than overwrites.
+
+**Review Checkpoint**: T025 smoke test verifies the merge contract from T010 in practice.
+
+- [X] T022 artifact-gen [US3] Extend agent with existing-spec handling (REQ-008):
+  - Read existing `spec.md` fully when transcript maps to a known category
+  - Additive check: a transcript item is additive if it is not semantically equivalent to any item already in the existing spec's Requirements or Constraints sections
+  - If additive: build merged body (original content + proposed additions appended to Requirements section); present additions in chat for confirmation; call `write-spec.ps1 -Force` with complete merged body on confirm
+  - If not additive: skip with a chat note (no write)
+- [X] T023 review [US3] Validate against US3 acceptance criteria: no wholesale overwrite; skips when fully covered; requires confirmation before any change; merged body preserves all original content
+- [X] T024 [P] review [US3] Cross-check that agent's merged body construction and `write-spec.ps1 -Force` (T010 contract) agree — no data-loss scenario possible at the handoff point
+- [ ] T025 test [US3] Smoke test: transcript adds two new requirements to a category with an existing spec; verify only net-new requirements appear as proposed; confirm; verify merged spec; re-run same transcript — verify no duplicate additions (idempotency, REQ-013)
+
+---
+
+## Phase 6: Agent Mode — US4 Hysteresis Category Matching (REQ-018/019/020)
+
+**Goal**: Verify the pre-implemented hysteresis classifier in `.github/agents/transcripttospecs.agent.md` (commit `9d68f7e`) is complete per REQ-018/019/020; run three verification procedures from plan.md Phase 2.
+
+**Status**: T026–T029 are agent-file verification tasks (classifier already written). T030–T035 are test execution tasks.
+
+**Completion Gate**: All 7 checklist items in T033 pass + T034 merge-into verified + T035 cleanup done.
+
+- [X] T026 review [US4] Pre-implementation state audit — read `.github/agents/transcripttospecs.agent.md` and confirm all 6 sections exist per plan.md audit table:
+  - (1) 4-tier classifier table in Step 3 with EXACT / CLOSE / AMBIGUOUS / NO MATCH rows
+  - (2) Hysteresis rule in Step 3 with conditions (a), (b), (c) explicitly listed
+  - (3) AMBIGUOUS A/B inline choice in Step 5 with Option A labeled as Default
+  - (4) CLOSE MATCH inline rationale format in Step 5
+  - (5) "Why a new category" + "Closest existing category considered" fields in New Category Discovery
+  - (6) `merge-into <existing-category>` redirect handling in New Category Discovery
+- [X] T027 review [US4] Verify 4-tier classifier content (REQ-018): confirm Step 3 rows state: EXACT MATCH → UPDATE; CLOSE MATCH (≥60% threshold explicitly stated) → UPDATE with rationale; AMBIGUOUS (different lifecycle/actor/enforcement boundary) → A/B flag; NO MATCH (different primary domain) → NEW CATEGORY candidate
+- [X] T028 review [US4] Verify hysteresis bias rule content (REQ-019): confirm Step 3 includes MUST NOT language; confirm all three split conditions are present and distinct: (a) lifecycle phase, (b) actor/authority boundary, (c) zero normative overlap + radical scope expansion; no condition missing or conflated
+- [X] T029 review [US4] Verify grouping plan display content (REQ-020): confirm Step 5 shows CLOSE MATCH inline rationale; AMBIGUOUS A/B with "Default: A" explicitly labeled; NEW CATEGORY shows closest evaluated category + hysteresis condition(s); New Category Discovery accepts `merge-into <category>` and redirects to UPDATE flow
+- [X] T030 artifact-gen [US4] Create test transcript `meetings/test-hysteresis-dr-2026-03-17.md` using the exact content from plan.md Phase 2 T031 Test Transcript section (Q1 Business Resilience Review — Alice/Bob/Carol; DR strategy RPO/RTO/failover runbook + reserved-instance right-sizing)
+- [ ] T031 test [US4] Verification — Decision 7 worked example (plan.md T029): invoke agent on a stub transcript with only the cost-allocation tagging topic against existing platform categories; verify:
+  - Agent classifies as CLOSE MATCH with `platform/governance` (NOT a new category)
+  - Grouping plan entry shows `UPDATE specs/platform/governance/spec.md` with `~65% concept overlap` rationale
+  - Agent does NOT propose `platform/cost-tagging` or any new platform category
+- [ ] T032 test [US4] Verification — AMBIGUOUS default bias (plan.md T030): invoke agent on stub transcript with only *"define a process for rotating platform team access credentials"* against platform tier; verify:
+  - [ ] Grouping plan shows inline A/B choice with A explicitly labeled as Default
+  - [ ] Confirming without entering B routes group as UPDATE, not NEW CATEGORY
+  - [ ] Agent does NOT call `register-category.ps1` for this group
+- [ ] T033 test [US4] Full smoke test (plan.md T031): invoke agent on `meetings/test-hysteresis-dr-2026-03-17.md`; verify all 7 checklist items:
+  - [ ] Group A (disaster-recovery) classified as NEW CATEGORY with condition (a) cited
+  - [ ] Group B (reserved-instance right-sizing) classified as CLOSE MATCH with `business/cost`
+  - [ ] Grouping plan shows `Closest evaluated: business/governance — rejected: distinct lifecycle phase`
+  - [ ] Grouping plan shows `merge-into governance` as a valid response option
+  - [ ] `merge-into governance` response reclassifies Group A as UPDATE; `register-category.ps1` NOT called
+  - [ ] Confirm-as-is path calls `register-category.ps1 -Tier business -CategoryName disaster-recovery -SpecId dr`
+  - [ ] Session summary shows 1 new category registered + 1 spec updated
+- [ ] T034 test [US4] Test `merge-into` shortcut in isolation: from a fresh session where agent proposes `business/disaster-recovery` as NEW CATEGORY, respond `merge-into governance`; verify agent does NOT call `register-category.ps1`; verify agent reads `specs/business/governance/spec.md` and enters US3 additive-update flow
+- [ ] T035 test [US4] Cleanup test artifacts — run plan.md cleanup commands:
+  ```powershell
+  Remove-Item specs/business/disaster-recovery -Recurse -Force -ErrorAction SilentlyContinue
+  Remove-Item meetings/test-hysteresis-dr-2026-03-17.md -ErrorAction SilentlyContinue
+  git checkout HEAD -- specs/business/_categories.yaml specs/specs.yaml
+  ```
+  Verify no uncommitted changes remain in `specs/business/` or `specs/specs.yaml`
+
+---
+
+## Phase 7: Agent Mode — US5 Empty Project Bootstrap
+
+**Goal**: Agent handles a repo with no existing category specs and bootstraps all `_categories.yaml` files correctly.
+
+- [X] T036 artifact-gen [US5] Extend agent Step 2 catalog load: if a tier `_categories.yaml` is missing, create a skeleton (tier name, `categories: []`, `category-count: 0`) before proceeding (REQ-002)
+- [X] T037 review [US5] Validate bootstrap behavior: agent does not error on missing `_categories.yaml`; skeletons comply with the schema used by `register-category.ps1`
+- [ ] T038 test [US5] Smoke test: remove one `_categories.yaml`; verify agent bootstraps it; verify all new specs are compliant; verify session summary distinguishes newly registered vs pre-existing categories
+
+---
+
+## Phase 8: Platform Spec Registration & Deliverable Audit
+
+**Goal**: Confirm all deliverables from spec.md Deliverables table exist on disk.
+
+- [X] T039 [P] artifact-gen [US1] Verify (or create) `specs/platform/transcript-ingestion/spec.md` — must have compliant frontmatter (`tier: platform`, `category: transcript-ingestion`, `spec-id: txin`, `status: draft`)
+- [X] T040 [P] review [US1] Cross-check all 6 deliverables in spec.md Deliverables table are present:
+  - `.github/agents/transcripttospecs.agent.md`
+  - `.specify/templates/transcript-analysis-template.md` ← T001
+  - `.specify/scripts/powershell/register-category.ps1` ← T004
+  - `.specify/scripts/powershell/write-spec.ps1` ← T008
+  - `specs/platform/transcript-ingestion/spec.md` ← T039
+  - `specs/platform/003-transcript-to-spec/data-model.md`
+- [X] T041 review [US1] Verify `contracts/ingest-transcript-cli.md` parameter signatures match the actual implemented scripts after T004 and T008; update contract doc if any parameter name or default drifted
+
+---
+
+## Phase 9: Cross-Cutting Validation (All Stories)
+
+**Goal**: NFR compliance and full end-to-end session pass.
+
+- [X] T042 [P] test [US1] Run PSScriptAnalyzer across all `.ps1` files in `.specify/scripts/powershell/` — zero errors required (NFR-001)
+- [X] T043 [P] test [US1] Time each toolkit script: `register-category.ps1` and `write-spec.ps1` must complete in under 10 seconds per call (NFR-002, REQ-017)
+- [ ] T044 [P] review [US1] Verify all generated spec files are human-readable in VS Code with no binary characters (NFR-003)
+- [ ] T045 test [US1] End-to-end session test: full transcript session (multi-tier, one conflict, one additive update, one new category with hysteresis evaluation) without leaving Copilot Chat (NFR-004); record session summary output
 
 ---
 
 ## Implementation Notes
 
-- The `transcript-to-specs` agent handles ALL reasoning, judgment, Q&A, conflict presentation, and grouping confirmation. Scripts handle ONLY deterministic file operations.
-- `common.ps1` provides `Get-RepoRoot`, `$script:SpecTiers`, and `Build-CategoryCatalog` — use these; do not hardcode paths or tier lists in the new scripts. **Before implementing T009**, verify that `Build-CategoryCatalog` exists in `common.ps1` and returns a hashtable of spec-id → tier/category pairs; if absent, add it to `common.ps1` as part of T009's scope.
-- Both new scripts MUST be idempotent: `register-category.ps1` exits 0 silently if the spec-id is already registered; `write-spec.ps1` exits 2 (skip) if the file exists and `-Force` is not set.
-- Conflict detection in the agent is heuristic (keyword + semantic similarity scanning of existing spec bodies) — false positives are acceptable and resolved interactively. False negatives (missed conflicts) are a risk; the agent should err on the side of surfacing more conflicts rather than fewer.
-- **Tier precedence reminder**: "higher-tiered" means lower priority number. Platform=0 is the highest-authority tier; Application=5 is the lowest. A spec at priority N must only check tiers at priorities 0 through N-1 for conflicts.
-
+- **T026–T029 are verification, not implementation**: classifier, hysteresis rule, and display requirements are already in `.github/agents/transcripttospecs.agent.md` (commit `9d68f7e`) — Phase 6 is verify-and-test only
+- **No script changes required for hysteresis** (T026–T035): REQ-018/019/020 are agent-behavioral changes only; `register-category.ps1` and `write-spec.ps1` interfaces are unchanged
+- **Parallel opportunities**: T001+T003, T004+T008, T006+T011, T027+T028 (independent agent section checks), T031+T032 (independent verification scenarios), T042+T043+T044 (NFR checks)
+- **AMBIGUOUS default bias** (T028/T032): A (extend existing) is always the default — agent must require explicit B to split; this is the primary guard against category proliferation
+- **merge-into shortcut** (T029/T034): any `merge-into <category>` response reclassifies as UPDATE and routes through Phase 5 existing-spec handling — no new script required
+- **Phase 6 completion gate**: T033 all 7 items + T034 merge-into verified + T035 cleanup → T026–T035 markable `[X]`

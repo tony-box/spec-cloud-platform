@@ -137,7 +137,7 @@ The split: *analysis, judgment, and interaction* (agent, spec-interpreted) vs *f
 - **REQ-007**: Before writing any spec, the agent MUST check all higher-tiered existing specs for conflicts. A **conflict** is a MUST, MUST NOT, SHALL, or SHALL NOT normative statement in a higher-authority tier spec (i.e., a spec whose tier has a lower priority number per the constitution: Platform=0 > Business=1 > Security=2 > Infrastructure=3 > DevOps=4 > Application=5) that directly contradicts a requirement or behavior stated in the proposed spec. For each conflict detected the agent MUST pause and offer the user three options: (1) Block, (2) Write-with-flag, (3) Propose upstream amendment
 - **REQ-008**: For a transcript topic that maps to an existing `spec.md`, the agent MUST read the existing spec and determine if the transcript is **additive**. A transcript item is additive if it introduces a net-new requirement, constraint, decision, or rationale not semantically equivalent to any already-present item in the existing spec's Requirements or Constraints sections. If additive, propose the net-new items in chat and ask for confirmation; if already covered, skip with a chat note
 - **REQ-009**: All output spec files MUST be written via toolkit scripts to enforce deterministic frontmatter, registry updates, and PSScriptAnalyzer compliance
-- **REQ-010**: Every generated spec file MUST include compliant YAML frontmatter with all required fields per `spec-system`: `tier`, `category`, `spec-id`, `version: "1.0.0-draft"`, `status: draft`, `compliance-state: current`
+- **REQ-010**: Every generated spec file MUST include compliant YAML frontmatter with all required fields per `spec-system`: `tier`, `category`, `spec-id`, `version: "1.0.0-draft"`, `status: draft`, `compliance-state: current`, and a `depends-on:` block that lists at minimum the platform tier specs checked for conflicts during generation (satisfying Constitution Principle V bidirectional traceability)
 - **REQ-011**: Generated specs MUST record `requested-by: "transcripttospecs"` and `decision-mode: autonomous` in role-context
 - **REQ-012**: If the user chose Write-with-flag for a conflict, the generated spec MUST include a `conflict-flags:` frontmatter field listing each upstream spec violated and the reason
 - **REQ-013**: Registry updates (`_categories.yaml`, `specs.yaml`) MUST be idempotent — re-running on the same transcript MUST NOT create duplicate entries
@@ -231,8 +231,9 @@ The agent proposes the additions in chat and asks for confirmation before writin
 ### User Story 4 — New category discovery with hysteresis evaluation (Priority: P2)
 
 The transcript discusses a disaster-recovery strategy. The agent evaluates all existing `business` categories against the extracted items: `compliance-framework`, `cost`, `governance`. It determines:
-- `governance` is a CLOSE MATCH candidate, but fails the close-match threshold because disaster-recovery has a distinct lifecycle phase (incident response / recovery) not present in any existing business category — this meets hysteresis condition (a).
-- The agent classifies the group as NO MATCH and proposes a new category `business/disaster-recovery` (spec-id `dr`).
+1. **Classifier step (REQ-018)**: Concept overlap between the disaster-recovery items and `governance` is below the 60% threshold (different primary domain: incident response vs. policy enforcement) → classifies as **NO MATCH**.
+2. **Hysteresis check (REQ-019)**: Since the classifier reached NO MATCH, the agent checks split conditions. Condition (a) is met: the extracted items address a distinct lifecycle phase (incident response / recovery) not present in any existing business category.
+3. The agent proposes a new category `business/disaster-recovery` (spec-id `dr`), citing both the NO MATCH outcome and hysteresis condition (a).
 
 In the grouping plan the agent shows:
 ```
@@ -267,7 +268,7 @@ Invoking the agent on a repo with no existing category specs generates a full in
 
 | Artifact | Path | Execution Mode |
 |---|---|---|
-| Agent mode definition | `.github/agents/transcripttospecs.md` | spec-interpreted |
+| Agent mode definition | `.github/agents/transcripttospecs.agent.md` | spec-interpreted |
 | Analysis & signal vocabulary template | `.specify/templates/transcript-analysis-template.md` | spec-interpreted |
 | Category registration script | `.specify/scripts/powershell/register-category.ps1` | script-enforced |
 | Spec writer script | `.specify/scripts/powershell/write-spec.ps1` | script-enforced |

@@ -76,9 +76,11 @@ Execute these 7 steps sequentially. Do not skip steps or reorder them.
 Read the live category catalog to know what tiers and categories already exist:
 
 1. Read `specs/specs.yaml` (tier list, priority order)
-2. For each tier in `$script:SpecTiers` order, check if `specs/<tier>/_categories.yaml` exists and read it
+2. For each tier in `$script:SpecTiers` order, check if `specs/<tier>/_categories.yaml` exists:
+   - If it **exists**: read it and extract category entries
+   - If it **does not exist**: treat the tier as having zero registered categories (the bootstrap skeleton is created automatically by `register-category.ps1` when the first category is registered — do NOT pre-create the file in this step)
 3. Build an in-memory map: `{ '<tier>/<category>' → { spec-id, existing-spec-path, has-existing-spec } }`
-4. Report: "Loaded catalog: [N] tiers, [M] categories, [K] with existing specs"
+4. Report: "Loaded catalog: [N] tiers, [M] categories, [K] with existing specs" — include tiers with 0 categories in the count
 
 ### Step 3 — Extract and Map
 

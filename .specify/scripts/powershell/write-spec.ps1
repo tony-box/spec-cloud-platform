@@ -8,7 +8,7 @@
       1. Validates parameters (-Tier, -Category, -SpecId, -FrontmatterJson, -BodyMarkdown)
       2. Validates all required frontmatter fields are present in the JSON input
       3. Enforces mandatory values: status=draft, compliance-state=current,
-         requested-by="transcript-to-specs", decision-mode=autonomous
+         requested-by="transcripttospecs", decision-mode=autonomous
       4. Injects a conflict-flags block into frontmatter and body if the input
          JSON contains a non-empty conflict-flags array
       5. Resolves the output path to specs/<tier>/<category>/spec.md, creating
@@ -24,7 +24,7 @@
     This script is idempotent when -Force is not set: repeated calls on an
     existing file always exit 2 without modifying the file.
 
-    Part of the transcript-to-specs platform toolkit.
+    Part of the transcripttospecs platform toolkit.
 
 .PARAMETER Tier
     Target tier. Must be one of: platform, business, security, infrastructure, devops, application.
@@ -247,7 +247,7 @@ $rc = $fm.'role-context'
 $fmLines += 'role-context:'
 $fmLines += "  declared-role: $($rc.'declared-role' ?? 'platform')"
 $fmLines += "  authority-scope: $($rc.'authority-scope' ?? 'platform-meta-governance')"
-$fmLines += "  requested-by: `"transcript-to-specs`""
+$fmLines += "  requested-by: `"transcripttospecs`""
 $fmLines += "  decision-mode: autonomous"
 if ($rc.PSObject.Properties['cascade-run-id']) {
     $fmLines += "  cascade-run-id: null"

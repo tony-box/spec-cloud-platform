@@ -11,7 +11,7 @@ description: "AI-assisted meeting transcript ingestion to automatically generate
 role-context:
   declared-role: platform
   authority-scope: platform-meta-governance
-  change-intent: "Add AI transcript ingestion capability to the .specify/ framework: transcript-to-specs agent mode + register-category.ps1 + write-spec.ps1 toolkit scripts + transcript-analysis-template.md"
+  change-intent: "Add AI transcript ingestion capability to the .specify/ framework: transcripttospecs agent mode + register-category.ps1 + write-spec.ps1 toolkit scripts + transcript-analysis-template.md"
   requested-by: "Platform Dev"
   decision-mode: reviewed
   cascade-run-id: null
@@ -36,7 +36,7 @@ version-history:
   - version: "1.0.0-draft"
     date: "2026-03-17"
     git-tag: spec/txin/1.0.0-draft
-    summary: "Initial draft. AI transcript ingestion capability via transcript-to-specs agent mode."
+    summary: "Initial draft. AI transcript ingestion capability via transcripttospecs agent mode."
 ---
 
 # Specification: AI Transcript Ingestion for Spec Generation
@@ -52,7 +52,7 @@ version-history:
 
 ## Summary
 
-This category governs the `transcript-to-specs` platform capability: a VS Code Copilot Chat agent mode that converts meeting transcripts into governed spec drafts. The agent reads a transcript, uses the tier signal vocabulary to extract architectural decisions, proposes a grouping plan to the user, conducts clarifying Q&A, detects conflicts with existing higher-authority specs, and writes compliant `spec.md` files via `register-category.ps1` and `write-spec.ps1` toolkit scripts — all within a single agent session.
+This category governs the `transcripttospecs` platform capability: a VS Code Copilot Chat agent mode that converts meeting transcripts into governed spec drafts. The agent reads a transcript, uses the tier signal vocabulary to extract architectural decisions, proposes a grouping plan to the user, conducts clarifying Q&A, detects conflicts with existing higher-authority specs, and writes compliant `spec.md` files via `register-category.ps1` and `write-spec.ps1` toolkit scripts — all within a single agent session.
 
 ---
 
@@ -60,7 +60,7 @@ This category governs the `transcript-to-specs` platform capability: a VS Code C
 
 | Artifact | Path | Mode |
 |---|---|---|
-| Agent mode definition | `.github/agents/transcript-to-specs.agent.md` | spec-interpreted |
+| Agent mode definition | `.github/agents/transcripttospecs.agent.md` | spec-interpreted |
 | Tier signal vocabulary template | `.specify/templates/transcript-analysis-template.md` | spec-interpreted |
 | Category registration script | `.specify/scripts/powershell/register-category.ps1` | script-enforced |
 | Spec writer script | `.specify/scripts/powershell/write-spec.ps1` | script-enforced |
@@ -82,7 +82,7 @@ This category governs the `transcript-to-specs` platform capability: a VS Code C
 - **REQ-007**: Before writing any spec, the agent MUST check all specs in higher-authority tiers (lower priority number) for conflicts; a conflict is a MUST/MUST NOT/SHALL/SHALL NOT statement that directly contradicts the proposed spec's content; per-conflict resolution is mandatory and interactive (Block / Write-with-flag / Propose-amendment)
 - **REQ-008**: For a transcript topic mapping to an existing `spec.md`, the agent MUST read the existing spec; an item is additive if it introduces net-new content not semantically equivalent to any existing requirement; if additive propose additions and require user confirmation; if already covered skip with a chat note
 - **REQ-009**: All `spec.md` writes MUST go through `write-spec.ps1`; amendment proposals are written directly by the agent
-- **REQ-010**: Every generated spec MUST have `status: draft`, `compliance-state: current`, `requested-by: "transcript-to-specs"`, `decision-mode: autonomous` (enforced by `write-spec.ps1`)
+- **REQ-010**: Every generated spec MUST have `status: draft`, `compliance-state: current`, `requested-by: "transcripttospecs"`, `decision-mode: autonomous` (enforced by `write-spec.ps1`)
 - **REQ-011**: When updating an existing spec, the agent MUST build the full merged body (original + additions) and pass it to `write-spec.ps1 -Force`; the script replaces wholesale
 - **REQ-012**: Write-with-flag specs MUST include a `conflict-flags:` frontmatter array and a `## ⚠️ Conflict Flags` body section
 - **REQ-013**: Registry updates MUST be idempotent — repeating on the same transcript MUST NOT create duplicates
@@ -110,4 +110,4 @@ This category governs the `transcript-to-specs` platform capability: a VS Code C
 - The agent MUST NOT modify an existing spec file without explicit user confirmation of proposed additions
 - New categories MUST follow: `lowercase-kebab-case` directory, spec-id matching `^[a-z][a-z0-9-]{1,7}$`, globally unique spec-id
 - Conflict resolution MUST be per-conflict and interactive — silent skip or silent block is not permitted
-- The `transcript-to-specs` agent MUST NOT embed API keys or make direct LLM API calls from toolkit scripts
+- The `transcripttospecs` agent MUST NOT embed API keys or make direct LLM API calls from toolkit scripts

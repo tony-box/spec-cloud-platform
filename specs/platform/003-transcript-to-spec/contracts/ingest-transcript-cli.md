@@ -1,7 +1,7 @@
-# Contracts: transcript-to-specs Toolkit
+# Contracts: transcripttospecs Toolkit
 
 **Branch**: `003-transcript-to-spec` | **Date**: 2026-03-17 | **Phase**: 1 | **Location**: `specs/platform/003-transcript-to-spec/`  
-**Primary interface**: `transcript-to-specs` VS Code agent mode (Copilot Chat)  
+**Primary interface**: `transcripttospecs` VS Code agent mode (Copilot Chat)  
 **Toolkit scripts**: `register-category.ps1` + `write-spec.ps1` (called BY the agent; also independently usable from CI)
 
 ---
@@ -11,7 +11,7 @@
 The user invokes the agent by opening Copilot Chat in VS Code and typing:
 
 ```
-@transcript-to-specs Please process this transcript: <path-to-transcript.md>
+@transcripttospecs Please process this transcript: <path-to-transcript.md>
 ```
 
 The agent reads the transcript file, conducts the full analysis-to-write session in chat, and calls the toolkit scripts for all file operations. No terminal commands or separate script invocations are required from the user.
@@ -22,14 +22,14 @@ The agent reads the transcript file, conducts the full analysis-to-write session
 
 **Path**: `.specify/scripts/powershell/register-category.ps1`  
 **Execution Mode**: script-enforced  
-**Called by**: `transcript-to-specs` agent (after user confirms new category); also usable directly from CI
+**Called by**: `transcripttospecs` agent (after user confirms new category); also usable directly from CI
 
 ### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `-Tier` | string | **Yes** | — | One of the 6 known tiers (`business`, `security`, `infrastructure`, `devops`, `platform`, `application`) |
-| `-CategoryName` | string | **Yes** | — | Human-readable name (used in `_categories.yaml` `name:` field) |
+| `-CategoryName` | string | **Yes** | — | **kebab-case** directory name (e.g. `disaster-recovery`). Must match `^[a-z][a-z0-9-]+$`. The human-readable title is generated automatically from this value. |
 | `-SpecId` | string | **Yes** | — | Globally unique spec-id, must match `^[a-z][a-z0-9-]{1,7}$` |
 | `-Description` | string | **Yes** | — | One-sentence description of the category |
 
@@ -37,10 +37,10 @@ The agent reads the transcript file, conducts the full analysis-to-write session
 
 ```powershell
 # Register a new category
-./register-category.ps1 -Tier business -CategoryName "Disaster Recovery" -SpecId dr -Description "Business continuity and DR objectives"
+./register-category.ps1 -Tier business -CategoryName disaster-recovery -SpecId dr -Description "Business continuity and DR objectives"
 
 # Idempotent re-run (spec-id already exists) — exits 0 silently
-./register-category.ps1 -Tier business -CategoryName "Disaster Recovery" -SpecId dr -Description "Business continuity and DR objectives"
+./register-category.ps1 -Tier business -CategoryName disaster-recovery -SpecId dr -Description "Business continuity and DR objectives"
 ```
 
 ### Outputs
@@ -63,7 +63,7 @@ The agent reads the transcript file, conducts the full analysis-to-write session
 
 **Path**: `.specify/scripts/powershell/write-spec.ps1`  
 **Execution Mode**: script-enforced  
-**Called by**: `transcript-to-specs` agent (after user confirms grouping plan and any conflict resolution); also usable directly from CI
+**Called by**: `transcripttospecs` agent (after user confirms grouping plan and any conflict resolution); also usable directly from CI
 
 ### Parameters
 
@@ -80,11 +80,11 @@ The agent reads the transcript file, conducts the full analysis-to-write session
 
 ```powershell
 # Write a new spec (agent-generated frontmatter JSON)
-$fm = '{"tier":"business","category":"cost","spec-id":"cost","version":"1.0.0-draft","status":"draft","compliance-state":"current","role-context":{"requested-by":"transcript-to-specs","decision-mode":"autonomous"}}'
+$fm = '{"tier":"business","category":"cost","spec-id":"cost","version":"1.0.0-draft","status":"draft","compliance-state":"current","role-context":{"requested-by":"transcripttospecs","decision-mode":"autonomous"}}'
 ./write-spec.ps1 -Tier business -Category cost -SpecId cost -FrontmatterJson $fm -BodyMarkdown $body
 
 # Write a spec with conflict flags
-$fm = '{"tier":"devops","category":"ci-cd-orchestration","spec-id":"cicd","conflict-flags":[{"conflicts-with":"security/access-control","reason":"Zero-friction deploy vs change-board approval (REQ-AC-007)"}],"version":"1.0.0-draft","status":"draft","compliance-state":"current","role-context":{"requested-by":"transcript-to-specs","decision-mode":"autonomous"}}'
+$fm = '{"tier":"devops","category":"ci-cd-orchestration","spec-id":"cicd","conflict-flags":[{"conflicts-with":"security/access-control","reason":"Zero-friction deploy vs change-board approval (REQ-AC-007)"}],"version":"1.0.0-draft","status":"draft","compliance-state":"current","role-context":{"requested-by":"transcripttospecs","decision-mode":"autonomous"}}'
 ./write-spec.ps1 -Tier devops -Category ci-cd-orchestration -SpecId cicd -FrontmatterJson $fm -BodyMarkdown $body
 
 # Overwrite an existing draft (additive update confirmed by user)

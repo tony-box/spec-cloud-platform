@@ -1,4 +1,4 @@
-# Quickstart: transcript-to-specs Agent
+# Quickstart: transcripttospecs Agent
 
 **Branch**: `003-transcript-to-spec` | **Date**: 2026-03-17 | **Phase**: 1 | **Location**: `specs/platform/003-transcript-to-spec/`
 
@@ -8,7 +8,7 @@
 
 - VS Code with GitHub Copilot Chat extension
 - A meeting transcript saved as `.md` or `.txt` anywhere in the repo
-- The `transcript-to-specs` agent mode installed (`.github/agents/transcript-to-specs.md` present in repo)
+- The `transcripttospecs` agent mode installed (`.github/agents/transcripttospecs.md` present in repo)
 
 ---
 
@@ -44,7 +44,7 @@ Carol: We have a GDPR audit coming in Q3. All data at rest must be encrypted
 Open Copilot Chat in VS Code and type:
 
 ```
-@transcript-to-specs Please process this transcript: meetings/q2-planning-2026.md
+@transcripttospecs Please process this transcript: meetings/q2-planning-2026.md
 ```
 
 The agent reads the file, loads the live category catalog, and analyzes the transcript using the tier signal vocabulary.
@@ -121,7 +121,7 @@ Topics skipped: none
 
 Open any generated spec to review. Each has:
 - Correct YAML frontmatter (tier, category, spec-id, version, `status: draft`)
-- `role-context.requested-by: "transcript-to-specs"` and `decision-mode: autonomous`
+- `role-context.requested-by: "transcripttospecs"` and `decision-mode: autonomous`
 - Executive Summary, Requirements, and Constraints derived from the meeting
 
 Edit and refine as needed before committing.
@@ -182,7 +182,7 @@ Reply yes. The agent appends the addition via `write-spec.ps1 -Force`.
 If you are starting a new platform project with no existing specs, invoke the agent on your founding-vision document:
 
 ```
-@transcript-to-specs Please process this transcript: docs/founding-vision.md
+@transcripttospecs Please process this transcript: docs/founding-vision.md
 ```
 
 The agent creates all referenced `_categories.yaml` files and spec stubs from scratch. Confirm each grouping and new-category proposal in chat. You will have a complete initial spec tree in a single Copilot Chat session.

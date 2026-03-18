@@ -14,7 +14,7 @@
     This script is idempotent — if the spec-id is already registered in the target
     tier, it exits 0 without modifying any file.
 
-    Part of the transcript-to-specs platform toolkit.
+    Part of the transcripttospecs platform toolkit.
 
 .PARAMETER Tier
     Target tier. Must be one of: platform, business, security, infrastructure, devops, application.
@@ -117,13 +117,17 @@ if ($SpecId -notmatch '^[a-z][a-z0-9-]{1,7}$') {
 $catalog = Build-CategoryCatalog
 if ($catalog.ContainsKey($SpecId)) {
     $conflict = $catalog[$SpecId]
-    $msg = "Spec-id '$SpecId' is already registered in tier '$($conflict.tier)'. Spec-ids must be globally unique across all tiers."
-    if ($Json) {
-        [ordered]@{ status = "error"; message = $msg; conflictTier = $conflict.tier } | ConvertTo-Json -Compress
-    } else {
-        Write-Error $msg
+    if ($conflict.tier -ne $Tier) {
+        # Registered in a DIFFERENT tier — real uniqueness violation
+        $msg = "Spec-id '$SpecId' is already registered in tier '$($conflict.tier)'. Spec-ids must be globally unique across all tiers."
+        if ($Json) {
+            [ordered]@{ status = "error"; message = $msg; conflictTier = $conflict.tier } | ConvertTo-Json -Compress
+        } else {
+            Write-Error $msg
+        }
+        exit 1
     }
-    exit 1
+    # Same tier: already registered — fall through to per-tier idempotency check
 }
 
 # --- Locate _categories.yaml ---
@@ -171,7 +175,8 @@ if ($catContent -match "(?m)^\s{2,8}spec-id:\s*[`"']?$([regex]::Escape($SpecId))
 }
 
 # --- Build YAML entry ---
-$catTitle = $textInfo.ToTitleCase($CategoryName -replace '-', ' ')
+$humanName = $CategoryName -replace '-', ' '
+$catTitle  = $textInfo.ToTitleCase($humanName)
 $entry    = @"
 
   - category: $CategoryName

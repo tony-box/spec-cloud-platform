@@ -5,13 +5,13 @@ spec-id: txin
 artifact-type: template
 execution-mode: spec-interpreted
 version: "1.0.0-draft"
-description: "Tier signal vocabulary and extraction guidance for the transcript-to-specs agent"
+description: "Tier signal vocabulary and extraction guidance for the transcripttospecs agent"
 created: 2026-03-17
 ---
 
 # Transcript Analysis Template
 
-**Purpose**: Guide the `transcript-to-specs` agent through structured extraction, tier-category mapping, conflict detection, and grouping of meeting transcript content into compliant spec drafts.
+**Purpose**: Guide the `transcripttospecs` agent through structured extraction, tier-category mapping, conflict detection, and grouping of meeting transcript content into compliant spec drafts.
 
 This template is **spec-interpreted** — it provides structure, vocabulary, and guardrails. The agent applies judgment within those constraints. Variation in extraction is intentional and expected.
 
@@ -201,7 +201,7 @@ If a proposed spec has conflicts:
   "role-context": {
     "declared-role": "platform",
     "authority-scope": "platform-meta-governance",
-    "requested-by": "transcript-to-specs",
+    "requested-by": "transcripttospecs",
     "decision-mode": "autonomous",
     "cascade-run-id": null,
     "approved-by": null
@@ -271,7 +271,7 @@ The `conflict-flags` array is empty unless the user chose "Write-with-flag" for 
 ### Session summary (post to chat after all writes complete)
 
 ```markdown
-## 📋 Transcript-to-Specs Session Summary
+## 📋 transcripttospecs Session Summary
 
 **Transcript**: `<file path>`
 **Session date**: <date>
