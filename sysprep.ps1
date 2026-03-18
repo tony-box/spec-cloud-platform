@@ -82,6 +82,23 @@ function Copy-Asset ([string]$RelPath) {
     }
 }
 
+function Reset-SpecsYamlCounts ([string]$Path) {
+    # Zero category counts for all tiers EXCEPT platform.
+    # Platform functional specs travel with every customer release; their count is preserved.
+    if (-not (Test-Path $Path)) { return }
+    $lines       = Get-Content $Path
+    $currentTier = $null
+    $result = for ($i = 0; $i -lt $lines.Count; $i++) {
+        $line = $lines[$i]
+        if ($line -match '^\s+- tier:\s+(\w+)') { $currentTier = $Matches[1] }
+        if ($currentTier -ne 'platform' -and $line -match '^\s+categories:\s+\d+') {
+            $line = $line -replace '(\bcategories:\s+)\d+', '${1}0'
+        }
+        $line
+    }
+    ($result -join "`n") | Set-Content -Path $Path -Encoding utf8NoBOM -NoNewline
+}
+
 function Reset-CategoriesYaml ([string]$Path) {
     if (-not (Test-Path $Path)) { return }
     $content = Get-Content $Path -Raw
@@ -129,7 +146,7 @@ try {
                     -Value "# $roleDir team artifacts" -Encoding utf8NoBOM
     }
 
-    # Spec system skeleton (manifest + tier index files only — no tier content)
+    # Spec system skeleton — tier manifest and index files
     Copy-Asset "specs\specs.yaml"
     foreach ($tier in @('business','security','infrastructure','devops','platform')) {
         Copy-Asset "specs\$tier\_categories.yaml"
@@ -138,6 +155,17 @@ try {
     foreach ($leaf in @('_categories.yaml','_index.yaml')) {
         Copy-Asset "specs\application\$leaf"
     }
+
+    # Copy functional platform spec directories.
+    # These define system behavior (spec-system, iac-linting, artifact-org,
+    # policy-as-code, transcript-ingestion) and must travel with every release
+    # so that agent workflows function out-of-the-box.
+    # 0xx-* directories are internal development-plan artifacts for the template
+    # itself and are intentionally excluded.
+    $platformSrcDir = Join-Path $RepoRoot "specs\platform"
+    Get-ChildItem $platformSrcDir -Directory |
+        Where-Object { $_.Name -notmatch '^\d{3}-' } |
+        ForEach-Object { Copy-Asset "specs\platform\$($_.Name)" }
 
     Write-Host "[2/7] Customer assets copied"
 
@@ -153,12 +181,15 @@ try {
         }
     }
 
-    # Remove ALL platform spec subdirectories:
-    #   0xx-*  = internal feature roadmap for the template itself
-    #   others = platform-internal standards (iac-linting, artifact-org, etc.)
+    # Remove platform development-plan directories (0xx-*) only.
+    # These are internal feature-roadmap artifacts for the template itself.
+    # Functional platform specs (spec-system, iac-linting, artifact-org,
+    # policy-as-code, transcript-ingestion) were copied in Step 2 and are kept.
     $platformDir = Join-Path $StagingPath "specs\platform"
     if (Test-Path $platformDir) {
-        Get-ChildItem $platformDir -Directory | Remove-Item -Recurse -Force
+        Get-ChildItem $platformDir -Directory |
+            Where-Object { $_.Name -match '^\d{3}-' } |
+            Remove-Item -Recurse -Force
     }
 
     # Clear agent session memory (accumulated during template development)
@@ -174,27 +205,27 @@ try {
     Write-Host "[3/7] Internal content stripped"
 
     # -----------------------------------------------------------------------
-    # Step 4 – Reset _categories.yaml skeletons to empty state
+    # Step 4 – Reset _categories.yaml skeletons for customer-authored tiers
     # -----------------------------------------------------------------------
-    foreach ($tier in @('business','security','infrastructure','devops','platform')) {
+    # Platform _categories.yaml is NOT reset — it indexes the functional platform
+    # specs that shipped in Step 2 and must remain accurate for agents to work.
+    foreach ($tier in @('business','security','infrastructure','devops')) {
         $catFile = Join-Path $StagingPath "specs\$tier\_categories.yaml"
         Reset-CategoriesYaml $catFile
     }
     foreach ($leaf in @('_categories.yaml','_index.yaml')) {
         Reset-CategoriesYaml (Join-Path $StagingPath "specs\application\$leaf")
     }
-    Write-Host "[4/7] Category indexes reset"
+    Write-Host "[4/7] Category indexes reset (platform preserved)"
 
     # -----------------------------------------------------------------------
-    # Step 5 – Reset specs.yaml tier category counts to 0
+    # Step 5 – Reset specs.yaml category counts for customer-authored tiers
     # -----------------------------------------------------------------------
+    # Platform tier count (categories: 5) is preserved — functional platform specs shipped.
+    # All other tier counts are zeroed; customers populate these from transcripts.
     $specsYaml = Join-Path $StagingPath "specs\specs.yaml"
-    if (Test-Path $specsYaml) {
-        $content = Get-Content $specsYaml -Raw
-        $content = $content -replace '(?m)(^\s*categories:\s*)\d+', '${1}0'
-        Set-Content -Path $specsYaml -Value $content -Encoding utf8NoBOM -NoNewline
-    }
-    Write-Host "[5/7] specs.yaml counts reset"
+    Reset-SpecsYamlCounts $specsYaml
+    Write-Host "[5/7] specs.yaml counts reset (platform preserved)"
 
     # -----------------------------------------------------------------------
     # Step 6 – Write GETTING_STARTED.md and placeholder directories
