@@ -202,9 +202,8 @@ try {
     $vscodePath = Join-Path $StagingPath ".vscode"
     if (Test-Path $vscodePath) { Remove-Item $vscodePath -Recurse -Force }
 
-    # Remove internal development tracking files
-    $todoPath = Join-Path $StagingPath "to-do.md"
-    if (Test-Path $todoPath) { Remove-Item $todoPath -Force }
+    # Remove internal development tracking files (any todo/to-do variants)
+    Get-ChildItem $StagingPath -File -Filter "to*do*" | Remove-Item -Force
 
     Write-Host "[3/7] Internal content stripped"
 
