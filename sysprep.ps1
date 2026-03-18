@@ -173,11 +173,27 @@ try {
     # Step 3 – Strip internal / generated content from the staging tree
     # -----------------------------------------------------------------------
 
-    # Remove all tier spec subdirectories (customer-authored content)
+    # Remove all tier spec subdirectories and any stray files (customer-authored content).
+    # Only the _categories.yaml / _index.yaml skeleton files are retained.
     foreach ($tier in @('business','security','infrastructure','devops','application')) {
         $tierDir = Join-Path $StagingPath "specs\$tier"
         if (Test-Path $tierDir) {
             Get-ChildItem $tierDir -Directory | Remove-Item -Recurse -Force
+            Get-ChildItem $tierDir -File |
+                Where-Object { $_.Name -notin @('_categories.yaml','_index.yaml') } |
+                Remove-Item -Force
+        }
+    }
+
+    # Strip any content that leaked into the artifact role skeleton directories.
+    # Each role dir should contain only the .gitkeep placeholder.
+    foreach ($roleDir in @('applications','devops','infrastructure')) {
+        $artifactRoleDir = Join-Path $StagingPath "artifacts\$roleDir"
+        if (Test-Path $artifactRoleDir) {
+            Get-ChildItem $artifactRoleDir -Directory | Remove-Item -Recurse -Force
+            Get-ChildItem $artifactRoleDir -File |
+                Where-Object { $_.Name -ne '.gitkeep' } |
+                Remove-Item -Force
         }
     }
 
@@ -204,6 +220,12 @@ try {
 
     # Remove internal development tracking files (any todo/to-do variants)
     Get-ChildItem $StagingPath -File -Filter "to*do*" | Remove-Item -Force
+
+    # Remove developer-only tooling files (not needed by customers)
+    foreach ($devFile in @('sysprep.ps1', 'to-do.md')) {
+        $devFilePath = Join-Path $StagingPath $devFile
+        if (Test-Path $devFilePath) { Remove-Item $devFilePath -Force }
+    }
 
     Write-Host "[3/7] Internal content stripped"
 
@@ -338,10 +360,12 @@ Generated from template **{{TAG_NAME}}**.
 
         # Remove an existing tag if -Force was requested
         if ($Force -and $existingTag) {
-            git -C $RepoRoot tag -d $TagName 2>$null | Out-Null
+            git tag -d $TagName 2>$null | Out-Null
         }
 
-        git -C $RepoRoot tag -a $TagName -m "Customer template release $TagName"
+        # Tag HEAD of the staging worktree (the orphan commit), not the main branch.
+        # We are Push-Location'd to $StagingPath, so plain `git tag` targets this worktree.
+        git tag -a $TagName -m "Customer template release $TagName"
         Write-Host "[7/7] Commit and tag '$TagName' created"
     } finally {
         Pop-Location
