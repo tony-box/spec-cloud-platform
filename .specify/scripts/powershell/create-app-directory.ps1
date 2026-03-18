@@ -43,7 +43,7 @@ param(
 # Configuration
 $ArtifactsRoot = "artifacts"
 $ApplicationsDir = Join-Path $ArtifactsRoot "applications"
-$TemplateDir = Join-Path $ArtifactsRoot ".templates" "application-artifact-template"
+$TemplateDir = Join-Path ".specify" "templates" "application-artifact-template"
 $AppDir = Join-Path $ApplicationsDir $AppName
 
 # Validation

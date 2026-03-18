@@ -120,8 +120,14 @@ try {
     Copy-Asset ".github"
     Copy-Asset ".gitignore"
 
-    # Infrastructure deliverables (IaC modules are customer value)
-    Copy-Asset "artifacts"
+    # Artifacts skeleton — empty role directories only (no pre-populated content).
+    # Customer teams fill these with their own outputs.
+    foreach ($roleDir in @('applications', 'devops', 'infrastructure')) {
+        $skelDest = Join-Path $StagingPath "artifacts\$roleDir"
+        New-Item -ItemType Directory -Path $skelDest -Force | Out-Null
+        Set-Content -Path (Join-Path $skelDest ".gitkeep") `
+                    -Value "# $roleDir team artifacts" -Encoding utf8NoBOM
+    }
 
     # Spec system skeleton (manifest + tier index files only — no tier content)
     Copy-Asset "specs\specs.yaml"
