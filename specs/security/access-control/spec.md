@@ -69,6 +69,8 @@ adhered-by:
 - **REQ-003**: Privileged access MUST require MFA (multi-factor authentication)
 - **REQ-004**: All access MUST follow least privilege principle
 - **REQ-005**: All authentication attempts MUST be logged and auditable
+- **REQ-006**: Production deployments MUST require change-board approval before execution (no self-service or automated promotion without an approved change ticket)
+- **REQ-007**: Production deployment rights MUST NOT be granted to individual engineers; all production deployments MUST be executed via approved pipeline service accounts only
 
 ### Authentication Methods
 

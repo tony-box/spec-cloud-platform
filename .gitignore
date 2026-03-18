@@ -1,0 +1,31 @@
+# ============================================================
+# .gitignore — spec-cloud-platform-template
+# Tech stack: PowerShell scripts + YAML/Markdown specs
+# ============================================================
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.tmp
+*.bak
+*.swp
+*~
+
+# VS Code workspace settings (keep .vscode/extensions.json etc. if desired)
+.vscode/settings.json
+.vscode/*.code-workspace
+
+# PowerShell module caches and test output
+PSGetUpdateCheck.txt
+*.ps1xml
+
+# Spec generation temp output
+*.draft.md
+*.temp.md
+
+# Secrets / credentials — never commit these
+*.env
+*.secret
+secrets/
+credentials/

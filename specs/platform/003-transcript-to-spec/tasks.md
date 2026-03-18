@@ -7,7 +7,7 @@ artifact-type: tasks
 version: "1.1.0-draft"
 description: "Task list for AI Transcript Ingestion — transcripttospecs agent + hysteresis category matching (plan v1.2.0-draft)"
 created: 2026-03-17
-last-updated: 2026-03-17
+last-updated: 2026-03-18
 
 # Role Context (per governance v2.0.0)
 role-context:
@@ -111,7 +111,7 @@ role-context:
 - [X] T014 review [US1] Validate agent Steps 1–6 against US1 acceptance criteria: grouping plan before any writes; max 5 clarifying questions; correct YAML frontmatter in output; session summary lists every action (REQ-014)
 - [X] T015 [P] review [US1] Verify agent never writes a file before user confirms grouping plan (REQ-004); verify agent never embeds API keys or makes direct LLM API calls from scripts (Constraints)
 - [X] T016 [P] artifact-gen [US1] Register the `transcript-ingestion` platform category: run `register-category.ps1 -Tier platform -CategoryName "Transcript Ingestion" -SpecId txin -Description "AI-assisted meeting transcript ingestion for automatic spec generation"`; verify `_categories.yaml` entry
-- [ ] T017 test [US1] Smoke test using `quickstart.md` Q2 Planning Meeting walkthrough: invoke `@transcripttospecs` on a sample multi-tier transcript; verify grouping plan appears before writes; verify each output spec has `status: draft`, `requested-by: "transcripttospecs"`, `decision-mode: autonomous`; verify session summary
+- [X] T017 test [US1] Smoke test using `quickstart.md` Q2 Planning Meeting walkthrough: invoke `@transcripttospecs` on a sample multi-tier transcript; verify grouping plan appears before writes; verify each output spec has `status: draft`, `requested-by: "transcripttospecs"`, `decision-mode: autonomous`; verify session summary
 
 ---
 
@@ -129,7 +129,7 @@ role-context:
   - Choice 3 (Propose amendment): write draft spec AND generate companion amendment proposal at `specs/<upstream-tier>/<upstream-category>/spec-amendment-<new-spec-id>.md`
 - [X] T019 review [US2] Validate against US2 acceptance criteria: correct upstream spec-id/version/requirement cited; all three choices honored; Write-with-flag output has correct frontmatter block; amendment proposal targets the correct upstream spec
 - [X] T020 [P] review [US2] Verify conflict resolution is always interactive — no silent skip, no silent block (Constraints: "Conflict resolution MUST be per-conflict and interactive")
-- [ ] T021 test [US2] Smoke test: process a transcript proposing zero-friction CI/CD deployment against a stubbed `security/access-control` spec with a change-board approval MUST; verify conflict is surfaced; verify Write-with-flag output includes `conflict-flags:` in frontmatter
+- [X] T021 test [US2] Smoke test: process a transcript proposing zero-friction CI/CD deployment against a stubbed `security/access-control` spec with a change-board approval MUST; verify conflict is surfaced; verify Write-with-flag output includes `conflict-flags:` in frontmatter
 
 ---
 
@@ -146,7 +146,7 @@ role-context:
   - If not additive: skip with a chat note (no write)
 - [X] T023 review [US3] Validate against US3 acceptance criteria: no wholesale overwrite; skips when fully covered; requires confirmation before any change; merged body preserves all original content
 - [X] T024 [P] review [US3] Cross-check that agent's merged body construction and `write-spec.ps1 -Force` (T010 contract) agree — no data-loss scenario possible at the handoff point
-- [ ] T025 test [US3] Smoke test: transcript adds two new requirements to a category with an existing spec; verify only net-new requirements appear as proposed; confirm; verify merged spec; re-run same transcript — verify no duplicate additions (idempotency, REQ-013)
+- [X] T025 test [US3] Smoke test: transcript adds two new requirements to a category with an existing spec; verify only net-new requirements appear as proposed; confirm; verify merged spec; re-run same transcript — verify no duplicate additions (idempotency, REQ-013)
 
 ---
 
@@ -169,24 +169,24 @@ role-context:
 - [X] T028 review [US4] Verify hysteresis bias rule content (REQ-019): confirm Step 3 includes MUST NOT language; confirm all three split conditions are present and distinct: (a) lifecycle phase, (b) actor/authority boundary, (c) zero normative overlap + radical scope expansion; no condition missing or conflated
 - [X] T029 review [US4] Verify grouping plan display content (REQ-020): confirm Step 5 shows CLOSE MATCH inline rationale; AMBIGUOUS A/B with "Default: A" explicitly labeled; NEW CATEGORY shows closest evaluated category + hysteresis condition(s); New Category Discovery accepts `merge-into <category>` and redirects to UPDATE flow
 - [X] T030 artifact-gen [US4] Create test transcript `meetings/test-hysteresis-dr-2026-03-17.md` using the exact content from plan.md Phase 2 T031 Test Transcript section (Q1 Business Resilience Review — Alice/Bob/Carol; DR strategy RPO/RTO/failover runbook + reserved-instance right-sizing)
-- [ ] T031 test [US4] Verification — Decision 7 worked example (plan.md T029): invoke agent on a stub transcript with only the cost-allocation tagging topic against existing platform categories; verify:
+- [X] T031 test [US4] Verification — Decision 7 worked example (plan.md T029): invoke agent on a stub transcript with only the cost-allocation tagging topic against existing platform categories; verify:
   - Agent classifies as CLOSE MATCH with `platform/governance` (NOT a new category)
   - Grouping plan entry shows `UPDATE specs/platform/governance/spec.md` with `~65% concept overlap` rationale
   - Agent does NOT propose `platform/cost-tagging` or any new platform category
-- [ ] T032 test [US4] Verification — AMBIGUOUS default bias (plan.md T030): invoke agent on stub transcript with only *"define a process for rotating platform team access credentials"* against platform tier; verify:
-  - [ ] Grouping plan shows inline A/B choice with A explicitly labeled as Default
-  - [ ] Confirming without entering B routes group as UPDATE, not NEW CATEGORY
-  - [ ] Agent does NOT call `register-category.ps1` for this group
-- [ ] T033 test [US4] Full smoke test (plan.md T031): invoke agent on `meetings/test-hysteresis-dr-2026-03-17.md`; verify all 7 checklist items:
-  - [ ] Group A (disaster-recovery) classified as NEW CATEGORY with condition (a) cited
-  - [ ] Group B (reserved-instance right-sizing) classified as CLOSE MATCH with `business/cost`
-  - [ ] Grouping plan shows `Closest evaluated: business/governance — rejected: distinct lifecycle phase`
-  - [ ] Grouping plan shows `merge-into governance` as a valid response option
-  - [ ] `merge-into governance` response reclassifies Group A as UPDATE; `register-category.ps1` NOT called
-  - [ ] Confirm-as-is path calls `register-category.ps1 -Tier business -CategoryName disaster-recovery -SpecId dr`
-  - [ ] Session summary shows 1 new category registered + 1 spec updated
-- [ ] T034 test [US4] Test `merge-into` shortcut in isolation: from a fresh session where agent proposes `business/disaster-recovery` as NEW CATEGORY, respond `merge-into governance`; verify agent does NOT call `register-category.ps1`; verify agent reads `specs/business/governance/spec.md` and enters US3 additive-update flow
-- [ ] T035 test [US4] Cleanup test artifacts — run plan.md cleanup commands:
+- [X] T032 test [US4] Verification — AMBIGUOUS default bias (plan.md T030): invoke agent on stub transcript with only *"define a process for rotating platform team access credentials"* against platform tier; verify:
+  - [X] Grouping plan shows inline A/B choice with A explicitly labeled as Default
+  - [X] Confirming without entering B routes group as UPDATE, not NEW CATEGORY
+  - [X] Agent does NOT call `register-category.ps1` for this group
+- [X] T033 test [US4] Full smoke test (plan.md T031): invoke agent on `meetings/test-hysteresis-dr-2026-03-17.md`; verify all 7 checklist items:
+  - [X] Group A (disaster-recovery) classified as NEW CATEGORY with condition (a) cited
+  - [X] Group B (reserved-instance right-sizing) classified as CLOSE MATCH with `business/cost`
+  - [X] Grouping plan shows `Closest evaluated: business/governance — rejected: distinct lifecycle phase`
+  - [X] Grouping plan shows `merge-into governance` as a valid response option
+  - [X] `merge-into governance` response reclassifies Group A as UPDATE; `register-category.ps1` NOT called
+  - [X] Confirm-as-is path calls `register-category.ps1 -Tier business -CategoryName disaster-recovery -SpecId dr`
+  - [X] Session summary shows 1 new category registered + 1 spec updated
+- [X] T034 test [US4] Test `merge-into` shortcut in isolation: from a fresh session where agent proposes `business/disaster-recovery` as NEW CATEGORY, respond `merge-into governance`; verify agent does NOT call `register-category.ps1`; verify agent reads `specs/business/governance/spec.md` and enters US3 additive-update flow
+- [X] T035 test [US4] Cleanup test artifacts — run plan.md cleanup commands:
   ```powershell
   Remove-Item specs/business/disaster-recovery -Recurse -Force -ErrorAction SilentlyContinue
   Remove-Item meetings/test-hysteresis-dr-2026-03-17.md -ErrorAction SilentlyContinue
@@ -202,7 +202,7 @@ role-context:
 
 - [X] T036 artifact-gen [US5] Extend agent Step 2 catalog load: if a tier `_categories.yaml` is missing, create a skeleton (tier name, `categories: []`, `category-count: 0`) before proceeding (REQ-002)
 - [X] T037 review [US5] Validate bootstrap behavior: agent does not error on missing `_categories.yaml`; skeletons comply with the schema used by `register-category.ps1`
-- [ ] T038 test [US5] Smoke test: remove one `_categories.yaml`; verify agent bootstraps it; verify all new specs are compliant; verify session summary distinguishes newly registered vs pre-existing categories
+- [X] T038 test [US5] Smoke test: remove one `_categories.yaml`; verify agent bootstraps it; verify all new specs are compliant; verify session summary distinguishes newly registered vs pre-existing categories
 
 ---
 
@@ -228,8 +228,8 @@ role-context:
 
 - [X] T042 [P] test [US1] Run PSScriptAnalyzer across all `.ps1` files in `.specify/scripts/powershell/` — zero errors required (NFR-001)
 - [X] T043 [P] test [US1] Time each toolkit script: `register-category.ps1` and `write-spec.ps1` must complete in under 10 seconds per call (NFR-002, REQ-017)
-- [ ] T044 [P] review [US1] Verify all generated spec files are human-readable in VS Code with no binary characters (NFR-003)
-- [ ] T045 test [US1] End-to-end session test: full transcript session (multi-tier, one conflict, one additive update, one new category with hysteresis evaluation) without leaving Copilot Chat (NFR-004); record session summary output
+- [X] T044 [P] review [US1] Verify all generated spec files are human-readable in VS Code with no binary characters (NFR-003)
+- [X] T045 test [US1] End-to-end session test: full transcript session (multi-tier, one conflict, one additive update, one new category with hysteresis evaluation) without leaving Copilot Chat (NFR-004); record session summary output
 
 ---
 
