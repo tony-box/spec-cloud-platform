@@ -50,7 +50,7 @@ precedence:
 
 # Relationships
 defines:
-  - "transcript-to-specs agent mode invocation contract and behavioral constraints"
+  - "transcripttospecs agent mode invocation contract and behavioral constraints"
   - "register-category.ps1 and write-spec.ps1 script-enforced toolkit interface"
   - "transcript-analysis-template.md spec-interpreted AI guidance and tier signal vocabulary"
   - "transcript-ingestion platform category registration"
@@ -60,12 +60,12 @@ defines:
 
 ### Session 2026-03-17
 
-- Q: How is the transcript ingestion capability invoked? → A: New VS Code agent mode named `transcript-to-specs`. User invokes in Copilot Chat, provides a transcript file path, and the agent reads the file, conducts conversation-style Q&A, and writes specs — all within a single agent session. No manual intermediary step between analysis and spec generation.
-- Q: What is the execution model — does it require a user step between AI analysis and spec writing? → A: No. The previous two-step model (script renders prompt → user pastes to AI → user saves response → script reads response) is replaced. The `transcript-to-specs` agent handles the full flow autonomously: file read, analysis, clarifying questions, and spec writes all happen within the agent session.
+- Q: How is the transcript ingestion capability invoked? → A: New VS Code agent mode named `transcripttospecs`. User invokes in Copilot Chat, provides a transcript file path, and the agent reads the file, conducts conversation-style Q&A, and writes specs — all within a single agent session. No manual intermediary step between analysis and spec generation.
+- Q: What is the execution model — does it require a user step between AI analysis and spec writing? → A: No. The previous two-step model (script renders prompt → user pastes to AI → user saves response → script reads response) is replaced. The `transcripttospecs` agent handles the full flow autonomously: file read, analysis, clarifying questions, and spec writes all happen within the agent session.
 - Q: When a newly identified spec conflicts with a higher-tiered existing spec, how should the agent handle it? → A: Per-conflict interactive resolution. For each conflict detected the agent pauses in chat and presents the user with three choices: (1) Block — do not write this spec until the upstream spec is amended; (2) Write-with-flag — write the draft spec with a `conflict-flags:` frontmatter field and an inline warning section noting the violation; (3) Propose amendment — write the conflicting draft AND generate a companion amendment proposal for the upstream spec. The user chooses per conflict before the agent continues.
 - Q: How should transcript content be grouped into spec files? → A: One spec per tier-category pair. The agent maps each topic cluster to exactly one tier+category combination, presents the proposed grouping plan to the user in chat for confirmation, then writes one `spec.md` per pair. A single transcript may produce multiple specs across multiple tiers and categories.
 - Q: When the transcript covers a topic already captured in an existing spec, what should the agent do? → A: Update if additive, skip if already covered. The agent reads the existing spec, checks whether the transcript adds new requirements, constraints, or decisions not already captured, then proposes additions in chat and asks for user confirmation before writing. If the existing spec fully covers the topic, the agent skips it with a note in the chat summary.
-- Q: Does `ingest-transcript.ps1` still exist in the new agent-driven design, or does the agent handle everything? → A: Agent + scripts. The `transcript-to-specs` agent handles all analysis, clarification Q&A, conflict resolution, and grouping confirmation. It calls existing `.specify/scripts/powershell/` toolkit scripts for the deterministic operations (frontmatter generation, registry updates, `_categories.yaml` writes, output validation). The scripts remain independently usable from CI. No single monolithic `ingest-transcript.ps1`; the deterministic operations are split across purpose-specific scripts wired by the agent.
+- Q: Does `ingest-transcript.ps1` still exist in the new agent-driven design, or does the agent handle everything? → A: Agent + scripts. The `transcripttospecs` agent handles all analysis, clarification Q&A, conflict resolution, and grouping confirmation. It calls existing `.specify/scripts/powershell/` toolkit scripts for the deterministic operations (frontmatter generation, registry updates, `_categories.yaml` writes, output validation). The scripts remain independently usable from CI. No single monolithic `ingest-transcript.ps1`; the deterministic operations are split across purpose-specific scripts wired by the agent.
 
 ---
 
@@ -95,7 +95,7 @@ defines:
 
 **Problem**: Valuable architectural and business decisions are made in meetings but never captured as formal platform specs. Translating meeting notes into correctly-structured, categorized spec files is manual, error-prone, and requires deep knowledge of the six-tier hierarchy, category registration, frontmatter schema, and cross-tier conflict rules.
 
-**Solution**: A new VS Code agent mode named **`transcript-to-specs`** that a user invokes in Copilot Chat. The user provides a transcript file path; the agent:
+**Solution**: A new VS Code agent mode named **`transcripttospecs`** that a user invokes in Copilot Chat. The user provides a transcript file path; the agent:
 1. Reads the transcript and the live category catalog (`specs.yaml` + all `_categories.yaml` files)
 2. Identifies decisions, requirements, and constraints across all tiers using the tier signal vocabulary
 3. Proposes a grouping plan — one spec per tier-category pair — and asks the user to confirm before writing
@@ -116,7 +116,7 @@ Per the platform execution-mode policy (`specs.yaml`):
 
 | Component | Type | Mode | Rationale |
 |---|---|---|---|
-| `transcript-to-specs` agent mode | `.agent.md` under `.github/agents/` | **spec-interpreted** | AI-driven analysis, clarification Q&A, conflict resolution, grouping confirmation — variation is intentional and desirable |
+| `transcripttospecs` agent mode | `.agent.md` under `.github/agents/` | **spec-interpreted** | AI-driven analysis, clarification Q&A, conflict resolution, grouping confirmation — variation is intentional and desirable |
 | `transcript-analysis-template.md` | `.md` under `.specify/templates/` | **spec-interpreted** | Tier signal vocabulary and extraction guidance for the agent — guidance document, not executable |
 | Toolkit scripts (e.g., `register-category.ps1`, `write-spec.ps1`) | `.ps1` under `.specify/scripts/` | **script-enforced** | Deterministic operations: frontmatter generation, `_categories.yaml` writes, `specs.yaml` updates, output validation, exit codes |
 
@@ -128,17 +128,17 @@ The split: *analysis, judgment, and interaction* (agent, spec-interpreted) vs *f
 
 ### Functional Requirements — Agent Behavior
 
-- **REQ-001**: The `transcript-to-specs` agent MUST accept a transcript file path as its primary input and read the file using its file tools
+- **REQ-001**: The `transcripttospecs` agent MUST accept a transcript file path as its primary input and read the file using its file tools
 - **REQ-002**: Before proposing any specs, the agent MUST load the live category catalog by reading `specs/specs.yaml` and all `specs/<tier>/_categories.yaml` files
 - **REQ-003**: The agent MUST extract decisions, requirements, constraints, cost/budget signals, security requirements, infrastructure choices, governance/process rules, and DevOps practices from the transcript using the tier signal vocabulary in `transcript-analysis-template.md`
 - **REQ-004**: Each extracted item MUST be mapped to exactly one tier and one category; the agent MUST present the full proposed grouping plan to the user in chat and wait for confirmation before writing any files
 - **REQ-005**: The agent MUST ask clarifying questions in chat for any topic it cannot fully resolve from the transcript alone, using a sequential one-question-at-a-time pattern (max 5 questions per session)
-- **REQ-006**: If a finding does not map to any existing category, the agent MUST propose a new category (name, spec-id, tier, justification) and ask the user to confirm before registering it
+- **REQ-006**: Before proposing a new category, the agent MUST first evaluate each extracted group against all existing categories in the same tier using the semantic matching classifier defined in REQ-018. A new category MUST NOT be proposed unless the NO MATCH classification is reached and the hysteresis conditions in REQ-019 permit it. When a new category is proposed, the agent MUST show (a) which existing category was the closest match considered and (b) which hysteresis condition(s) justify the split. The user MUST confirm before the category is registered.
 - **REQ-007**: Before writing any spec, the agent MUST check all higher-tiered existing specs for conflicts. A **conflict** is a MUST, MUST NOT, SHALL, or SHALL NOT normative statement in a higher-authority tier spec (i.e., a spec whose tier has a lower priority number per the constitution: Platform=0 > Business=1 > Security=2 > Infrastructure=3 > DevOps=4 > Application=5) that directly contradicts a requirement or behavior stated in the proposed spec. For each conflict detected the agent MUST pause and offer the user three options: (1) Block, (2) Write-with-flag, (3) Propose upstream amendment
 - **REQ-008**: For a transcript topic that maps to an existing `spec.md`, the agent MUST read the existing spec and determine if the transcript is **additive**. A transcript item is additive if it introduces a net-new requirement, constraint, decision, or rationale not semantically equivalent to any already-present item in the existing spec's Requirements or Constraints sections. If additive, propose the net-new items in chat and ask for confirmation; if already covered, skip with a chat note
 - **REQ-009**: All output spec files MUST be written via toolkit scripts to enforce deterministic frontmatter, registry updates, and PSScriptAnalyzer compliance
 - **REQ-010**: Every generated spec file MUST include compliant YAML frontmatter with all required fields per `spec-system`: `tier`, `category`, `spec-id`, `version: "1.0.0-draft"`, `status: draft`, `compliance-state: current`
-- **REQ-011**: Generated specs MUST record `requested-by: "transcript-to-specs"` and `decision-mode: autonomous` in role-context
+- **REQ-011**: Generated specs MUST record `requested-by: "transcripttospecs"` and `decision-mode: autonomous` in role-context
 - **REQ-012**: If the user chose Write-with-flag for a conflict, the generated spec MUST include a `conflict-flags:` frontmatter field listing each upstream spec violated and the reason
 - **REQ-013**: Registry updates (`_categories.yaml`, `specs.yaml`) MUST be idempotent — re-running on the same transcript MUST NOT create duplicate entries
 - **REQ-014**: The agent MUST produce a session summary in chat after all writes: specs created, specs updated, specs skipped, new categories registered, conflicts flagged, amendment proposals written
@@ -148,6 +148,23 @@ The split: *analysis, judgment, and interaction* (agent, spec-interpreted) vs *f
 - **REQ-015**: Toolkit scripts called by the agent MUST pass PSScriptAnalyzer with zero errors
 - **REQ-016**: Toolkit scripts MUST exit non-zero if required inputs are missing or output validation fails
 - **REQ-017**: File scaffolding and registry update scripts MUST complete within 10 seconds per operation
+
+- **REQ-018**: The agent MUST classify each extracted group against all existing same-tier categories using the following 4-tier semantic classifier:
+  - **EXACT MATCH** — category name identical (or kebab-case equivalent) → mark as UPDATE
+  - **CLOSE MATCH** — same primary domain, ≥60% concept overlap (overlapping nouns/verbs/subjects) → mark as UPDATE; note which existing category absorbs the group and why
+  - **AMBIGUOUS** — same broad domain but the extracted items introduce a clearly orthogonal concern (different lifecycle phase, actor, or enforcement boundary) → flag for Step 5 user disambiguation as an A/B choice
+  - **NO MATCH** — different primary domain, no meaningful concept overlap → mark as potential NEW CATEGORY (subject to REQ-019)
+
+- **REQ-019**: The agent MUST apply a hysteresis bias toward existing categories. A new category MUST NOT be proposed unless at least one of the following split conditions is clearly met:
+  - (a) The extracted items address a lifecycle phase not present in any existing same-tier category
+  - (b) The extracted items introduce a distinct actor or authority boundary not represented in any existing same-tier category
+  - (c) The extracted items have zero normative overlap with all existing same-tier categories AND the closest existing category would require renaming or radical scope expansion to accommodate them
+
+- **REQ-020**: In the grouping plan (Step 5), the agent MUST:
+  - For CLOSE MATCH groups: display the match rationale inline (e.g., *close match: 70% concept overlap — adding audit-trail requirements to `governance`*)
+  - For AMBIGUOUS groups: present an inline A/B choice where A (extend existing) is the explicit default; the user MUST explicitly choose B to create a new category
+  - For NEW CATEGORY proposals: state the closest existing category that was evaluated and which specific hysteresis condition(s) from REQ-019 justify creating a new category instead
+  - Accept a `merge-into <existing-category>` user response at any point to redirect a proposed new category to an UPDATE against the named existing category
 
 ### Non-Functional Requirements
 
@@ -169,7 +186,7 @@ The split: *analysis, judgment, and interaction* (agent, spec-interpreted) vs *f
 
 ### User Story 1 — Multi-tier spec generation from a business strategy meeting (Priority: P1)
 
-A platform engineer opens Copilot Chat and invokes the `transcript-to-specs` agent, pointing it at a transcript of a quarterly planning meeting where stakeholders discussed cost targets, reserved instances, Azure Policy for billing alerts, default SKUs, and faster time to market via CI/CD maturity.
+A platform engineer opens Copilot Chat and invokes the `transcripttospecs` agent, pointing it at a transcript of a quarterly planning meeting where stakeholders discussed cost targets, reserved instances, Azure Policy for billing alerts, default SKUs, and faster time to market via CI/CD maturity.
 
 The agent:
 1. Reads the file and loads the current category catalog
@@ -181,7 +198,7 @@ The agent:
 **Acceptance criteria**:
 - Agent presents grouping plan before writing any files
 - Agent asks at most 5 clarifying questions in the session
-- Each written spec has correct YAML frontmatter (`status: draft`, `requested-by: "transcript-to-specs"`, `decision-mode: autonomous`)
+- Each written spec has correct YAML frontmatter (`status: draft`, `requested-by: "transcripttospecs"`, `decision-mode: autonomous`)
 - Session summary lists every spec created/updated/skipped and every conflict handled
 
 ### User Story 2 — Conflict detection and per-conflict resolution (Priority: P1)
@@ -211,15 +228,29 @@ The agent proposes the additions in chat and asks for confirmation before writin
 - If the existing spec already fully covers the transcript content, agent skips with a note (no write)
 - User confirmation is required before any change to an existing spec file
 
-### User Story 4 — New category discovery (Priority: P2)
+### User Story 4 — New category discovery with hysteresis evaluation (Priority: P2)
 
-The transcript discusses a disaster-recovery strategy that has no matching category in the catalog. The agent proposes a new category `business/disaster-recovery` (spec-id `dr`), asks for user confirmation, then creates the spec and updates `specs/business/_categories.yaml` and `specs.yaml`.
+The transcript discusses a disaster-recovery strategy. The agent evaluates all existing `business` categories against the extracted items: `compliance-framework`, `cost`, `governance`. It determines:
+- `governance` is a CLOSE MATCH candidate, but fails the close-match threshold because disaster-recovery has a distinct lifecycle phase (incident response / recovery) not present in any existing business category — this meets hysteresis condition (a).
+- The agent classifies the group as NO MATCH and proposes a new category `business/disaster-recovery` (spec-id `dr`).
+
+In the grouping plan the agent shows:
+```
+🆕 NEW CATEGORY: business/disaster-recovery
+   Closest evaluated: business/governance — rejected: distinct lifecycle phase (incident response/recovery) not present in governance
+   Hysteresis condition met: (a) distinct lifecycle phase
+   Confirm? (yes / no / merge-into governance)
+```
+
+The user confirms. The agent calls `register-category.ps1` then `write-spec.ps1`.
 
 **Acceptance criteria**:
+- Agent evaluates existing same-tier categories before proposing new; shows reasoning
 - New `_categories.yaml` entry includes all required fields (`name`, `spec-id`, `description`)
-- `specs.yaml` `category-count` for the tier is incremented
+- `specs.yaml` `category-count` for the tier is incremented  
 - The new spec has compliant frontmatter
 - Agent does not create the category without explicit user confirmation
+- If user responds `merge-into governance`, agent reclassifies as UPDATE and routes through existing spec handling instead of creating a new category
 
 ### User Story 5 — Empty project bootstrap (Priority: P3)
 
@@ -236,7 +267,7 @@ Invoking the agent on a repo with no existing category specs generates a full in
 
 | Artifact | Path | Execution Mode |
 |---|---|---|
-| Agent mode definition | `.github/agents/transcript-to-specs.md` | spec-interpreted |
+| Agent mode definition | `.github/agents/transcripttospecs.md` | spec-interpreted |
 | Analysis & signal vocabulary template | `.specify/templates/transcript-analysis-template.md` | spec-interpreted |
 | Category registration script | `.specify/scripts/powershell/register-category.ps1` | script-enforced |
 | Spec writer script | `.specify/scripts/powershell/write-spec.ps1` | script-enforced |
@@ -252,7 +283,7 @@ Invoking the agent on a repo with no existing category specs generates a full in
 - The agent MUST NOT modify an existing spec file without explicit user confirmation of the proposed additions
 - New categories MUST follow naming convention: `lowercase-kebab-case` directory, spec-id 2–8 characters matching `^[a-z][a-z0-9-]{1,7}$` (begins with letter, may contain lowercase alphanumeric and hyphens), globally unique across the entire catalog
 - The analysis template MUST include the full tier signal vocabulary so the agent produces correct tier-category mappings even on an empty project
-- Role-context in generated specs MUST record `requested-by: "transcript-to-specs"` and `decision-mode: autonomous`
+- Role-context in generated specs MUST record `requested-by: "transcripttospecs"` and `decision-mode: autonomous`
 - Conflict resolution MUST be per-conflict and interactive — the agent MUST NOT silently skip or silently block conflicting specs
-- The `transcript-to-specs` agent MUST NOT embed API keys or make direct LLM API calls from toolkit scripts; all AI reasoning happens within the agent session
+- The `transcripttospecs` agent MUST NOT embed API keys or make direct LLM API calls from toolkit scripts; all AI reasoning happens within the agent session
 

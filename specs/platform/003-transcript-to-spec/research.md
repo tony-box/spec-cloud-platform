@@ -6,7 +6,7 @@
 
 ## Decision 1: Execution Model Split
 
-**Decision**: Use a split-responsibility model — `transcript-to-specs` agent mode (spec-interpreted) handles analysis, clarification Q&A, conflict resolution, and grouping confirmation; `register-category.ps1` and `write-spec.ps1` (script-enforced) handle all deterministic file operations.
+**Decision**: Use a split-responsibility model — `transcripttospecs` agent mode (spec-interpreted) handles analysis, clarification Q&A, conflict resolution, and grouping confirmation; `register-category.ps1` and `write-spec.ps1` (script-enforced) handle all deterministic file operations.
 
 > **Clarification update (2026-03-17)**: Original decision specified `ingest-transcript.ps1` as the script-enforced component. This was superseded by Q5 in the clarification session: no monolithic `ingest-transcript.ps1`; the deterministic operations are split into purpose-specific scripts (`register-category.ps1`, `write-spec.ps1`) called by the agent.
 
@@ -23,7 +23,7 @@
 
 **Decision**: ~~The script renders the analysis template as a context document and passes it to the user's current AI agent as a structured prompt. The AI returns a structured `IngestionManifest` JSON block. The script parses that JSON and acts on it.~~ **SUPERSEDED by clarification Q1 + Q2 (2026-03-17).**
 
-**Superseded by**: A `transcript-to-specs` VS Code agent mode. The user invokes the agent in Copilot Chat with a transcript file path. The agent handles analysis, clarification Q&A, and conflict resolution natively within the session — no manual AI handover step, no manifest JSON exchange between script and user. The split-responsibility principle from Decision 1 is preserved but the invocation boundary shifts: agent = reasoning layer, toolkit scripts = file I/O layer.
+**Superseded by**: A `transcripttospecs` VS Code agent mode. The user invokes the agent in Copilot Chat with a transcript file path. The agent handles analysis, clarification Q&A, and conflict resolution natively within the session — no manual AI handover step, no manifest JSON exchange between script and user. The split-responsibility principle from Decision 1 is preserved but the invocation boundary shifts: agent = reasoning layer, toolkit scripts = file I/O layer.
 
 **Rationale**: The existing toolkit already operates AI-assisted in a human-in-the-loop pattern (speckit commands guide AI, AI generates content, human reviews). This feature follows the same pattern. Requiring an embedded AI API call would force credential management, network dependencies, and model versioning into the toolkit — all out of scope and fragile.
 
@@ -137,6 +137,45 @@ If validation fails, the entry is skipped with an error report; the script conti
 
 ---
 
+## Decision 7: Semantic Category Matching with Hysteresis Bias
+
+**Decision**: The agent evaluates each extracted group against all existing categories in the same tier using a 4-tier semantic classifier before deciding whether to create a new category. The classifier has a built-in bias toward reusing existing categories.
+
+**Classifier outcomes**:
+
+| Signal | Classification | Action |
+|---|---|---|
+| Identical category name | EXACT MATCH | UPDATE existing spec |
+| Same primary domain, ≥60% concept overlap (shared nouns/verbs/subjects) | CLOSE MATCH | UPDATE existing spec; show match rationale in grouping plan |
+| Same broad domain, but orthogonal concern — different lifecycle phase, different actor, or different enforcement boundary | AMBIGUOUS | Present A/B choice in Step 5; A (extend existing) is the default |
+| Different primary domain, no meaningful concept overlap | NO MATCH | Propose NEW CATEGORY; requires explicit user confirmation |
+
+**Hysteresis rule** — a new category MUST NOT be proposed unless at least one of the following split conditions is clearly met:
+- (a) The extracted items address a **lifecycle phase** not present in any existing same-tier category
+- (b) The extracted items introduce a **distinct actor or authority boundary** not represented in any existing same-tier category
+- (c) The extracted items have **zero normative overlap** with all existing same-tier categories AND the closest existing category would require renaming or radical scope expansion to accommodate them
+
+**Rationale**: Without a bias toward existing categories, the agent exhibits "category proliferation" — every transcript produces new categories for topics that already belong to existing ones, just under slightly different names. The hysteresis rule makes the stable state (existing category) the path of least resistance, requiring a concrete justification to break out.
+
+**Alternatives considered**:
+- Simple name-match only (original v1.0.0 behavior): Rejects everything not found by exact name. Produces excessive new categories for synonymous or closely related topics. Rejected.
+- Pure semantic similarity threshold (no explicit split conditions): Gives the agent a single judgment call with no checklist. Inconsistent across sessions. Rejected — the three split conditions make the decision auditable and reproducible.
+- Fully automatic merge with no AMBIGUOUS category: Would silently merge distinct concerns. Rejected — the AMBIGUOUS path preserves user authority over genuinely unclear cases.
+
+**Worked example**:
+
+Transcript excerpt: *"We discussed requiring cost-allocation tags on all new resource groups and flagging untagged resources monthly."*
+
+Existing same-tier (platform) categories: `governance`, `spec-system`, `artifact-org`, `category-spec-system`, `transcript-ingestion`
+
+Evaluation:
+- `governance` — shares subject matter (resource tagging, compliance enforcement, policy mandate). Concept overlap: tagging policy, governance review, platform mandate. **→ CLOSE MATCH** (≥60% overlap with governance). Action: UPDATE `specs/platform/governance/spec.md`, match rationale: *"65% concept overlap — cost-allocation tagging is a governance enforcement requirement."*
+- No split condition applies: (a) same lifecycle as existing governance requirements (ongoing enforcement); (b) same actor (platform governance); (c) normative overlap exists.
+- Result shown in grouping plan: `UPDATE specs/platform/governance/spec.md` *(close match: 65% concept overlap — adding cost-allocation tagging enforcement)*
+- NOT proposed as new category `platform/cost-tagging`.
+
+---
+
 ## Summary of Resolved Unknowns
 
 | Unknown | Resolution |
@@ -149,3 +188,4 @@ If validation fails, the entry is skipped with an error report; the script conti
 | Where does the script live? | `.specify/scripts/powershell/ingest-transcript.ps1` (per toolkit conventions) |
 | Where does the template live? | `.specify/templates/transcript-analysis-template.md` (per execution-mode policy) |
 | What's the platform category? | `transcript-ingestion`, spec-id `txin`, registered in `specs/platform/_categories.yaml` |
+| What is "close enough" for category reuse? | CLOSE MATCH (≥60% concept overlap) → UPDATE; AMBIGUOUS → user choice (default: extend existing); NO MATCH → NEW CATEGORY with hysteresis conditions check |

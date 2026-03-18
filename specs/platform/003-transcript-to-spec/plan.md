@@ -4,7 +4,7 @@ tier: platform
 category: transcript-ingestion
 spec-id: txin
 artifact-type: plan
-version: "1.0.0-draft"
+version: "1.1.0-draft"
 created: 2026-03-17
 last-updated: 2026-03-17
 
@@ -12,7 +12,7 @@ last-updated: 2026-03-17
 role-context:
   declared-role: platform
   authority-scope: platform-meta-governance
-  change-intent: "Design and implement the transcript-ingestion capability: transcript-to-specs agent mode (spec-interpreted) + register-category.ps1 + write-spec.ps1 (script-enforced) + transcript-analysis-template.md"
+  change-intent: "Add semantic category matching with hysteresis bias to the transcripttospecs agent and back-fill the requirements into spec.md"
   upstream-snapshot:
     - spec-id: spec
       version: "1.0.0-draft"
@@ -24,145 +24,113 @@ role-context:
   approved-by: null
 ---
 
-# Implementation Plan: AI Transcript Ingestion for Spec Generation
+# Implementation Plan: Hysteresis Category Matching — transcripttospecs Agent
 
-**Branch**: `003-transcript-to-spec` | **Date**: 2026-03-17 | **Spec**: [specs/platform/003-transcript-to-spec/spec.md](spec.md)  
+**Branch**: `003-transcript-to-spec` | **Date**: 2026-03-17 | **Spec**: [spec.md](spec.md)  
 **Input**: Feature specification from `specs/platform/003-transcript-to-spec/spec.md`
 
 ---
 
 ## Summary
 
-Build a new platform capability for AI-assisted meeting transcript ingestion. The primary deliverable is the **`transcript-to-specs`** VS Code agent mode: a user invokes it in Copilot Chat, provides a transcript file path, and the agent orchestrates the full session — reading the file, loading the live category catalog, extracting decisions by tier, presenting a grouping plan, conducting clarifying Q&A, handling per-conflict interactive resolution, checking existing specs for additive updates, and writing output spec drafts. All file writes and registry updates are delegated to two new toolkit scripts: `register-category.ps1` (script-enforced, category registration) and `write-spec.ps1` (script-enforced, spec file creation with frontmatter). A new platform category `transcript-ingestion` (spec-id: `txin`) is registered in `specs/platform/` and `specs.yaml`.
+The `transcripttospecs` agent (v1.0.0) creates or updates specs but always proposes a new category when the transcript mentions a topic not found by exact name in the catalog. This produces unnecessary category proliferation when the transcript simply discusses something already covered under a slightly different label. 
 
----
+This plan adds **semantic category matching with hysteresis bias** to the agent: a 4-tier classification algorithm that prefers extending existing categories and only proposes new ones when one of three concrete split conditions is clearly met. The change is purely agent-behavioral (spec-interpreted) — no changes to toolkit scripts or YAML schemas.
+
+**Scope**: Update `transcripttospecs.agent.md` (done), back-fill requirements into `spec.md` (REQ-018 to REQ-020), update User Story 4, and add a worked example to `research.md`.
 
 ## Technical Context
 
-**Language/Version**: PowerShell 7+ (pwsh) — toolkit scripts; Copilot Chat agent mode (`.agent.md`)  
-**Primary Dependencies**: `common.ps1` (shared helpers: repo root, branch, paths, `$script:SpecTiers`), PSScriptAnalyzer (CI validation), `.specify/templates/transcript-analysis-template.md` (tier signal vocabulary for agent)  
-**Storage**: File system — agent reads transcript `.md`/`.txt`, reads `specs.yaml` + `_categories.yaml`; toolkit scripts write `spec.md` files and update `_categories.yaml`/`specs.yaml`  
-**Testing**: Manual validation (agent + scripts), PSScriptAnalyzer for scripts  
-**Target Platform**: VS Code Copilot Chat (agent); cross-platform pwsh (scripts — Linux, Windows, macOS)  
-**Project Type**: Platform toolkit extension (`.github/agents/` + `.specify/scripts/` + `.specify/templates/`)  
-**Performance Goals**: Script operations complete within 10 seconds each; agent session completes without leaving Copilot Chat  
-**Constraints**: No API keys in scripts; all AI reasoning inside agent session; agent MUST NOT write files directly — all file operations via toolkit scripts; scripts must not overwrite existing specs without `-Force`  
-**Scale/Scope**: One transcript per agent session; up to ~50 category mappings per transcript; single-user interactive agent session
-
----
+**Language/Version**: PowerShell 7 (scripts — unchanged), Markdown (agent definition)  
+**Primary Dependencies**: Existing `.specify/` toolkit scripts (`register-category.ps1`, `write-spec.ps1`), `transcript-analysis-template.md` — no new dependencies  
+**Storage**: File system only (`_categories.yaml`, `specs.yaml`, `spec.md` — unchanged)  
+**Testing**: Manual smoke test via Copilot Chat session (`@transcripttospecs`) on a sample transcript  
+**Target Platform**: VS Code Copilot Chat agent mode  
+**Performance Goals**: N/A — agent reasoning time is user-facing latency  
+**Constraints**: Must not change the agent's external invocation interface or toolkit script contracts  
+**Scale/Scope**: One agent file changed; spec.md gains 3 new requirements and 1 updated requirement
 
 ## Constitution Check: Tier Alignment & Spec Cascading
 
-- **Spec Tier**: platform (authority-scope: platform-meta-governance)
-- **Parent Tier Specs**: This feature operates at the highest authority scope — it extends the `.specify/` framework itself, which is reserved exclusively for platform-meta-governance. No upstream specs override this work.
+*GATE: Verified — no violations.*
+
+- **Spec Tier**: `platform` (priority 0 — highest authority; no upstream tiers to check against)
+- **Parent Tier Specs**: None (platform tier has no higher-authority upstream)
 - **Derived Constraints**:
-  - All generated spec files MUST comply with `platform/spec-system` frontmatter schema (required fields, semver versioning, status values)
-  - All generated file paths MUST follow `platform/artifact-org` directory structure (`specs/<tier>/<category>/spec.md`)
-  - `register-category.ps1` and `write-spec.ps1` MUST satisfy the script-enforced interface standard: deterministic output, non-zero exit on failure, idempotent where applicable
-  - `transcript-analysis-template.md` MUST be placed in `.specify/templates/` to qualify as spec-interpreted mode
-  - PSScriptAnalyzer MUST pass with zero errors per `platform/iac-linting`
+  - `platform/spec-system` (spec v1.0.0-draft): Generated specs must conform to frontmatter schema — **not affected** by this change (hysteresis logic is pre-write, during grouping plan only)
+  - `platform/artifact-org` (artifact v1.0.0-draft): Output paths must follow `specs/<tier>/<category>/spec.md` — **not affected**
 - **Artifact Traceability**:
-  - `transcript-to-specs.md` (`.github/agents/`) — new spec-interpreted agent mode
-  - `transcript-analysis-template.md` — new spec-interpreted template (tier signal vocabulary)
-  - `register-category.ps1` — new script-enforced category registration script
-  - `write-spec.ps1` — new script-enforced spec writer script
-  - `specs/platform/transcript-ingestion/spec.md` — new platform category spec
-  - `specs/platform/_categories.yaml` — updated with new category entry
-  - `specs/specs.yaml` — updated with category-count and toolkit registration
+  - Updated: `.github/agents/transcripttospecs.agent.md` (done — commit 9d68f7e)
+  - Updated: `specs/platform/003-transcript-to-spec/spec.md` (3 new REQs, 1 updated REQ)
+  - Updated: `specs/platform/003-transcript-to-spec/research.md` (worked example section)
+  - No new files, no script changes, no schema changes
 
-*Constitution re-check (post-design)*: ✅ All generated artifacts align with tier constraints. No violations.
-
----
+*Re-check post-Phase 1: PASS — all generated spec outputs remain identical in structure; only agent decision logic changes.*
 
 ## Spec Organization
 
 ```text
 specs/platform/003-transcript-to-spec/
-├── plan.md                       ← this file
-├── spec.md                       ← feature specification
-├── research.md                   ← Phase 0: decisions & alternatives
-├── data-model.md                 ← Phase 1: entities & state
-└── quickstart.md                 ← Phase 1: usage walkthrough
-
-# Delivered artifacts (output of implementation)
-.github/agents/
-└── transcript-to-specs.md        ← agent mode definition (spec-interpreted)
-
-.specify/
-├── scripts/powershell/
-│   ├── register-category.ps1     ← category registration (script-enforced)
-│   └── write-spec.ps1            ← spec file writer (script-enforced)
-└── templates/
-    └── transcript-analysis-template.md  ← tier signal vocabulary (spec-interpreted)
-
-specs/platform/
-└── transcript-ingestion/
-    └── spec.md                   ← promoted platform category spec
+├── plan.md          ← this file (updated)
+├── spec.md          ← Phase 1 output: add REQ-018, REQ-019, REQ-020; update REQ-006; update User Story 4
+├── research.md      ← Phase 0 output: add hysteresis decision record + worked example
+├── tasks.md         ← existing (no changes needed)
+└── contracts/
+    └── ingest-transcript-cli.md   ← existing (no changes needed — interface unchanged)
 ```
 
 ---
 
-## Implementation Phases
+## Phase 0: Research
 
-### Phase 1 — Signal Vocabulary Template (spec-interpreted)
+> **All questions resolved. No NEEDS CLARIFICATION items remain.**
 
-Design `transcript-analysis-template.md` to guide the agent:
-1. Full per-tier keyword signal table (all 6 tiers, disambiguation rules for multi-tier signals)
-2. Extraction algorithm: meeting metadata → raw statement extraction → tier+category mapping → gap detection
-3. Grouping rules: one spec per tier-category pair, how to merge multiple statements into one spec body
-4. Output format: proposed grouping plan format + session summary table format
+See [research.md](research.md) — "Hysteresis Category Matching" section (to be appended).
 
-**Output**: `.specify/templates/transcript-analysis-template.md`
+**Key decisions recorded in research.md**:
 
-### Phase 2 — Agent Mode (spec-interpreted) + Toolkit Scripts (script-enforced)
-
-**Phase 2a — `transcript-to-specs` agent mode**
-
-Author `.github/agents/transcript-to-specs.md` with:
-1. **Invocation**: how user provides transcript file path in Copilot Chat
-2. **Workflow**: 7-step sequential flow (read → catalog → extract → group plan → confirm → resolve conflicts / check existing specs → write + summarize)
-3. **Conflict resolution**: per-conflict interactive; 3-option prompt (Block / Write-with-flag / Propose-amendment); agent behavior for each choice
-4. **Existing spec handling**: read existing spec → determine if additive → propose additions → confirm before write
-5. **New category handling**: propose name+spec-id+tier → confirm → call `register-category.ps1`
-6. **Toolkit script integration**: exact call signatures, exit code interpretation
-7. **Constraints**: enumerate all behavioral guardrails from spec.md
-
-**Output**: `.github/agents/transcript-to-specs.md`
-
-**Phase 2b — `register-category.ps1`**
-
-1. Validate parameters (`-Tier`, `-CategoryName`, `-SpecId`, `-Description`)
-2. Check global spec-id uniqueness against full catalog
-3. Upsert entry in `specs/<tier>/_categories.yaml` (create bootstrap skeleton if missing)
-4. Increment `category-count` in `specs.yaml` (idempotent)
-5. Exit 0 on success, 1 on validation failure
-
-**Output**: `.specify/scripts/powershell/register-category.ps1`
-
-**Phase 2c — `write-spec.ps1`**
-
-1. Validate parameters (`-Tier`, `-Category`, `-SpecId`, `-FrontmatterJson`, `-BodyMarkdown`)
-2. Parse and validate frontmatter JSON (all required fields present, `status: draft` enforced)
-3. Inject `conflict-flags:` block into frontmatter + body if present in input JSON
-4. Resolve target path; create directory if needed
-5. Skip (exit 2) if file exists and `-Force` not set
-6. Write frontmatter + body markdown; validate written file
-7. Exit 0 on success, 1 on validation failure, 2 on skip
-
-**Output**: `.specify/scripts/powershell/write-spec.ps1`
-
-### Phase 3 — Platform Category Registration & Validation
-
-- Create `specs/platform/transcript-ingestion/spec.md` (promote this feature spec)
-- Add `transcript-ingestion` entry to `specs/platform/_categories.yaml`
-- Run `Invoke-ScriptAnalyzer` on both new scripts — zero errors required
-- End-to-end smoke test: invoke `transcript-to-specs` agent on sample transcript, verify grouping plan presentation, written spec frontmatter, session summary
-- Tag: `git tag spec/txin/1.0.0-draft`
+| Question | Decision | Rationale |
+|---|---|---|
+| What is "close enough" for category reuse? | 4-tier classifier: EXACT / CLOSE (≥60% concept overlap) / AMBIGUOUS / NO MATCH | Avoids both false merges and false splits |
+| What is the default for AMBIGUOUS? | Extend existing (option A); user must explicitly choose B to split | Implements the hysteresis bias — inertia toward existing state |
+| When is a new category clearly justified? | One of 3 conditions: distinct lifecycle phase, distinct actor/authority boundary, or zero normative overlap requiring radical scope expansion | Gives the agent a checklist rather than an unconstrained judgment call |
+| Does "merge-into" need a new script? | No — reclassify as UPDATE and route through existing Existing Spec Handling flow | Reuses infrastructure already in place |
 
 ---
 
-## Complexity Tracking
+## Phase 1: Design Artifacts
 
-No constitution violations. Complexity is proportional to the feature scope.
+### spec.md Changes
 
+**REQ-006** (existing — UPDATED): Changes from "if no category matches, propose new" to "evaluate semantic proximity first; only propose new when none of the existing categories is a sufficiently close match." Full updated text in spec.md.
 
+**REQ-018** (new): The agent MUST evaluate each extracted group against all existing categories in the same tier using a 4-tier semantic classifier:
+- EXACT MATCH (identical name) → UPDATE
+- CLOSE MATCH (≥60% concept overlap: same primary domain, overlapping nouns/verbs/subjects) → UPDATE, noting which existing category absorbs the group
+- AMBIGUOUS (same broad domain but orthogonal concern — different lifecycle, actor, or enforcement boundary) → flag for Step 5 user disambiguation
+- NO MATCH (different primary domain, no meaningful concept overlap) → NEW CATEGORY
+
+**REQ-019** (new): The agent MUST apply a hysteresis bias toward existing categories. A new category MUST NOT be proposed unless at least one of the following conditions is clearly met:
+- (a) The extracted items address a lifecycle phase not present in any existing same-tier category
+- (b) The extracted items introduce a distinct actor or authority boundary not represented in any existing same-tier category
+- (c) The extracted items have zero normative overlap with all existing same-tier categories AND the closest category would require renaming or radical scope expansion to accommodate them
+
+**REQ-020** (new): In the grouping plan (Step 5), the agent MUST:
+- For CLOSE MATCH groups: show the match rationale (e.g., "70% concept overlap — adding to `governance`")
+- For AMBIGUOUS groups: present an inline A/B choice with A (extend existing) as the explicit default; the user must type "B" to override
+- For NEW CATEGORY proposals: state which existing category was the closest considered and why it was rejected per the hysteresis conditions in REQ-019
+
+**User Story 4** (existing — UPDATED): Updated to reflect that the agent evaluates existing categories before proposing a new one, shows its reasoning, and offers `merge-into` as a user response for cases the user wants to redirect to an existing category even after the agent proposed new.
+
+### research.md Addition
+
+Append a new section "Hysteresis Category Matching" to the existing research.md with:
+- The decision record (what was chosen, rationale, alternatives)
+- A worked example showing all 4 classifier outcomes for a realistic transcript scenario
+
+### No Changes Required
+
+- `contracts/ingest-transcript-cli.md` — CLI interface is unchanged
+- `register-category.ps1` — script behavior unchanged
+- `write-spec.ps1` — script behavior unchanged
+- `transcript-analysis-template.md` — template unchanged (hysteresis is agent-level logic, not template vocabulary)
