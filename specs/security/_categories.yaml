@@ -1,0 +1,19 @@
+---
+# Security Tier Category Index
+# 
+# This file indexes all categories within the Security tier
+# Specification: platform/002-category-based-spec-system/spec.md
+# Task: T103 - Create specs/security/_categories.yaml index
+# Created: 2026-02-07
+# Version: 1.0.0-draft
+
+metadata:
+  tier: security
+  name: "Security Categories"
+  description: "All categories at the security tier level"
+  version: "1.0.0-draft"
+  created: "2026-02-07"
+  category-count: 0
+
+# Security tier categories (ordered by precedence)
+categories: []
