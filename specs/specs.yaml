@@ -30,9 +30,9 @@ metadata:
 tiers:
   - tier: platform
     name: "Platform Tier"
-    description: "Foundational platform standards (spec system, linting, artifact org, policy-as-code)"
+    description: "Foundational platform standards (spec system, linting, artifact org, policy-as-code, transcript-ingestion)"
     priority: 0
-    categories: 4
+    categories: 5
     authority-scope: platform-meta-governance | platform-content-standards
     authority-note: >
       Platform has dual scope:
@@ -176,6 +176,14 @@ execution-mode-policy:
         purpose: "CI gate verifying toolkit components are registered and scripts meet interface standard"
         contracts: { input: "none (scans .specify/)", output: "pass/fail with -Json mode", idempotent: true }
 
+      register-category.ps1:
+        purpose: "Register a new category in tier _categories.yaml and increment specs.yaml category-count"
+        contracts: { input: "-Tier, -CategoryName, -SpecId, -Description", output: "_categories.yaml updated, specs.yaml count incremented", idempotent: true }
+
+      write-spec.ps1:
+        purpose: "Write a spec.md file with validated frontmatter, mandatory field enforcement, and conflict-flag injection"
+        contracts: { input: "-Tier, -Category, -SpecId, -FrontmatterJson, -BodyMarkdown [-Force]", output: "spec.md written (exit 0), skipped (exit 2), or error (exit 1)", idempotent: true }
+
     templates:
       spec-template.md:
         purpose: "Structured guidance for specification authoring"
@@ -196,6 +204,10 @@ execution-mode-policy:
       agent-file-template.md:
         purpose: "Structured guidance for agent context files"
         interpretation-zones: "agent instructions, context summaries, role directives"
+
+      transcript-analysis-template.md:
+        purpose: "Tier signal vocabulary and extraction algorithm for the transcript-to-specs agent"
+        interpretation-zones: "signal keyword matching, disambiguation, gap identification, grouping plan presentation"
 
 # Category tree structure
 # The version field on each entry is the AUTHORITATIVE latest published version for that spec.
@@ -295,6 +307,12 @@ categories:
       version: "1.0.0-draft"
       file: platform/spec-system/spec.md
       description: "Meta-specifications for spec format and system"
+
+    transcript-ingestion:
+      spec-id: txin
+      version: "1.0.0-draft"
+      file: platform/transcript-ingestion/spec.md
+      description: "AI-assisted meeting transcript ingestion to generate categorized spec drafts"
 
   devops:
     deployment-automation:

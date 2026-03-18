@@ -13,7 +13,7 @@ metadata:
   description: "All categories at the platform tier level (meta and standards)"
   version: "1.0.0-draft"
   created: "2026-02-07"
-  category-count: 4
+  category-count: 5
   note: "Platform tier includes both meta-level (Spec-System) and technical standards (IaC-Linting, etc.)"
 
 # Platform tier categories (mostly independent, spec-system is meta)
@@ -78,6 +78,18 @@ categories:
     created: "2026-02-07"
     precedence:
       rationale: "Reactive enforcement layer; implements business/security requirements"
+
+  - category: transcript-ingestion
+    spec-id: txin
+    version: "1.0.0-draft"
+    file: transcript-ingestion/spec.md
+    name: "Transcript Ingestion"
+    description: "AI-assisted meeting transcript ingestion to generate categorized spec drafts"
+    priority: 3
+    status: "draft"
+    created: "2026-03-17"
+    precedence:
+      rationale: "Framework extension to .specify/; platform-meta-governance authority"
       note: "Lower priority than standards; enforces decisions made by other tiers"
     depends-on:
       - tier: business

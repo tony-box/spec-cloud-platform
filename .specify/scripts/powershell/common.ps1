@@ -155,6 +155,33 @@ function Get-FeaturePathsEnv {
     }
 }
 
+function Build-CategoryCatalog {
+    <#
+    .SYNOPSIS
+        Builds a hashtable mapping every registered spec-id to its tier.
+    .DESCRIPTION
+        Reads all specs/<tier>/_categories.yaml files and extracts spec-id entries,
+        returning @{ 'spec-id' = @{ tier = '<tier>' } } for global uniqueness checks.
+        Used by register-category.ps1 before accepting a new spec-id.
+    #>
+    $repoRoot = Get-RepoRoot
+    $catalog = @{}
+    foreach ($tier in $script:SpecTiers) {
+        $catFile = Join-Path $repoRoot "specs" $tier "_categories.yaml"
+        if (-not (Test-Path $catFile -PathType Leaf)) { continue }
+        $content = Get-Content -Path $catFile -Raw
+        # Match lines like:  spec-id: txin  or  spec-id: "txin"
+        $specIdMatches = [regex]::Matches($content, "(?m)^\s{2,8}spec-id:\s*[`"']?([a-zA-Z][a-zA-Z0-9-]*)[`"']?\s*$")
+        foreach ($m in $specIdMatches) {
+            $specId = $m.Groups[1].Value.Trim()
+            if ($specId -and -not $catalog.ContainsKey($specId)) {
+                $catalog[$specId] = @{ tier = $tier; specId = $specId }
+            }
+        }
+    }
+    return $catalog
+}
+
 function Test-FileExists {
     param([string]$Path, [string]$Description)
     if (Test-Path -Path $Path -PathType Leaf) {
