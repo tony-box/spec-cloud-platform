@@ -134,8 +134,8 @@ The split: *analysis, judgment, and interaction* (agent, spec-interpreted) vs *f
 - **REQ-004**: Each extracted item MUST be mapped to exactly one tier and one category; the agent MUST present the full proposed grouping plan to the user in chat and wait for confirmation before writing any files
 - **REQ-005**: The agent MUST ask clarifying questions in chat for any topic it cannot fully resolve from the transcript alone, using a sequential one-question-at-a-time pattern (max 5 questions per session)
 - **REQ-006**: If a finding does not map to any existing category, the agent MUST propose a new category (name, spec-id, tier, justification) and ask the user to confirm before registering it
-- **REQ-007**: Before writing any spec, the agent MUST check all higher-tiered existing specs for conflicts; for each conflict detected it MUST pause and offer the user three options: (1) Block, (2) Write-with-flag, (3) Propose upstream amendment
-- **REQ-008**: For a transcript topic that maps to an existing `spec.md`, the agent MUST read the existing spec and determine if the transcript is additive; if additive propose changes and ask for confirmation; if already covered skip with a chat note
+- **REQ-007**: Before writing any spec, the agent MUST check all higher-tiered existing specs for conflicts. A **conflict** is a MUST, MUST NOT, SHALL, or SHALL NOT normative statement in a higher-authority tier spec (i.e., a spec whose tier has a lower priority number per the constitution: Platform=0 > Business=1 > Security=2 > Infrastructure=3 > DevOps=4 > Application=5) that directly contradicts a requirement or behavior stated in the proposed spec. For each conflict detected the agent MUST pause and offer the user three options: (1) Block, (2) Write-with-flag, (3) Propose upstream amendment
+- **REQ-008**: For a transcript topic that maps to an existing `spec.md`, the agent MUST read the existing spec and determine if the transcript is **additive**. A transcript item is additive if it introduces a net-new requirement, constraint, decision, or rationale not semantically equivalent to any already-present item in the existing spec's Requirements or Constraints sections. If additive, propose the net-new items in chat and ask for confirmation; if already covered, skip with a chat note
 - **REQ-009**: All output spec files MUST be written via toolkit scripts to enforce deterministic frontmatter, registry updates, and PSScriptAnalyzer compliance
 - **REQ-010**: Every generated spec file MUST include compliant YAML frontmatter with all required fields per `spec-system`: `tier`, `category`, `spec-id`, `version: "1.0.0-draft"`, `status: draft`, `compliance-state: current`
 - **REQ-011**: Generated specs MUST record `requested-by: "transcript-to-specs"` and `decision-mode: autonomous` in role-context
@@ -207,7 +207,7 @@ The transcript introduces new cost-reduction requirements. `business/cost/spec.m
 The agent proposes the additions in chat and asks for confirmation before writing.
 
 **Acceptance criteria**:
-- Agent does not overwrite the existing spec wholesale — only proposed additions are appended
+- Agent does not overwrite the existing spec wholesale — the agent reads the existing spec body in full, builds a merged body (original content plus proposed additions appended to the Requirements section), and passes the complete merged body to `write-spec.ps1 -Force`
 - If the existing spec already fully covers the transcript content, agent skips with a note (no write)
 - User confirmation is required before any change to an existing spec file
 
@@ -250,7 +250,7 @@ Invoking the agent on a repo with no existing category specs generates a full in
 - Generated specs MUST NOT be auto-published — `status: draft` is the only valid initial state
 - The agent MUST NOT write any spec file before the user confirms the grouping plan
 - The agent MUST NOT modify an existing spec file without explicit user confirmation of the proposed additions
-- New categories MUST follow naming convention: `lowercase-kebab-case` directory, spec-id 2–8 alphanumeric chars, globally unique spec-id across the entire catalog
+- New categories MUST follow naming convention: `lowercase-kebab-case` directory, spec-id 2–8 characters matching `^[a-z][a-z0-9-]{1,7}$` (begins with letter, may contain lowercase alphanumeric and hyphens), globally unique across the entire catalog
 - The analysis template MUST include the full tier signal vocabulary so the agent produces correct tier-category mappings even on an empty project
 - Role-context in generated specs MUST record `requested-by: "transcript-to-specs"` and `decision-mode: autonomous`
 - Conflict resolution MUST be per-conflict and interactive — the agent MUST NOT silently skip or silently block conflicting specs
