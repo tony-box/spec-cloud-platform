@@ -26,7 +26,7 @@ You **MUST** treat the text after the agent invocation as the transcript file pa
 
 ## Overview
 
-The `transcript-to-specs` agent converts meeting transcripts into governed platform spec drafts. It orchestrates the full session — file read, catalog load, extraction, grouping, Q&A, conflict resolution, and file writes — without requiring the user to leave Copilot Chat.
+The `transcripttospecs` agent converts meeting transcripts into governed platform spec drafts. It orchestrates the full session — file read, catalog load, extraction, grouping, Q&A, conflict resolution, and file writes — without requiring the user to leave Copilot Chat.
 
 **Architecture**:
 - **This agent** (spec-interpreted): All reasoning, extraction, clarification Q&A, conflict resolution, grouping confirmation, and merge logic
@@ -54,7 +54,7 @@ A spec at priority N checks all tiers at priorities 0 through N-1 for conflicts.
 The user invokes this agent in Copilot Chat and provides a transcript file path:
 
 ```
-@transcript-to-specs path/to/meeting-notes.md
+@transcripttospecs path/to/meeting-notes.md
 ```
 
 The agent reads the file at that path using its file reading tools. Supported formats: Markdown (`.md`), plain text (`.txt`). If the path does not exist, report the error and stop.
@@ -87,14 +87,34 @@ Using the vocabulary and algorithm in `.specify/templates/transcript-analysis-te
 1. Extract all decisions, requirements, constraints, and architecturally significant action items
 2. Map each to exactly one `{ tier, category }` pair
 3. Record items that cannot be confidently mapped as gaps (clarifying questions — max 5)
-4. Check each mapped item's category against the loaded catalog:
-   - If category exists and has a `spec.md` → mark as potential UPDATE
-   - If category does not exist → mark as potential NEW CATEGORY (requires user confirmation)
+4. **Semantic category matching** — for each mapped `{ tier, category }` pair, apply the following hysteresis logic against the loaded catalog. Default bias is to reuse an existing category; only invent a new one when the evidence clearly points elsewhere:
+
+   **For each extracted group, evaluate existing categories in the same tier:**
+
+   | Signal | Interpretation |
+   |---|---|
+   | Same category name (exact or kebab-case equivalent) | → mark as UPDATE |
+   | Same primary domain, overlapping nouns/verbs (≥ 60% concept overlap) | → mark as UPDATE — add content to existing category |
+   | Same primary domain, but extracted items introduce a clearly orthogonal concern (different lifecycle, different actor, different enforcement boundary) | → flag for user disambiguation (present as "extend existing" vs. "new category") |
+   | Different primary domain, no meaningful concept overlap | → mark as NEW CATEGORY |
+
+   **Hysteresis rule** — when in doubt, choose the existing category. Only propose a new category when at least one of these conditions holds:
+   - The extracted items address a **lifecycle phase** not present in any existing category (e.g., existing covers provisioning; new covers decommissioning)
+   - The extracted items introduce a **distinct actor or authority boundary** (e.g., existing is owned by security; new is owned by platform governance)
+   - The extracted items have **zero normative overlap** with all existing categories in the same tier and the closest existing category would require renaming or radical scope expansion to accommodate them
+
+   After matching, classify each group:
+   - **EXACT MATCH** — category name identical → UPDATE
+   - **CLOSE MATCH** — semantic overlap ≥ threshold → UPDATE (note which existing category absorbs it)
+   - **AMBIGUOUS** — unclear; flag for Step 5 disambiguation prompt
+   - **NO MATCH** — clearly orthogonal → NEW CATEGORY (requires user confirmation)
 
 ### Step 4 — Build Proposed Grouping Plan
 
 Group all mapped items by `tier/category` — one spec per pair. For each group:
-- Determine action: NEW, UPDATE (additive), or NEW CATEGORY
+- Determine action: NEW, UPDATE (additive), NEW CATEGORY, or AMBIGUOUS
+- For UPDATE and CLOSE MATCH groups: note the existing category being updated and why the match was made
+- For AMBIGUOUS groups: include both options (extend existing vs. new category) so the user can choose in Step 5
 - For UPDATE groups: read the existing `spec.md` and identify which items are genuinely additive (not semantically equivalent to existing requirements)
 - Pre-check for conflicts (Step 5 preview): note any groups whose content may conflict with higher-authority specs
 
@@ -102,9 +122,19 @@ Group all mapped items by `tier/category` — one spec per pair. For each group:
 
 Present the grouping plan using the format from `transcript-analysis-template.md` (Section 3). Include:
 - Path, action (NEW / UPDATE / NEW CATEGORY), spec-id, brief summary of statements covered
+- For UPDATE groups that resulted from a CLOSE MATCH: show the match rationale in parentheses, e.g. `UPDATE specs/platform/governance/spec.md` *(close match: 70% concept overlap with governance — adding audit-trail requirements)*
+- For AMBIGUOUS groups: present as a choice inline, e.g.:
+  ```
+  ❓ AMBIGUOUS: transcript items about "cost tagging enforcement"
+     Option A: UPDATE specs/platform/governance/spec.md (extend existing governance category)
+     Option B: NEW CATEGORY specs/platform/cost-governance/  (separate category)
+     Default: A (extend existing)  — enter "B" to override
+  ```
 - Any pre-identified conflicts flagged with ⚠️
 
 **STOP and wait for user confirmation before writing any files.**
+
+For AMBIGUOUS groups, if the user does not explicitly choose option B, treat as option A (extend existing).
 
 If user modifies the plan (removes a group, changes a tier assignment), incorporate the changes before proceeding.
 
@@ -144,7 +174,7 @@ $frontmatterJson = @{
     "role-context"     = @{
         "declared-role"    = "platform"
         "authority-scope"  = "platform-meta-governance"
-        "requested-by"     = "transcript-to-specs"
+        "requested-by"     = "transcripttospecs"
         "decision-mode"    = "autonomous"
         "cascade-run-id"   = $null
         "approved-by"      = $null
@@ -230,7 +260,7 @@ Amendment proposal files are written **directly by the agent** using its file ed
 artifact-type: amendment-proposal
 targets-spec-id: <upstream-spec-id>
 targets-version: "<upstream-spec-version>"
-proposed-by: "transcript-to-specs"
+proposed-by: "transcripttospecs"
 proposed-date: "<today>"
 status: open
 ---
@@ -238,7 +268,7 @@ status: open
 # Amendment Proposal: <upstream-spec-id> — <brief title>
 
 **Proposing spec**: `specs/<tier>/<category>/spec.md` (spec-id: `<new-spec-id>`)
-**Session**: transcript-to-specs, <date>
+**Session**: transcripttospecs, <date>
 
 ## Conflict Description
 
@@ -308,13 +338,13 @@ If no additive items: log "already covered — no write" to session summary and 
 
 ## New Category Discovery
 
-When a confirmed group maps to a category that has no entry in the catalog:
+When a confirmed group maps to a category that has no entry in the catalog (action = NEW CATEGORY after hysteresis evaluation in Step 3):
 
 ### Confirmation Flow
 
 1. Present proposed category to user:
    ```
-   🆕 New category discovered: no existing catalog entry matches this topic.
+   🆕 New category proposed: no sufficiently close existing category found.
 
    Proposed:
      Tier:        <tier>
@@ -322,9 +352,14 @@ When a confirmed group maps to a category that has no entry in the catalog:
      Spec-id:     <proposed-spec-id>  (globally unique — not yet registered)
      Description: <one-sentence description>
 
-   Confirm creating this new category? (yes / no)
+   Why a new category (not extending existing): <brief rationale — which hysteresis condition(s) apply>
+   Closest existing category considered: <tier>/<closest-category> — rejected because: <reason>
+
+   Confirm creating this new category? (yes / no / merge-into <existing-category>)
    ```
    **STOP and wait** for user reply.
+
+   If user responds with `merge-into <existing-category>`, reclassify the group as an UPDATE targeting that category and proceed via Existing Spec Handling instead.
 
 2. If user confirms:
    a. Call `register-category.ps1`:
@@ -394,10 +429,11 @@ These constraints are enforced by the agent and must never be bypassed:
 - **No writes before grouping confirmation** — the agent MUST NOT call any write tool before Step 5 confirmation is received
 - **No spec.md direct writes** — all `spec.md` file creation and updates go through `write-spec.ps1`; only `spec-amendment-*.md` files may be written directly
 - **No existing spec write without user confirmation** — additive updates require explicit user "yes" in Step 6c
-- **No new category without user confirmation** — `register-category.ps1` is only called after user confirms the new category in Step 6d
+- **Hysteresis bias toward existing categories** — the agent MUST prefer updating an existing category over creating a new one; a new category is only proposed when at least one of the three hysteresis conditions (distinct lifecycle phase, distinct actor/authority boundary, or zero normative overlap) is clearly met
+- **No new category without user confirmation** — `register-category.ps1` is only called after user confirms the new category in Step 6d; user may also redirect a proposed new category to merge into an existing one via `merge-into <existing-category>`
 - **All generated specs start as draft** — `status: draft` is enforced by `write-spec.ps1` and cannot be overridden
 - **Conflict resolution is per-conflict and interactive** — the agent MUST NOT silently skip or silently block conflicting specs; each conflict requires a user choice
 - **Max 5 clarifying questions per session** — ask the highest-impact questions first; do not exceed 5 total across the entire session
 - **No API keys in scripts** — all AI reasoning happens within this agent session; toolkit scripts are purely deterministic I/O operations
-- **Traceability** — every generated spec records `requested-by: "transcript-to-specs"` and `decision-mode: autonomous` in its frontmatter role-context (enforced by `write-spec.ps1`)
+- **Traceability** — every generated spec records `requested-by: "transcripttospecs"` and `decision-mode: autonomous` in its frontmatter role-context (enforced by `write-spec.ps1`)
 - **Tier precedence** — "higher-tiered" always means lower priority number; Platform (0) is the highest-authority tier; Application (5) is the lowest
