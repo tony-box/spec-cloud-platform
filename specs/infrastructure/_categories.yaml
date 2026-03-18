@@ -1,0 +1,20 @@
+---
+# Infrastructure Tier Category Index
+# 
+# This file indexes all categories within the Infrastructure tier
+# Specification: platform/002-category-based-spec-system/spec.md
+# Task: T104 - Create specs/infrastructure/_categories.yaml index
+# Created: 2026-02-07
+# Version: 1.0.0-draft
+
+metadata:
+  tier: infrastructure
+  name: "Infrastructure Categories"
+  description: "All categories at the infrastructure tier level"
+  version: "1.1.0-draft"
+  created: "2026-02-07"
+  updated: "2026-02-07"
+  category-count: 0
+
+# Infrastructure tier categories (workload-dependent precedence)
+categories: []

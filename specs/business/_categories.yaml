@@ -1,0 +1,19 @@
+---
+# Business Tier Category Index
+# 
+# This file indexes all categories within the Business tier
+# Specification: platform/002-category-based-spec-system/spec.md
+# Task: T102 - Create specs/business/_categories.yaml index
+# Created: 2026-02-07
+# Version: 1.0.0-draft
+
+metadata:
+  tier: business
+  name: "Business Categories"
+  description: "All categories at the business tier level"
+  version: "1.0.0-draft"
+  created: "2026-02-07"
+  category-count: 0
+
+# Business tier categories (ordered by precedence)
+categories: []
