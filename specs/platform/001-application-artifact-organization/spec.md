@@ -3,6 +3,7 @@
 **Tier**: platform  
 **Spec ID**: platform-001-application-artifact-organization  
 **Created**: 2026-02-05  
+**Updated**: 2026-03-18  
 **Status**: Approved  
 **Approved By**: Platform Team  
 **Approved Date**: 2026-02-05  
@@ -171,7 +172,7 @@ Security scanning tools need to analyze artifacts. Following this standard:
 
 - **REQ-001**: Platform MUST enforce artifact organization standard: `/artifacts/applications/<appname>/` for all application artifacts
 - **REQ-002**: Platform MUST define standard subdirectories within app artifact directory: `iac/`, `modules/`, `scripts/`, `pipelines/`, `docs/`
-- **REQ-003**: Platform MUST provide directory creation templates that auto-generate subdirectories with README.md files explaining each directory's purpose
+- **REQ-003**: Platform MUST provide directory creation templates that auto-generate subdirectories with README.md files explaining each directory's purpose. These templates MUST live in `.specify/templates/application-artifact-template/` (not inside `artifacts/`)
 - **REQ-004**: Platform MUST document naming conventions for artifacts (e.g., `<appname>-<component>.bicep`)
 - **REQ-005**: Platform MUST create migration tooling to move existing artifacts to new structure
 - **REQ-006**: Platform MUST enforce this standard in quality gates (artifact review gates MUST validate directory structure compliance)
@@ -184,6 +185,14 @@ Security scanning tools need to analyze artifacts. Following this standard:
   - Contains: Subdirectories for artifact types
   - Naming: lowercase app name, hyphen-separated (e.g., `payment-service`, `web-app-001`)
   - Metadata: README.md explaining structure
+  - Created by: `.specify/scripts/powershell/create-app-directory.ps1`
+  - Validated by: `.specify/scripts/powershell/validate-artifact-structure.ps1`
+  - Template source: `.specify/templates/application-artifact-template/`
+
+- **Role Artifact Directories** - Top-level directories within `/artifacts/` for each team role:
+  - `/artifacts/applications/` — Application team outputs (per-app subdirectories)
+  - `/artifacts/devops/` — DevOps team outputs (pipeline templates, reusable tooling)
+  - `/artifacts/infrastructure/` — Infrastructure team outputs (IaC modules, platform reference work)
 
 - **IaC Subdirectory** - `/artifacts/applications/<appname>/iac/`
   - Contains: Bicep templates, ARM templates, Terraform code, parameter files
@@ -212,6 +221,8 @@ Security scanning tools need to analyze artifacts. Following this standard:
 - **Infrastructure Teams**: When generating application IaC, MUST target app-specific directories
 - **Application Teams**: When creating new applications, MUST create directory structure following this standard
 - **Migration Deadline**: Existing artifacts must migrate by 2026-03-31 (90-day period)
+- **Tooling Separation**: Platform scripts and templates that manage the artifact system (`create-app-directory.ps1`, `validate-artifact-structure.ps1`, `artifact-structure-schema.json`, `application-artifact-template/`) MUST reside in `.specify/scripts/` or `.specify/templates/` — never inside `artifacts/`. The `artifacts/` tree is exclusively for role outputs.
+- **Customer Template**: When the repo is sysprep'd for customer distribution (`sysprep.ps1`), `artifacts/` ships as empty role skeletons only. Development-time example content (e.g., infra team's `iac-modules/`) is not distributed to customers.
 
 ---
 
@@ -223,7 +234,7 @@ Security scanning tools need to analyze artifacts. Following this standard:
 - **SC-004**: Existing applications (cost-optimized-demo) migrated to new structure by 2026-03-31
 - **SC-005**: GitHub Actions templates parameterized to target app-specific artifact paths
 - **SC-006**: Quality gates validate artifact organization (check directory structure exists, required files present)
-- **SC-007**: Platform documentation (ARTIFACT_ORGANIZATION_GUIDE.md) published and available
+- **SC-007**: Customer onboarding documentation (`GETTING_STARTED.md`) published in every customer template release tag; includes artifact structure guidance
 - **SC-008**: Team onboarding documentation updated to include artifact organization standard
 
 ---
@@ -232,9 +243,10 @@ Security scanning tools need to analyze artifacts. Following this standard:
 
 ### Phase 1: Define Standard & Create Templates (Week 1)
 1. Ratify this spec (Constitution compliant)
-2. Create directory structure template with README.md files
-3. Publish ARTIFACT_ORGANIZATION_GUIDE.md with examples
-4. Create PowerShell/bash scripts to auto-generate directory structure
+2. Create directory structure template with README.md files → `.specify/templates/application-artifact-template/`
+3. Publish customer onboarding documentation (`GETTING_STARTED.md`) — written by `sysprep.ps1` into every release tag
+4. Create PowerShell scripts to auto-generate and validate directory structure → `.specify/scripts/powershell/`
+5. Create validation schema → `.specify/schemas/artifact-structure-schema.json`
 
 ### Phase 2: Update Existing Artifacts (Weeks 2-4)
 1. Create migration plan for existing artifacts
@@ -271,7 +283,8 @@ Security scanning tools need to analyze artifacts. Following this standard:
 
 ---
 
-**Specification Status**: Draft  
+**Specification Status**: Approved  
 **Created**: 2026-02-05  
+**Updated**: 2026-03-18  
 **Author**: Platform Team  
-**Next Step**: Create implementation plan (plan.md)
+**Change Log**: 2026-03-18 — Clarified tooling lives in `.specify/` not `artifacts/`; added role artifact directory model; updated SC-007; added Tooling Separation and Customer Template constraints

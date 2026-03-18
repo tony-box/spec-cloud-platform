@@ -86,10 +86,11 @@ Ratify the specification and create reusable templates that application teams ca
 ### Artifacts to Generate
 
 #### 1. Directory Structure Template
-**Output**: `/artifacts/.templates/application-artifact-template/`
+**Output**: `.specify/templates/application-artifact-template/`  
+_(Moved from `artifacts/.templates/` 2026-03-18 — platform tooling lives in `.specify/`, not in `artifacts/`)_
 
 ```
-application-artifact-template/
+.specify/templates/application-artifact-template/
 ├── README.md (explaining structure)
 ├── iac/
 │   └── README.md (IaC-specific guidance)
@@ -110,11 +111,13 @@ application-artifact-template/
 - Links to specification
 
 #### 2. Directory Creation Script
-**Output**: `artifacts/.templates/scripts/create-app-directory.ps1`
+**Output**: `.specify/scripts/powershell/create-app-directory.ps1`  
+_(Moved from `artifacts/.templates/scripts/` 2026-03-18)_
 
 ```powershell
-# Usage: ./create-app-directory.ps1 -AppName "payment-service"
+# Usage: .specify/scripts/powershell/create-app-directory.ps1 -AppName "payment-service"
 # Creates: /artifacts/applications/payment-service/ with full structure
+# Template source: .specify/templates/application-artifact-template/
 ```
 
 **Deliverable**: PowerShell script that:
@@ -124,19 +127,19 @@ application-artifact-template/
 - Generates app-specific .gitignore files
 - Outputs confirmation message
 
-#### 3. Artifact Organization Guide
-**Output**: `/ARTIFACT_ORGANIZATION_GUIDE.md`
+#### 3. Customer Onboarding Documentation
+**Output**: `GETTING_STARTED.md` — written into every customer release tag by `sysprep.ps1`  
+_(Supersedes the originally planned `ARTIFACT_ORGANIZATION_GUIDE.md` — 2026-03-18)_
 
-**Deliverable**: Comprehensive documentation including:
-- Standard directory structure diagram
-- Naming conventions per artifact type
-- Examples (payment-service, web-app-001, etc.)
-- How to create a new app artifact directory
-- How to reference artifacts in GitHub Actions
-- Migration path for existing artifacts
+**Deliverable**: 3-step onboarding guide including:
+- Standard artifact directory structure overview
+- How to drop transcripts and invoke `@transcripttospecs`
+- Tier hierarchy reference table
+- Repository structure map (including `artifacts/` role directories)
 
 #### 4. Validation Schema
-**Output**: `/artifacts/.templates/schemas/artifact-structure.json`
+**Output**: `.specify/schemas/artifact-structure-schema.json`  
+_(Moved from `artifacts/.templates/schemas/` 2026-03-18)_
 
 **Deliverable**: JSON schema that validates:
 - Directory structure exists
@@ -224,7 +227,8 @@ Implement automated validation and quality gates to enforce the standard going f
 
 **Trigger**: When artifacts are committed or during CI/CD pipeline
 
-**Validation Script**: `artifacts/.templates/scripts/validate-artifact-structure.ps1`
+**Validation Script**: `.specify/scripts/powershell/validate-artifact-structure.ps1`  
+_(Moved from `artifacts/.templates/scripts/` 2026-03-18)_
 
 ```powershell
 # Validates:
@@ -232,7 +236,7 @@ Implement automated validation and quality gates to enforce the standard going f
 # - Subdirectories exist (or documented as optional)
 # - README.md files present
 # - Naming conventions followed
-# - No artifacts in /artifacts/ root (except .templates/)
+# - No role output artifacts in /artifacts/ root (only role subdirs: applications/, devops/, infrastructure/)
 ```
 
 **Integration**: Add to GitHub Actions as pre-deployment quality gate
@@ -241,7 +245,8 @@ Implement automated validation and quality gates to enforce the standard going f
 
 #### 2. GitHub Actions Template Update
 
-**Create**: `/artifacts/applications/.templates/workflows/deploy-application.yml`
+**Create**: `.specify/templates/workflows/deploy-application.yml`  
+_(Pipeline templates are platform tooling and live in `.specify/templates/`, not in `artifacts/`)_
 
 **Updates**:
 ```yaml
