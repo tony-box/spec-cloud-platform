@@ -11,7 +11,7 @@ last-updated: 2026-03-17
 role-context:
   declared-role: platform
   authority-scope: platform-meta-governance
-  change-intent: "Implement ingest-transcript.ps1 (script-enforced) + transcript-analysis-template.md (spec-interpreted) + platform category registration"
+  change-intent: "Implement transcript-to-specs VS Code agent mode + toolkit scripts (register-category.ps1, write-spec.ps1) + signal vocabulary template + platform category registration"
   upstream-snapshot:
     - spec-id: spec
       version: "1.0.0-draft"
@@ -26,7 +26,7 @@ role-context:
 # Tasks: AI Transcript Ingestion for Spec Generation
 
 **Input**: `specs/platform/003-transcript-to-spec/`  
-**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/ingest-transcript-cli.md  
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md  
 **Tier**: platform | **Spec ID**: txin | **Branch**: `003-transcript-to-spec`
 
 ---
@@ -34,178 +34,130 @@ role-context:
 ## Format: `[ID] [P?] [Story?] Description with file path`
 
 - **[P]**: Parallelizable — different files or independent functions, no incomplete dependencies
-- **[US#]**: Story label — required for all Phase 3+ tasks; maps to user stories in spec.md
+- **[US#]**: Story label — maps to user stories in spec.md
 - No test tasks — TDD not requested in spec
 
 ---
 
-## Phase 1: Setup
+## Phase 1: Scaffolding
 
-**Purpose**: Create file scaffolds for both deliverable artifacts
+**Purpose**: Create skeleton files for all deliverable artifacts before any logic is implemented
 
-- [ ] T001 Create `.specify/scripts/powershell/ingest-transcript.ps1` with CmdletBinding param block (`-TranscriptFile`, `-ManifestFile`, `-DryRun`, `-Force`, `-Json`, `-Help`), `$ErrorActionPreference = 'Stop'`, and `. $PSScriptRoot/common.ps1` source line
-- [ ] T002 [P] Create `.specify/templates/transcript-analysis-template.md` with frontmatter (`tier: platform`, `category: transcript-ingestion`, `spec-id: txin`, `artifact-type: template`, `execution-mode: spec-interpreted`) and top-level section headings
-
----
-
-## Phase 2: Foundational (shared building blocks — blocking all user stories)
-
-**Purpose**: Core helpers used by every user story; must be complete before Phase 3
-
-- [ ] T003 [P] Implement `-Help` display block in `.specify/scripts/powershell/ingest-transcript.ps1` — print usage, all parameters, invocation examples from contracts/ingest-transcript-cli.md, then `exit 0`
-- [ ] T003a [P] Implement `Get-AnalysisPrompt` function in `.specify/scripts/powershell/ingest-transcript.ps1` — accepts a `TranscriptDocument` and `CategoryCatalog`, renders `.specify/templates/transcript-analysis-template.md` by substituting `{{TRANSCRIPT_CONTENT}}` with transcript text and `{{CATEGORY_CATALOG}}` with a formatted YAML summary of all known tiers and categories, and returns the composed prompt string; wire into the **Step 1 flow**: if `-ManifestFile` is absent (and not `-Help`), call `Get-AnalysisPrompt`, write prompt to stdout, print guidance line `"Paste the above into your AI agent, then re-run with -ManifestFile <path>"`, and `exit 0`
-- [ ] T003b [P] Implement **Step 2** manifest-input flow in `.specify/scripts/powershell/ingest-transcript.ps1` — when `-ManifestFile` is provided: read file content (or read from stdin if value is `-`); pass raw string to `ConvertFrom-IngestionManifest`; then call `Test-IngestionManifest`; `exit 1` with descriptive message on parse or validation failure; this gates all subsequent spec-writing logic — **Note**: JSON fields from the manifest are `snake_case` (e.g. `spec_entries`); map to `PascalCase` PowerShell properties at this boundary
-- [ ] T004 [P] Implement `Build-CategoryCatalog` function in `.specify/scripts/powershell/ingest-transcript.ps1` — reads `specs/specs.yaml` via `Get-RepoRoot` (from `common.ps1`), iterates all `specs/<tier>/_categories.yaml` files, returns `CategoryCatalog` object with `Tiers`, `Categories`, and `SpecIds` arrays per data-model.md — **Note**: T019 extends this function to handle missing `_categories.yaml` (bootstrap mode); use a graceful per-tier fallback pattern (empty array rather than throw) so T019 is a minimal delta
-- [ ] T005 [P] Implement `Get-TranscriptDocument` function in `.specify/scripts/powershell/ingest-transcript.ps1` — validates `-TranscriptFile` exists and is non-empty (≤500 000 chars), returns `TranscriptDocument` object with `FilePath`, `Content`, `InferredDate`, `Participants`, `Purpose` per data-model.md
-- [ ] T006 [P] Implement `ConvertFrom-IngestionManifest` function in `.specify/scripts/powershell/ingest-transcript.ps1` — extracts the first fenced ` ```json ` block from a string input and returns the deserialized object via `ConvertFrom-Json`; throws on parse failure — **Note**: JSON schema uses `snake_case` (`spec_entries`, `new_categories`, `spec_id`, `is_new_category`) per research.md Decision 3; downstream PowerShell objects use `PascalCase` (data-model.md); map explicitly at this deserialization boundary rather than relying on implicit property access
-- [ ] T007 Implement `Test-IngestionManifest` validation function in `.specify/scripts/powershell/ingest-transcript.ps1` — validates: all `tier` values are in the 6 known tiers; all `spec_id` values match `^[a-z][a-z0-9-]{1,7}$`; `spec_entries` is non-empty; returns `$true`/`$false` with descriptive error messages
+- [ ] T001 Create `.github/agents/transcript-to-specs.md` with YAML frontmatter (`name`, `description`, `tools`, `version`) and top-level section headings: Overview, Invocation, Workflow, Conflict Resolution, Toolkit Script Integration, Constraints
+- [ ] T002 [P] Create `.specify/templates/transcript-analysis-template.md` with frontmatter (`tier: platform`, `category: transcript-ingestion`, `spec-id: txin`, `artifact-type: template`, `execution-mode: spec-interpreted`) and top-level section headings: Purpose, Tier Signal Vocabulary, Extraction Guidance, Grouping Rules, Output Format
+- [ ] T003 [P] Create `.specify/scripts/powershell/register-category.ps1` with `CmdletBinding` param block (`-Tier`, `-CategoryName`, `-SpecId`, `-Description`), `$ErrorActionPreference = 'Stop'`, and `. $PSScriptRoot/common.ps1` source line
+- [ ] T004 [P] Create `.specify/scripts/powershell/write-spec.ps1` with `CmdletBinding` param block (`-Tier`, `-Category`, `-SpecId`, `-FrontmatterJson`, `-BodyMarkdown`, `-Force`), `$ErrorActionPreference = 'Stop'`, and `. $PSScriptRoot/common.ps1` source line
 
 ---
 
-## Phase 3: User Story 1 — Core spec generation from transcript (P1) 🎯 MVP
+## Phase 2: Signal Vocabulary & Analysis Template (spec-interpreted)
 
-**Goal**: An engineer with a transcript can run `ingest-transcript.ps1 -DryRun` to preview a manifest and then run without `-DryRun` to write spec files with correct frontmatter into existing categories.
+**Purpose**: Author the `transcript-analysis-template.md` so the agent has a complete, accurate signal vocabulary and extraction algorithm
 
-**Independent test**: Run script on `quickstart.md` sample transcript → dry run prints table of 2–3 specs → full run writes `specs/<tier>/<category>/spec.md` files with correct YAML frontmatter, `status: draft`, `decision-mode: autonomous`
-
-- [ ] T008 [P] [US1] Write tier signal vocabulary section in `.specify/templates/transcript-analysis-template.md` — include the full per-tier keyword table from research.md Decision 4 (all 19 tier/category signal rows)
-- [ ] T009 [P] [US1] Write extraction guidance sections in `.specify/templates/transcript-analysis-template.md` — Step 1: meeting metadata extraction (date, participants, purpose); Step 2: decision/requirement/constraint extraction per signal vocabulary; Step 3: tier+category mapping rules; Step 4: gap detection instructions
-- [ ] T010 [US1] Write `IngestionManifest` output schema and generation instructions in `.specify/templates/transcript-analysis-template.md` — include complete JSON schema from research.md Decision 3, fenced ` ```json ` block instruction, and field-level guidance for `spec_entries` and `new_categories`
-- [ ] T011 [P] [US1] Implement `New-GeneratedSpec` function in `.specify/scripts/powershell/ingest-transcript.ps1` — accepts a `SpecEntry` (JSON-deserialized object; access fields via `snake_case` names e.g. `$entry.spec_id`) and returns a `GeneratedSpec` object (PowerShell `PascalCase`) with rendered YAML frontmatter (all required fields per spec-system: `tier`, `category`, `spec-id`, `version: "1.0.0-draft"`, `status: draft`, `compliance-state: current`, `role-context.requested-by: "transcript-ingestion"`, `role-context.decision-mode: autonomous`) and body markdown (Executive Summary from `summary`, Decisions list, Requirements list, Constraints list) per data-model.md
-- [ ] T012 [US1] Implement spec-writing loop in `.specify/scripts/powershell/ingest-transcript.ps1` — for each `SpecEntry` in manifest: resolve target path `specs/<tier>/<category>/spec.md`; skip with warning if file exists and `-Force` not set; otherwise create directory if needed and write `GeneratedSpec.FrontmatterYaml + GeneratedSpec.BodyMarkdown`; accumulate `IngestionResult` counters
-- [ ] T013 [P] [US1] Implement dry-run table display in `.specify/scripts/powershell/ingest-transcript.ps1` — when `-DryRun` is set (and `-Json` is not), print formatted table with columns `TIER`, `CATEGORY`, `SPEC-ID`, `ACTION` and summary line; then `exit 0`
-- [ ] T014 [US1] Implement text-mode `IngestionResult` summary output in `.specify/scripts/powershell/ingest-transcript.ps1` — when `-Json` is not set, print `[ingest-transcript] Complete: N created, N skipped, N failed` plus any warnings and errors, then exit 0 or 1 based on `IngestionResult.Success`
+- [ ] T005 [P] [US1] Write tier signal vocabulary table in `.specify/templates/transcript-analysis-template.md` — include per-tier keyword signal rows for all six tiers: business (cost, budget, ROI, SLA, compliance, policy), security (zero-trust, encryption, RBAC, audit, threat, access-control), infrastructure (landing zone, VM, networking, storage, IAC, region), devops (CI/CD, pipeline, deployment, automation, observability, GitOps), platform (spec-system, framework, catalog, module, registry, scaffold), application (API, feature, SLA, deployment-strategy); include negative signals (keywords that appear in multiple tiers and require disambiguation by context)
+- [ ] T006 [P] [US1] Write extraction guidance sections in `.specify/templates/transcript-analysis-template.md` — Step 1: extract meeting metadata (date, participants, purpose); Step 2: extract raw decision/requirement/constraint statements; Step 3: map each statement to exactly one tier+category using signal vocabulary; Step 4: identify gaps (topics that cannot be confidently mapped — surface these as clarifying questions); Step 5: identify conflicts with existing specs (check by reading referenced spec files)
+- [ ] T007 [US1] Write grouping and output format sections in `.specify/templates/transcript-analysis-template.md` — grouping rule: one spec per tier-category pair, merge multiple statements into one spec body; output format: describe the proposed grouping plan format the agent presents to the user (numbered list with tier/category/rationale per group); describe the session summary format (markdown table: spec path, action, conflict-flag Y/N)
 
 ---
 
-## Phase 4: User Story 2 — New category discovery (P2)
+## Phase 3: Toolkit Scripts (script-enforced)
 
-**Goal**: A transcript mentioning a concept with no matching category causes the tool to propose, validate, and register a new category in `_categories.yaml` and `specs.yaml`, then write the spec into the newly created directory.
+**Purpose**: Implement the deterministic file operation scripts that the agent calls for all writes
 
-**Independent test**: Run on a transcript containing "disaster-recovery" language → with `-Force`, tool creates `specs/business/disaster-recovery/spec.md`, adds entry to `specs/business/_categories.yaml`, increments `category-count` in `specs/specs.yaml`
+### `register-category.ps1`
 
-- [ ] T015 [P] [US2] Implement `Test-CategoryNameValid` function in `.specify/scripts/powershell/ingest-transcript.ps1` — validates `category` against `^[a-z][a-z0-9-]+$`; validates `spec_id` against `^[a-z][a-z0-9-]{1,7}$`; checks `spec_id` is not already in `CategoryCatalog.SpecIds`; returns `$true`/`$false` with error text
-- [ ] T016 [US2] Implement `Update-CategoryYaml` function in `.specify/scripts/powershell/ingest-transcript.ps1` — reads `specs/<tier>/_categories.yaml`; checks if `spec_id` already present (idempotent); if not, appends new entry (`name`, `spec-id`, `description`) and increments `category-count`; writes file back — **Note**: T020 extends this function for the case where the file does not yet exist; check existence before reading so T020 can slot in a file-creation branch without restructuring the function
-- [ ] T017 [P] [US2] Implement `Update-SpecsYamlCategoryCount` function in `.specify/scripts/powershell/ingest-transcript.ps1` — reads `specs/specs.yaml`; finds the tier block by name; increments `category-count` value; writes file back (idempotent: reads current count, compares before writing)
-- [ ] T018 [US2] Wire new-category flow in `.specify/scripts/powershell/ingest-transcript.ps1` — after manifest validation, for each entry in `manifest.new_categories`: call `Test-CategoryNameValid`; if `-Force` not set and stdin **is** a TTY, prompt for confirmation; if `-Force` not set and stdin is **not** a TTY (non-interactive/CI mode — detect via `[System.Console]::IsInputRedirected`), treat each new-category proposal as a hard error: add to `Errors[]`, set `SpecsFailed++`, and continue to next entry (no deadlock); call `Update-CategoryYaml` then `Update-SpecsYamlCategoryCount` for confirmed/forced entries; create directory `specs/<tier>/<category>/`; accumulate `CategoriesCreated` count
+- [ ] T008 Implement parameter validation in `.specify/scripts/powershell/register-category.ps1` — validate `-Tier` is one of the 6 known tiers (from `$script:SpecTiers` in `common.ps1`); validate `-CategoryName` against `^[a-z][a-z0-9-]+$`; validate `-SpecId` against `^[a-z][a-z0-9-]{1,7}$`; exit 1 with descriptive message on any failure
+- [ ] T009 [P] Implement spec-id uniqueness check in `.specify/scripts/powershell/register-category.ps1` — call `Build-CategoryCatalog` (from `common.ps1`); check if `-SpecId` already exists in the global spec-id set; exit 1 with message listing the conflict if duplicate found
+- [ ] T010 Implement `_categories.yaml` upsert in `.specify/scripts/powershell/register-category.ps1` — if `specs/<tier>/_categories.yaml` does not exist, write bootstrap skeleton; otherwise read existing file; check if `spec-id` already present (idempotent — exit 0 silently if already registered); append new entry (`name`, `spec-id`, `description`) and increment `category-count`; write back; atomic write (write to temp file, rename)
+- [ ] T011 [P] Implement `specs.yaml` category-count increment in `.specify/scripts/powershell/register-category.ps1` — read `specs/specs.yaml`; find tier entry; increment `category-count`; write back; idempotent (only increments if the category was actually new per T010)
+- [ ] T012 [P] Implement PSScriptAnalyzer compliance pass on `register-category.ps1` — all functions use approved verbs (`Register-`, `Build-`, `Test-`, `Write-`); no declared-but-unused variables; pass `Invoke-ScriptAnalyzer` with zero errors
 
----
+### `write-spec.ps1`
 
-## Phase 5: User Story 3 — Empty project bootstrap (P2)
-
-**Goal**: Running on a fresh repo with no `_categories.yaml` files bootstraps the entire spec catalog from a single transcript — all references tier `_categories.yaml` files are created, all specs written, and a manifest file produced.
-
-**Independent test**: Run on an empty `specs/` tree → all required `_categories.yaml` files are created, all specs written with correct frontmatter, `transcript-ingestion-manifest.md` written to the transcript's containing directory
-
-- [ ] T019 [US3] Update `Build-CategoryCatalog` in `.specify/scripts/powershell/ingest-transcript.ps1` to handle missing `_categories.yaml` gracefully — if a tier directory exists but has no `_categories.yaml`, treat that tier as having zero categories (empty array for that tier) rather than throwing; if `specs/specs.yaml` is missing, use a built-in default tier list
-- [ ] T020 [US3] Update `Update-CategoryYaml` in `.specify/scripts/powershell/ingest-transcript.ps1` to handle non-existent `_categories.yaml` — if file does not exist, write a bootstrap skeleton (`tier:`, `category-count: 1`, `categories:` with the first entry) instead of reading then appending
-- [ ] T021 [P] [US3] Implement `Write-IngestionManifestFile` function in `.specify/scripts/powershell/ingest-transcript.ps1` — after all writes, create `transcript-ingestion-manifest.md` in same directory as the transcript file; record: source transcript path, run date, all specs created (tier/category/path), all new categories registered, skip and error counts
+- [ ] T013 Implement parameter validation in `.specify/scripts/powershell/write-spec.ps1` — validate `-Tier`, `-Category`, `-SpecId`, `-FrontmatterJson` (must be parseable via `ConvertFrom-Json`); validate target path resolves within repo root (no path traversal); exit 1 with descriptive message on any failure
+- [ ] T014 Implement YAML frontmatter generation in `.specify/scripts/powershell/write-spec.ps1` — accept `-FrontmatterJson`, deserialize, validate all required fields are present (`tier`, `category`, `spec-id`, `version`, `status`, `compliance-state`, `role-context`), render as valid YAML block with `---` delimiters; enforce `status: draft`, `compliance-state: current`, `requested-by: "transcript-to-specs"`, `decision-mode: autonomous`
+- [ ] T015 [P] Implement spec file write in `.specify/scripts/powershell/write-spec.ps1` — resolve target path `specs/<tier>/<category>/spec.md`; create directory if needed; if file exists and `-Force` not set, exit 2 (skip, not error) with message; write frontmatter + body markdown; validate written file is non-empty and YAML frontmatter block opens the file; exit 0 on success
+- [ ] T016 Implement conflict-flag injection in `.specify/scripts/powershell/write-spec.ps1` — if `-FrontmatterJson` includes a `conflict-flags` array, add `conflict-flags:` block to generated YAML frontmatter and prepend a `## ⚠️ Conflict Flags` section to the body listing each flagged upstream spec and reason
+- [ ] T017 [P] Implement PSScriptAnalyzer compliance pass on `write-spec.ps1` — approved verbs (`Write-`, `New-`, `Test-`, `ConvertTo-`); no declared-but-unused variables; pass `Invoke-ScriptAnalyzer` with zero errors
 
 ---
 
-## Phase 6: User Story 4 — CI / machine-readable output (P3)
+## Phase 4: Agent Mode — Core Workflow (US1 P1)
 
-**Goal**: Running with `-Json` emits a valid JSON `IngestionResult` on stdout, with exit code 0 on full success or 1 on any failure — parseable by CI pipelines.
+**Purpose**: Author `transcript-to-specs.md` workflow steps for the single-session analysis-to-write flow
 
-**Independent test**: `ingest-transcript.ps1 -TranscriptFile sample.md -Json | ConvertFrom-Json` succeeds and returns object with `success`, `specs_created`, `specs_skipped`, `specs_failed`, `specs` array matching the schema from contracts/ingest-transcript-cli.md
-
-- [ ] T022 [P] [US4] Implement `-Json` `IngestionResult` output in `.specify/scripts/powershell/ingest-transcript.ps1` — when `-Json` is set (and `-DryRun` is not), serialize the final `IngestionResult` to the JSON schema defined in contracts/ingest-transcript-cli.md (fields: `success`, `dry_run`, `transcript_file`, `specs_created`, `specs_skipped`, `specs_failed`, `categories_created`, `errors`, `warnings`, `specs[]`) via `ConvertTo-Json -Compress`
-- [ ] T023 [US4] Implement `-DryRun -Json` combined mode in `.specify/scripts/powershell/ingest-transcript.ps1` — when both flags set, emit JSON representation of the manifest preview (same schema with `dry_run: true`, all entries with `action: "would-create"` or `action: "would-skip"`) and exit 0
-- [ ] T024 [US4] Enforce exit codes throughout `.specify/scripts/powershell/ingest-transcript.ps1` — audit all exit paths: `exit 0` only when `IngestionResult.SpecsFailed -eq 0` (skips are not failures); `exit 1` on: missing or unreadable transcript, unparseable manifest JSON, any `SpecsFailed > 0`, any failed prerequisite check
-
----
-
-## Phase 7: Polish & Platform Registration
-
-**Purpose**: Register the new capability in the platform spec tree; lint; end-to-end validation; tag
-
-- [ ] T025 [P] Add `transcript-ingestion` category entry to `specs/platform/_categories.yaml` — entry must include `name: transcript-ingestion`, `spec-id: txin`, a description, and increment `category-count`
-- [ ] T026 [P] Register `ingest-transcript.ps1` in `specs/specs.yaml` toolkit-components scripts section — add entry with `purpose`, `contracts.input`, `contracts.output`, `contracts.idempotent: true` per the toolkit-registration block in contracts/ingest-transcript-cli.md
-- [ ] T027 [P] Create `specs/platform/transcript-ingestion/spec.md` — copy and promote the feature spec from `specs/platform/003-transcript-to-spec/spec.md`, update path references, set `status: ratified`, update `version-history`
-- [ ] T028 Run PSScriptAnalyzer on `.specify/scripts/powershell/ingest-transcript.ps1` and fix all errors — `Invoke-ScriptAnalyzer -Path .specify/scripts/powershell/ingest-transcript.ps1`; zero issues must remain
-- [ ] T029 End-to-end validation — run `ingest-transcript.ps1 -TranscriptFile specs/platform/003-transcript-to-spec/quickstart.md -DryRun` to confirm manifest output, then run without `-DryRun` on a scratch branch to confirm spec files are written correctly; wrap the scaffolding + validation loop in `Measure-Command` and assert elapsed time is under 10 seconds (NFR-002) — exclude AI response time from measurement
-- [ ] T030 Commit, push, and tag — `git tag spec/txin/1.0.0-draft` after T025–T029 are complete
+- [ ] T018 [P] [US1] Write Overview and Invocation sections in `.github/agents/transcript-to-specs.md` — describe: how the user invokes the agent (Copilot Chat with transcript file path), what the agent does at a high level, which toolkit scripts it calls and when, what user confirmations are required at each gate
+- [ ] T019 [US1] Write Workflow section in `.github/agents/transcript-to-specs.md` — define the 7-step sequential flow: (1) Accept transcript path, read file; (2) Load category catalog (read `specs.yaml` + all `_categories.yaml`); (3) Run transcript extraction using signal vocabulary from `transcript-analysis-template.md`; (4) Build proposed grouping plan (one spec per tier-category pair); (5) Present grouping plan to user in chat and wait for confirmation; (6) For each confirmed group: process conflicts, process existing-spec checks, then write via `write-spec.ps1`; (7) Post session summary
+- [ ] T020 [P] [US1] Write Toolkit Script Integration section in `.github/agents/transcript-to-specs.md` — document the exact PowerShell call signature for each script the agent uses, the expected exit codes and outputs, and how the agent interprets those (e.g., exit 2 from `write-spec.ps1` = skip, not error); document that the agent MUST NOT perform direct file writes — all file operations go through scripts
+- [ ] T021 [P] [US1] Write Constraints section in `.github/agents/transcript-to-specs.md` — enumerate all behavioral constraints from spec.md Constraints & Guardrails section; add agent-operational constraints: max 5 clarifying questions per session, always present grouping plan before any write, never write an existing spec without user confirmation
 
 ---
 
-## Dependencies
+## Phase 5: Agent Mode — Conflict Resolution (US2 P1)
+
+**Purpose**: Author the per-conflict interactive resolution workflow section of the agent file
+
+- [ ] T022 [US2] Write Conflict Resolution section in `.github/agents/transcript-to-specs.md` — define the detection algorithm: before writing each spec, the agent reads all specs in tiers above the target tier and scans for requirements that directly contradict the new spec's content; define the exact 3-option prompt format the agent presents to the user (Block / Write-with-flag / Propose-amendment); define agent behavior for each choice: Block = log to session summary with reason, skip write; Write-with-flag = call `write-spec.ps1` with `conflict-flags` in frontmatter JSON; Propose-amendment = write new spec AND generate an amendment proposal as a second markdown file targeting the upstream spec
+- [ ] T023 [P] [US2] Write amendment-proposal format in `.github/agents/transcript-to-specs.md` — define the format of the companion amendment-proposal file: path `specs/<tier>/<category>/spec-amendment-<source-spec-id>.md`, frontmatter (`artifact-type: amendment-proposal`, `targets-spec-id`, `targets-version`, `proposed-by: "transcript-to-specs"`), body sections (Conflict Description, Proposed Change, Rationale)
+
+---
+
+## Phase 6: Agent Mode — Existing Spec Updates & New Categories (US3/US4 P2)
+
+**Purpose**: Author the additive-update and new-category-registration workflows in the agent file
+
+- [ ] T024 [US3] Write existing-spec handling section in `.github/agents/transcript-to-specs.md` — define the 3-step check: (a) read existing `spec.md` for the target category; (b) compare newly extracted requirements against existing requirements — identify net-new items; (c) if net-new items exist, present them to user in chat with the question "Add these X items to `<path>`?"; if user confirms, append to spec body via `write-spec.ps1 -Force`; if no net-new items, log "already covered" in session summary and skip
+- [ ] T025 [US4] Write new-category-discovery section in `.github/agents/transcript-to-specs.md` — define the detection trigger (no existing category in catalog matches the topic), the confirmation prompt format (present proposed category name, spec-id, tier, and 1-sentence description to user), and the write sequence: (a) user confirms; (b) agent calls `register-category.ps1`; (c) agent calls `write-spec.ps1` to write the spec into the newly registered directory; if user declines, log to session summary and skip this topic
+
+---
+
+## Phase 7: Platform Registration & Validation
+
+**Purpose**: Register the new `transcript-ingestion` category; lint all scripts; end-to-end test; tag
+
+- [ ] T026 [P] Add `transcript-ingestion` entry to `specs/platform/_categories.yaml` — add entry: `name: "Transcript Ingestion"`, `spec-id: txin`, `description: "AI-assisted meeting transcript ingestion to generate categorized spec drafts"`, increment `category-count`
+- [ ] T027 [P] Update `specs/specs.yaml` — confirm `category-count` for `platform` tier is correct after T026
+- [ ] T028 [P] Run `Invoke-ScriptAnalyzer` on `register-category.ps1` and `write-spec.ps1` — zero errors required; fix any `PSUseApprovedVerbs` or `PSUseDeclaredVarsMoreThanAssignments` violations before proceeding
+- [ ] T029 End-to-end smoke test — manually invoke the `transcript-to-specs` agent in VS Code Copilot Chat using the sample transcript from `research.md`; verify: grouping plan is presented before any write, all written specs have `status: draft` and `requested-by: "transcript-to-specs"`, session summary is posted in chat
+- [ ] T030 [P] Create git tag `spec/txin/1.0.0-draft` on the final commit of this branch
+
+---
+
+## Phase Ordering & Parallelization
+
+### Dependency graph
 
 ```
-T001 ──┬──► T003
-       ├──► T004 ──┬──► T003a ──┐
-       ├──► T005 ──┘            ├──► T012 ──┬──► T013 ──► T022 ──► T023 ──► T024
-       ├──► T006 ──► T003b ──► T007         │             │
-       └──► T011 ───────────────────────────┘             └──► T014
-       
-T001 ──► T004 ──► T019 ──► T016 ──► T018
-T015 ──────────► T016 ──► T018
-T017 ─────────────────────► T018
-T018 ──► T020 ──► T021
-
-T002 ──► T008 ─┐
-        T009 ──┴──► T010
-
-# Phase gate: T003a + T003b + T007 + T011 must be done before T012
-# US1 complete when: T010 + T012 + T014 done
-# US2 complete when: T018 done
-# US3 complete when: T019 + T020 + T021 done
-# US4 complete when: T022 + T023 + T024 done
-# Done when: T025 + T026 + T027 + T028 + T029 + T030 done
+Phase 1 (scaffold) — unblocks all phases
+  ├── Phase 2 (template) — T005, T006, T007 all in parallel
+  ├── Phase 3 (scripts)
+  │   ├── T008, T009 parallel → T010 → T011, T012 parallel
+  │   └── T013, T014 parallel → T015 → T016, T017 parallel
+  └── Phase 4 (agent core)
+        ├── T018, T019 parallel
+        └── T020, T021 parallel (after T019)
+            └── Phase 5 (conflict) — T022, T023 parallel (after T020)
+                └── Phase 6 (updates/categories) — T024, T025 parallel
+                    └── Phase 7 (registration) — T026-T030
 ```
+
+### Quick-start parallel set (after T001-T004 complete)
+
+All of these can run simultaneously:
+- T005, T006, T007 — template sections
+- T008, T009, T013, T014 — script parameter validation and frontmatter generation in parallel across the two scripts
+- T018, T019 — agent overview and workflow (can be drafted in parallel with scripts)
+
+### MVP delivery
+
+Complete Phase 3 (T008–T017) + Phase 4 (T018–T021) to have a working agent with toolkit scripts. US1 is end-to-end testable from this point. Phase 5/6 add conflict resolution and update handling. Phase 7 finalizes registration and tagging.
 
 ---
 
-## Parallel Execution Examples
+## Implementation Notes
 
-### US1 — Start in parallel after T001 and T002 complete
+- The `transcript-to-specs` agent handles ALL reasoning, judgment, Q&A, conflict presentation, and grouping confirmation. Scripts handle ONLY deterministic file operations.
+- `common.ps1` provides `Get-RepoRoot`, `$script:SpecTiers`, and `Build-CategoryCatalog` — use these; do not hardcode paths or tier lists in the new scripts.
+- Both new scripts MUST be idempotent: `register-category.ps1` exits 0 silently if the spec-id is already registered; `write-spec.ps1` exits 2 (skip) if the file exists and `-Force` is not set.
+- Conflict detection in the agent is heuristic (keyword + semantic similarity scanning of existing spec bodies) — false positives are acceptable and resolved interactively. False negatives (missed conflicts) are a risk; the agent should err on the side of surfacing more conflicts rather than fewer.
 
-```
-# Round 1 — start all in parallel immediately after T001 + T002
-T003  ─── (help block in .ps1)
-T004  ─── (Build-CategoryCatalog in .ps1)
-T005  ─── (Get-TranscriptDocument in .ps1)
-T006  ─── (ConvertFrom-IngestionManifest in .ps1)
-T008  ─── (signal vocabulary in .md template)
-T009  ─── (extraction guidance in .md template)
-T011  ─── (New-GeneratedSpec in .ps1)
-T013  ─── (dry-run display in .ps1)
-
-# Round 2 — start once Round 1 preconditions met
-T003a ─── (Get-AnalysisPrompt + Step 1 flow)    ← needs T004 + T005 done
-T003b ─── (Step 2 manifest-reading flow)        ← needs T006 done
-```
-
-### US2 — Start T015 and T017 in parallel after US1 is done
-
-```
-T015  ─── (Test-CategoryNameValid)
-T017  ─── (Update-SpecsYamlCategoryCount)
-```
-
-### Phase 7 — Start T025, T026, T027 in parallel after T024
-
-```
-T025  ─── (_categories.yaml entry)
-T026  ─── (specs.yaml registration)
-T027  ─── (platform category spec.md)
-```
-
----
-
-## Implementation Strategy
-
-**MVP**: Complete Phase 3 (US1) first — this delivers the core value (transcript → spec files for existing categories). US1 is independently testable with `quickstart.md` as the sample transcript.
-
-**Phase ordering**:
-1. Phase 1 + Phase 2 (unblock all stories)
-2. Phase 3 US1 (MVP — core flow including dry-run and spec writing)
-3. Phase 4 US2 (new category registration — enables full bootstrap)
-4. Phase 5 US3 (bootstrap mode — needed for greenfield repos)
-5. Phase 6 US4 (CI mode — needed for pipeline integration)
-6. Phase 7 (registration + lint + tag)
-
-**Key implementation notes** (from research.md):
-- AI invocation is **out-of-band** — the script prints the rendered template + transcript; the human pastes the AI response back. The script only parses the returned JSON manifest. No API keys, no network calls.
-- Idempotency is enforced at two levels: (1) existence check on spec file path before write; (2) `spec_id` dedup in `_categories.yaml` before append.
-- `common.ps1` provides `Get-RepoRoot` and `$script:SpecTiers` — use these rather than hardcoding paths or tier lists.
-- The template (`transcript-analysis-template.md`) is spec-interpreted: variation in AI output is expected and acceptable. The script validates the JSON structure, not the content values.
