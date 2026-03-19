@@ -13,8 +13,16 @@
     relationship to the main history), so customers receive a clean tree when they
     clone or checkout the tag.
 
+.PARAMETER Bump
+    Increment type: Major, Minor, or Patch.  The script reads the latest "template/v*"
+    git tag, parses its semantic version, and computes the next version automatically.
+    Mutually exclusive with -Version.
+    If no template tag exists yet, defaults to 1.0.0 / 0.1.0 / 0.0.1 respectively.
+
 .PARAMETER Version
-    Semantic version string, e.g. "1.0.0".  The tag will be "template/v<Version>".
+    Explicit semantic version string, e.g. "1.0.0".  Use this when you need a specific
+    version rather than auto-increment.  Mutually exclusive with -Bump.
+    The tag will be "template/v<Version>".
 
 .PARAMETER Push
     Push the tag to origin after creating it locally.
@@ -23,14 +31,20 @@
     Re-create the tag even if it already exists (also force-pushes if -Push is set).
 
 .EXAMPLE
-    .\sysprep.ps1 -Version "1.0.0" -Push
-    .\sysprep.ps1 -Version "1.2.0"               # creates tag locally, no push
+    .\sysprep.ps1 -Bump Patch -Push      # auto-increment patch, push to origin
+    .\sysprep.ps1 -Bump Minor            # auto-increment minor, tag locally only
+    .\sysprep.ps1 -Bump Major -Push      # e.g. 1.2.3 -> 2.0.0, push
+    .\sysprep.ps1 -Version "1.0.0" -Push # explicit version, push
     .\sysprep.ps1 -Version "1.0.0" -Push -Force  # overwrite existing tag
 #>
 
-[CmdletBinding(SupportsShouldProcess)]
+[CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'Bump')]
 param(
-    [Parameter(Mandatory)]
+    [Parameter(ParameterSetName = 'Bump', Mandatory)]
+    [ValidateSet('Major', 'Minor', 'Patch')]
+    [string] $Bump,
+
+    [Parameter(ParameterSetName = 'Explicit', Mandatory)]
     [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string] $Version,
 
@@ -40,6 +54,31 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# ---------------------------------------------------------------------------
+# Resolve version: auto-increment from latest tag, or use explicit -Version
+# ---------------------------------------------------------------------------
+$previousTag = git -C $PSScriptRoot tag -l "template/v*" --sort=-version:refname 2>$null |
+    Select-Object -First 1
+
+if ($PSCmdlet.ParameterSetName -eq 'Bump') {
+    if ($previousTag -match '^template/v(\d+)\.(\d+)\.(\d+)$') {
+        [int]$maj = $Matches[1]; [int]$min = $Matches[2]; [int]$pat = $Matches[3]
+        switch ($Bump) {
+            'Major' { $maj++; $min = 0; $pat = 0 }
+            'Minor' {         $min++;   $pat = 0 }
+            'Patch' {                   $pat++   }
+        }
+        $Version = "$maj.$min.$pat"
+    } else {
+        # No existing template tag — start from scratch
+        $Version = switch ($Bump) {
+            'Major' { '1.0.0' }
+            'Minor' { '0.1.0' }
+            'Patch' { '0.0.1' }
+        }
+    }
+}
 
 # ---------------------------------------------------------------------------
 # Config
@@ -113,10 +152,13 @@ function Reset-CategoriesYaml ([string]$Path) {
 # ---------------------------------------------------------------------------
 # Step 1 – Create staging worktree (orphan: no shared history with main)
 # ---------------------------------------------------------------------------
+$previousDisplay = if ($previousTag) { $previousTag } else { "(none)" }
+
 Write-Host ""
-Write-Host "==> Sysprep: $TagName"
-Write-Host "    Repo   : $RepoRoot"
-Write-Host "    Staging: $StagingPath"
+Write-Host "==> Sysprep : $TagName"
+Write-Host "    Previous: $previousDisplay"
+Write-Host "    Repo    : $RepoRoot"
+Write-Host "    Staging : $StagingPath"
 Write-Host ""
 
 # git ≥ 2.25 required for --orphan in worktree add
