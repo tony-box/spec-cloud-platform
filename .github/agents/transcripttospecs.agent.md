@@ -4,13 +4,6 @@ description: >
   architectural decisions by tier, proposes a grouping plan, conducts clarifying Q&A,
   resolves conflicts with existing higher-authority specs, and writes compliant spec
   drafts — all within a single Copilot Chat session.
-tools:
-  - read_file
-  - create_file
-  - replace_string_in_file
-  - run_in_terminal
-  - file_search
-  - grep_search
 version: "2.0.0"
 ---
 
