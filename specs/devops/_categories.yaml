@@ -1,0 +1,11 @@
+# DevOps Tier Category Index
+# Tier: devops (priority 3 - lower-middle content tier)
+# Purpose: Deployment automation, observability, CI/CD orchestration, environment management
+# Created: 2026-02-09
+
+tier:
+  name: devops
+  priority: 3
+  description: "Bridges infrastructure and applications with deployment automation, observability, and operational practices"
+
+categories: []
