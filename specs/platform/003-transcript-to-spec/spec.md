@@ -67,6 +67,14 @@ defines:
 - Q: When the transcript covers a topic already captured in an existing spec, what should the agent do? → A: Update if additive, skip if already covered. The agent reads the existing spec, checks whether the transcript adds new requirements, constraints, or decisions not already captured, then proposes additions in chat and asks for user confirmation before writing. If the existing spec fully covers the topic, the agent skips it with a note in the chat summary.
 - Q: Does `ingest-transcript.ps1` still exist in the new agent-driven design, or does the agent handle everything? → A: Agent + scripts. The `transcripttospecs` agent handles all analysis, clarification Q&A, conflict resolution, and grouping confirmation. It calls existing `.specify/scripts/powershell/` toolkit scripts for the deterministic operations (frontmatter generation, registry updates, `_categories.yaml` writes, output validation). The scripts remain independently usable from CI. No single monolithic `ingest-transcript.ps1`; the deterministic operations are split across purpose-specific scripts wired by the agent.
 
+### Session 2026-03-18
+
+- Q: Should the cross-tier consistency check (post-write validation from application→business) be added as a standalone REQ here, or is the platform `transcript-ingestion/spec.md` v1.1.0 authoritative enough? → A: Platform spec is authoritative enough. No standalone REQ added; the platform spec governs agent behavior directly.
+- Q: How should the agent handle confidential/PII content in transcripts — should it avoid reproducing raw transcript text or speaker attribution in generated spec files? → A: Yes. The agent MUST NOT reproduce raw transcript excerpts, speaker names, or personal attribution in any generated spec file. All spec content MUST be expressed as requirements, constraints, and decisions only — no narrative or attributed quotation.
+- Q: When a transcript file is unreadable/empty/corrupt, or extraction finds zero tier-signal content, what should the agent do? → A: Differentiated handling — abort with a chat error message for unreadable/empty/corrupt files (no spec writes attempted); warn and ask for explicit user confirmation before ending the session if extraction yields zero tier-signal content.
+- Q: Should the spec specify who or what promotes generated specs from `status: draft`, or leave promotion entirely to human judgment? → A: Promotion stays manual and out of agent scope, but the agent MUST include a next-steps reminder at the end of every session summary stating that all output specs are `status: draft` and require human review to promote.
+- Q: Should there be a safety check before Phase 3 executes a very large number of write operations? → A: Yes (B). Before entering Phase 3, if the confirmed grouping plan contains more than 10 spec write operations, the agent MUST warn the user with the count and ask for explicit confirmation to proceed (e.g., "⚠️ This session will write 14 specs. Continue? (yes / no)"). This prevents unexpectedly large batch runs.
+
 ---
 
 # Specification: AI Transcript Ingestion for Spec Generation
@@ -95,14 +103,13 @@ defines:
 
 **Problem**: Valuable architectural and business decisions are made in meetings but never captured as formal platform specs. Translating meeting notes into correctly-structured, categorized spec files is manual, error-prone, and requires deep knowledge of the six-tier hierarchy, category registration, frontmatter schema, and cross-tier conflict rules.
 
-**Solution**: A new VS Code agent mode named **`transcripttospecs`** that a user invokes in Copilot Chat. The user provides a transcript file path; the agent:
-1. Reads the transcript and the live category catalog (`specs.yaml` + all `_categories.yaml` files)
-2. Identifies decisions, requirements, and constraints across all tiers using the tier signal vocabulary
-3. Proposes a grouping plan — one spec per tier-category pair — and asks the user to confirm before writing
-4. Asks clarifying questions in chat for any topics it cannot fully resolve from the transcript alone
-5. Detects conflicts with existing higher-tiered specs and presents per-conflict resolution options: block, write-with-flag, or propose an upstream amendment
-6. For existing categories: reads the current spec and proposes additions if the transcript is additive; skips with a note if already covered
-7. Writes compliant `spec.md` draft files and updates `_categories.yaml` / `specs.yaml` via toolkit scripts
+**Solution**: A new VS Code agent mode named **`transcripttospecs`** that a user invokes in Copilot Chat. The user provides a transcript file path; the agent processes the transcript in three sequential phases, each with explicit progress feedback posted to the chat UI:
+
+**Phase 1 — Context Build (parallel)**: Issues all file reads — transcript, `specs.yaml`, every tier `_categories.yaml`, and all existing `spec.md` files for categories that are potential UPDATE targets — as a single parallel tool call batch. Upon completion, posts a structured "Context loaded" banner in chat: transcript word count, tier count, existing spec count, and list of UPDATE-candidate categories.
+
+**Phase 2 — Plan & Clarification**: Extracts decisions, requirements, and constraints using the tier signal vocabulary; proposes the full grouping plan (one spec per tier-category pair) and waits for user confirmation; asks up to 5 clarifying questions sequentially; resolves all conflicts interactively. No file writes occur during this phase.
+
+**Phase 3 — Parallel Write Execution**: Processes each confirmed tier-category group as an independent unit, posting a start marker (▶) and a completion marker (✓ or ✗) per group in chat. Batches write operations for independent groups as parallel tool calls for maximum throughput.
 
 All analysis, clarification, and conflict resolution happen in a single agent session with no manual intermediary steps.
 
@@ -141,7 +148,7 @@ The split: *analysis, judgment, and interaction* (agent, spec-interpreted) vs *f
 - **REQ-011**: Generated specs MUST record `requested-by: "transcripttospecs"` and `decision-mode: autonomous` in role-context
 - **REQ-012**: If the user chose Write-with-flag for a conflict, the generated spec MUST include a `conflict-flags:` frontmatter field listing each upstream spec violated and the reason
 - **REQ-013**: Registry updates (`_categories.yaml`, `specs.yaml`) MUST be idempotent — re-running on the same transcript MUST NOT create duplicate entries
-- **REQ-014**: The agent MUST produce a session summary in chat after all writes: specs created, specs updated, specs skipped, new categories registered, conflicts flagged, amendment proposals written
+- **REQ-014**: The agent MUST produce a session summary in chat after all writes: specs created, specs updated, specs skipped, new categories registered, conflicts flagged, amendment proposals written, and a next-steps reminder stating that all output specs are `status: draft` and require human review before promotion
 
 ### Functional Requirements — Toolkit Scripts
 
@@ -166,12 +173,25 @@ The split: *analysis, judgment, and interaction* (agent, spec-interpreted) vs *f
   - For NEW CATEGORY proposals: state the closest existing category that was evaluated and which specific hysteresis condition(s) from REQ-019 justify creating a new category instead
   - Accept a `merge-into <existing-category>` user response at any point to redirect a proposed new category to an UPDATE against the named existing category
 
+### Functional Requirements — Execution Phase Model
+
+- **REQ-021**: The agent MUST process every transcript through exactly three sequential phases: (1) Context Build, (2) Plan & Clarification, (3) Parallel Write Execution. The agent MUST NOT begin any spec file write before Phase 3, and MUST NOT enter Phase 3 before the user has confirmed the grouping plan
+- **REQ-022**: In Phase 1 (Context Build), the agent MUST issue all file reads — transcript file, `specs.yaml`, all tier `_categories.yaml` files, and all existing `spec.md` files for categories identified as potential UPDATE targets — as a single parallel tool call batch. Upon completion the agent MUST post a "Context loaded" banner in chat listing: transcript word count, number of tiers in catalog, number of existing specs loaded, and the names of categories flagged as potential UPDATE targets
+- **REQ-023**: In Phase 3 (Parallel Write Execution), the agent MUST:
+  - Post a `▶ Processing N groups` header before beginning
+  - Before invoking any tool for a group, post a start marker: `▶ [tier/category] — new | update | skip`
+  - After a group completes, post a completion marker: `✓ [tier/category] — created | updated | skipped` or `✗ [tier/category] — error: <reason>`
+  - Batch write operations for groups with non-overlapping file paths and registry targets as parallel tool calls
+- **REQ-024**: If a Phase 3 group fails (toolkit script error, validation failure, or unresolved conflict), the agent MUST record the error inline with a ✗ marker and continue processing all remaining groups; all errors MUST be consolidated in the session summary required by REQ-014
+
 ### Non-Functional Requirements
 
 - **NFR-001**: All toolkit scripts MUST pass PSScriptAnalyzer (`PSUseApprovedVerbs`, `PSUseDeclaredVarsMoreThanAssignments`) with zero errors
 - **NFR-002**: File scaffolding and validation operations MUST complete within 10 seconds each (excluding agent reasoning time)
 - **NFR-003**: Generated spec files MUST be human-readable and immediately editable without tooling
 - **NFR-004**: The agent interaction MUST complete a full single-transcript session (analysis + Q&A + conflict resolution + writes) without requiring the user to leave the Copilot Chat interface
+- **NFR-005**: Phase 1 file reads MUST all be issued in a single parallel tool call batch; the agent MUST NOT perform sequential individual file reads during context loading
+- **NFR-006**: Phase 3 write operations targeting non-overlapping file paths and registry entries MUST be batched as parallel tool calls; the agent MUST NOT serialize operations that are logically independent
 
 ### Out of Scope (v1)
 
@@ -189,17 +209,18 @@ The split: *analysis, judgment, and interaction* (agent, spec-interpreted) vs *f
 A platform engineer opens Copilot Chat and invokes the `transcripttospecs` agent, pointing it at a transcript of a quarterly planning meeting where stakeholders discussed cost targets, reserved instances, Azure Policy for billing alerts, default SKUs, and faster time to market via CI/CD maturity.
 
 The agent:
-1. Reads the file and loads the current category catalog
-2. Proposes a grouping plan in chat: `business/cost` (cost management practices), `infrastructure/compute` (reserved instances + default SKUs), `infrastructure/cicd-pipeline` (billing policy), `devops/ci-cd-orchestration` (deployment velocity), `business/governance` (competitive velocity mandate) — and asks for confirmation
-3. After confirmation, asks 1–2 clarifying questions (e.g., "The transcript mentions 'default SKUs' — should these apply to all workloads or only production?")
-4. Checks existing specs for conflicts, surfaces any that exist, and resolves per-conflict with the user
-5. Writes all confirmed spec files via toolkit scripts and posts a session summary
+1. **Phase 1**: Issues all file reads in parallel — transcript, `specs.yaml`, all `_categories.yaml` files, existing specs for `business/cost` and `business/governance` — then posts a "Context loaded" banner: e.g. *"2 847 words · 6 tiers · 12 existing specs loaded · UPDATE candidates: business/cost, business/governance"*
+2. **Phase 2**: Proposes the grouping plan in chat: `business/cost` (cost management practices), `infrastructure/compute` (reserved instances + default SKUs), `infrastructure/cicd-pipeline` (billing policy), `devops/ci-cd-orchestration` (deployment velocity), `business/governance` (competitive velocity mandate) — and asks for confirmation; asks 1–2 clarifying questions (e.g., "The transcript mentions 'default SKUs' — should these apply to all workloads or only production?"); checks existing specs for conflicts and resolves per-conflict with the user
+3. **Phase 3**: Posts `▶ Processing 5 groups`, then for each group posts a start marker (▶) before writing and a completion marker (✓ or ✗) after; issues parallel write calls for independent groups; posts session summary
 
 **Acceptance criteria**:
+- A "Context loaded" banner appears in chat before the grouping plan is presented
 - Agent presents grouping plan before writing any files
 - Agent asks at most 5 clarifying questions in the session
+- Per-group progress markers appear during Phase 3 (▶ start and ✓ complete or ✗ error for each group)
+- Independent write operations are batched as parallel tool calls (not serialized)
 - Each written spec has correct YAML frontmatter (`status: draft`, `requested-by: "transcripttospecs"`, `decision-mode: autonomous`)
-- Session summary lists every spec created/updated/skipped and every conflict handled
+- Session summary lists every spec created/updated/skipped, every conflict handled, and any Phase 3 errors
 
 ### User Story 2 — Conflict detection and per-conflict resolution (Priority: P1)
 
@@ -286,5 +307,9 @@ Invoking the agent on a repo with no existing category specs generates a full in
 - The analysis template MUST include the full tier signal vocabulary so the agent produces correct tier-category mappings even on an empty project
 - Role-context in generated specs MUST record `requested-by: "transcripttospecs"` and `decision-mode: autonomous`
 - Conflict resolution MUST be per-conflict and interactive — the agent MUST NOT silently skip or silently block conflicting specs
+- The agent MUST NOT reproduce raw transcript excerpts, speaker names, or personal attribution in any generated spec file; all spec content MUST be expressed as requirements, constraints, and decisions only — no narrative or attributed quotation
+- If the transcript file is unreadable, empty, or corrupt, the agent MUST abort immediately with a clear error message in chat and MUST NOT attempt any spec writes or registry updates
+- If extraction yields zero tier-signal content from the transcript, the agent MUST NOT silently exit; it MUST warn the user in chat with a brief explanation and ask for explicit confirmation before ending the session
 - The `transcripttospecs` agent MUST NOT embed API keys or make direct LLM API calls from toolkit scripts; all AI reasoning happens within the agent session
+- If the confirmed grouping plan contains more than 10 spec write operations, the agent MUST warn the user with the total count before entering Phase 3 and ask for explicit confirmation to proceed; the agent MUST NOT begin Phase 3 writes until confirmation is received
 

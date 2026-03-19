@@ -1,6 +1,6 @@
 # Data Model: AI Transcript Ingestion
 
-**Branch**: `001-transcript-to-spec` | **Date**: 2026-03-17 | **Phase**: 1 | **Location**: `specs/platform/003-transcript-to-spec/`
+**Branch**: `003-transcript-to-spec` | **Date**: 2026-03-17 (updated 2026-03-19) | **Phase**: 1 | **Location**: `specs/platform/003-transcript-to-spec/`
 
 ---
 
@@ -22,6 +22,7 @@ The input artifact provided by the user.
 - `FilePath` must exist and be readable
 - `Content` must be non-empty
 - `Content` length ≤ 500,000 characters (practical AI context limit)
+- If `FilePath` does not exist, is unreadable, or `Content` is empty → agent aborts immediately (Phase 1 error, see Decision 10)
 
 ---
 
@@ -53,6 +54,33 @@ In-memory snapshot of the current spec registry, built from `specs.yaml` + all `
 | `SpecFilePath` | string | Absolute path to `spec.md` |
 | `Exists` | bool | Whether `spec.md` exists on disk |
 | `Version` | string \| null | Current version from frontmatter if file exists |
+
+---
+
+### PhaseContext
+
+Tracks execution state across the three processing phases. Held in agent session memory; never written to disk.
+
+| Field | Type | Description |
+|---|---|---|
+| `CurrentPhase` | enum: `ContextBuild` \| `PlanClarify` \| `WriteExecution` \| `Complete` \| `Aborted` | Current execution phase |
+| `TranscriptWordCount` | int | Word count of the loaded transcript (shown in context banner) |
+| `UpdateCandidates` | string[] | Category paths flagged as potential UPDATE targets during Phase 1 |
+| `GroupCount` | int | Number of confirmed groups entering Phase 3 |
+| `ProgressMarkers` | PhaseProgressMarker[] | Per-group write progress records |
+| `PhaseError` | string \| null | Non-null if Phase 1 aborted (unreadable file, zero-signal, etc.) |
+
+#### PhaseProgressMarker
+
+One record per tier-category group processed during Phase 3.
+
+| Field | Type | Description |
+|---|---|---|
+| `GroupKey` | string | `"<tier>/<category>"` (e.g. `"business/cost"`) |
+| `Action` | enum: `create` \| `update` \| `skip` | Intended action for this group |
+| `Status` | enum: `pending` \| `started` \| `success` \| `error` | Current write status |
+| `Marker` | string | Chat symbol: `"▶"` (started), `"✓"` (success), `"✗"` (error) |
+| `ErrorMessage` | string \| null | Non-null on error |
 
 ---
 
@@ -135,18 +163,21 @@ The in-memory representation of a spec file before it is written to disk. Produc
 
 ### IngestionResult
 
-Final output reported by the script after all writes complete.
+Final output reported by the agent after all Phase 3 writes complete.
 
 | Field | Type | Description |
 |---|---|---|
 | `TranscriptFile` | string | Source transcript path |
 | `SpecsCreated` | int | Count of spec files written |
+| `SpecsUpdated` | int | Count of existing spec files updated (via `-Force`) |
 | `SpecsSkipped` | int | Count of spec files skipped (existing, no `-Force`) |
 | `SpecsFailed` | int | Count of spec files that failed validation or write |
 | `CategoriesCreated` | int | Count of new categories registered |
-| `Errors` | string[] | Error messages for failed entries |
+| `ConflictsFlagged` | int | Count of Write-with-flag resolutions |
+| `AmendmentProposalsWritten` | int | Count of upstream amendment proposals generated |
+| `Errors` | string[] | Error messages for failed groups (from ✗ markers) |
 | `Warnings` | string[] | Warnings for skipped entries |
-| `DryRun` | bool | Whether this was a dry run |
+| `PromotionReminder` | string | Fixed text: `"All output specs are status: draft and require human review before promotion"` |
 | `Success` | bool | True if `SpecsFailed == 0` |
 
 **JSON output shape** (when `-Json`):
@@ -177,33 +208,46 @@ Final output reported by the script after all writes complete.
 TranscriptDocument (user input)
         │
         ▼
-  [script: build catalog]
+  [Phase 1: Context Build]
+  (all file reads issued as single parallel batch)
+        │
+        ├── [unreadable/empty] ──→ PhaseContext.PhaseError set → abort with chat error
         │
         ▼
-  CategoryCatalog (loaded from specs.yaml + _categories.yaml)
+  CategoryCatalog + UpdateCandidates loaded
+  "Context loaded" banner posted to chat:
+  "<N> words · <T> tiers · <S> existing specs · UPDATE candidates: ..."
         │
         ▼
-  [template: AI analysis]
+  [Phase 2: Plan & Clarification]
+  (no file writes in this phase)
+        │
+        ├── [zero tier-signal extracted] ──→ warn user → ask for confirmation
+        │                                     ├── user confirms end → session ends, no writes
+        │                                     └── user provides correction → restart Phase 1
         │
         ▼
-  IngestionManifest (AI output, JSON)
+  GroupingPlan proposed in chat → user confirms
+  Clarifying Q&A (max 5 questions)
+  Conflict detection + per-conflict resolution (Block │ Write-with-flag │ Propose amendment)
         │
         ▼
-  [script: parse + validate manifest]
-        │
-        ├── [DryRun] ──→ print manifest table → exit 0
-        │
-        ▼
-  GeneratedSpec[] (one per SpecEntry, SkipReason set if file exists + no Force)
+  [Phase 3: Parallel Write Execution]
+  "▶ Processing N groups" header posted
         │
         ▼
-  [script: write files + update registries]
+  For each group (batching non-overlapping groups as parallel tool calls):
+    ▶ [tier/category] — new | update | skip  (start marker)
+    │
+    ├── [new category] ──→ register-category.ps1 ──→ wait if same-tier write pending
+    ├── [write spec]   ──→ write-spec.ps1 [-Force]
+    │
+    ├── [success] ──→ ✓ [tier/category] — created | updated | skipped
+    └── [error]   ──→ ✗ [tier/category] — error: <reason> → continue to next group
         │
         ▼
-  IngestionResult (success/failure summary)
-        │
-        ▼
-  [script: output JSON or table + set exit code]
+  IngestionResult assembled
+  Session summary posted (all ✓/✗, conflicts, categories, PromotionReminder)
 ```
 
 ---

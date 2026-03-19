@@ -1,8 +1,104 @@
 # Contracts: transcripttospecs Toolkit
 
-**Branch**: `003-transcript-to-spec` | **Date**: 2026-03-17 | **Phase**: 1 | **Location**: `specs/platform/003-transcript-to-spec/`  
+**Branch**: `003-transcript-to-spec` | **Date**: 2026-03-17 (updated 2026-03-19) | **Phase**: 1 | **Location**: `specs/platform/003-transcript-to-spec/`  
 **Primary interface**: `transcripttospecs` VS Code agent mode (Copilot Chat)  
 **Toolkit scripts**: `register-category.ps1` + `write-spec.ps1` (called BY the agent; also independently usable from CI)
+
+---
+
+## Agent Execution Phases
+
+The agent processes every transcript in three sequential phases. Phase boundaries are enforced as normative constraints (REQ-021).
+
+### Phase 1 — Context Build
+
+**Precondition**: Agent has received a valid transcript file path.
+
+**Operations** (all issued as a single parallel tool call batch, NFR-005):
+- Read transcript file
+- Read `specs/specs.yaml`
+- Read all `specs/<tier>/_categories.yaml` (one per tier, 6 files)
+- Read all `spec.md` files for categories identified as potential UPDATE targets
+
+**Outputs posted to chat — "Context loaded" banner format**:
+
+```
+✅ Context loaded
+└─ Transcript:   <filename> (<N> words)
+└─ Tiers:        <T> tiers in catalog
+└─ Categories:   <C> categories registered
+└─ Existing specs loaded: <S>
+└─ UPDATE candidates: <tier>/<category>, <tier>/<category>  (or: none)
+```
+
+**Error conditions (abort Phase 1)**:
+
+| Condition | Chat message format |
+|---|---|
+| File not found | `❌ Phase 1 error: Transcript file not found: <path>. No specs will be written.` |
+| File unreadable | `❌ Phase 1 error: Cannot read transcript file: <path> (<reason>). No specs will be written.` |
+| File empty | `❌ Phase 1 error: Transcript file is empty: <path>. No specs will be written.` |
+
+---
+
+### Phase 2 — Plan & Clarification
+
+**Precondition**: Phase 1 completed without error; context banner posted.
+
+**Operations** (no file writes; agent reasoning only):
+1. Extract decisions, requirements, and constraints using the tier signal vocabulary
+2. Apply semantic category classifier (EXACT → CLOSE → AMBIGUOUS → NO MATCH) per REQ-018/019
+3. Post full grouping plan in chat and wait for user confirmation
+4. Ask clarifying questions sequentially (max 5)
+5. For each proposed spec, check all higher-authority tier specs for conflicts
+6. Resolve each conflict interactively (Block / Write-with-flag / Propose amendment)
+
+**Zero-signal handling** (early exit from Phase 2):
+
+```
+⚠️ No tier-relevant content found in this transcript.
+The analysis did not extract any decisions, requirements, or constraints
+mappable to the six-tier hierarchy using the current tier signal vocabulary.
+
+Is this expected, or would you like to try a different file?
+Reply 'done' to end the session without writing any specs, or provide
+an alternative transcript path to re-run from Phase 1.
+```
+
+---
+
+### Phase 3 — Parallel Write Execution
+
+**Precondition**: User has confirmed grouping plan; all conflicts resolved; Phase 2 complete.
+
+**Operations**: Write each confirmed group. Independent groups (non-overlapping file paths and registry targets) are batched as parallel tool calls (NFR-006).
+
+**Parallelism constraint**: Groups requiring `register-category.ps1` for the SAME tier MUST be serialized sequentially to prevent `category-count` double-increment. Groups for different tiers are always safe to parallelize.
+
+**Progress marker format** (posted to chat):
+
+```
+▶ Processing 5 groups
+
+▶ business/cost — create
+▶ business/compliance-framework — create
+▶ infrastructure/compute — create
+✓ business/cost — created (specs/business/cost/spec.md)
+✓ business/compliance-framework — created
+✓ infrastructure/compute — created
+▶ devops/ci-cd-orchestration — create [conflict-flag]
+✓ devops/ci-cd-orchestration — created (conflict-flags: security/access-control)
+▶ business/disaster-recovery — create [new category]
+✓ business/disaster-recovery — category registered + spec created
+```
+
+**Error marker format**:
+
+```
+✗ infrastructure/compute — error: write-spec.ps1 exited 1 (missing required frontmatter field: spec-id)
+```
+
+On error: record the ✗ marker and continue processing remaining groups (REQ-024).
 
 ---
 
@@ -14,7 +110,7 @@ The user invokes the agent by opening Copilot Chat in VS Code and typing:
 @transcripttospecs Please process this transcript: <path-to-transcript.md>
 ```
 
-The agent reads the transcript file, conducts the full analysis-to-write session in chat, and calls the toolkit scripts for all file operations. No terminal commands or separate script invocations are required from the user.
+The agent reads the transcript file, conducts the full three-phase session in chat, and calls the toolkit scripts for all file operations. No terminal commands or separate script invocations are required from the user.
 
 ---
 

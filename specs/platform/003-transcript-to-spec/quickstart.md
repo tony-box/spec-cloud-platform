@@ -1,6 +1,6 @@
 # Quickstart: transcripttospecs Agent
 
-**Branch**: `003-transcript-to-spec` | **Date**: 2026-03-17 | **Phase**: 1 | **Location**: `specs/platform/003-transcript-to-spec/`
+**Branch**: `003-transcript-to-spec` | **Date**: 2026-03-17 (updated 2026-03-19) | **Phase**: 1 | **Location**: `specs/platform/003-transcript-to-spec/`
 
 ---
 
@@ -8,22 +8,22 @@
 
 - VS Code with GitHub Copilot Chat extension
 - A meeting transcript saved as `.md` or `.txt` anywhere in the repo
-- The `transcripttospecs` agent mode installed (`.github/agents/transcripttospecs.md` present in repo)
+- The `transcripttospecs` agent mode installed (`.github/agents/transcripttospecs.agent.md` present in repo)
 
 ---
 
-## Walkthrough: Q2 Planning Meeting -> Specs
+## Walkthrough: Q2 Planning Meeting → Specs
 
-### Step 1 - Prepare your transcript
+### Step 1 — Prepare your transcript
 
 Save the meeting transcript to a file. Markdown and plain text are both supported:
 
 ```
 meetings/
-L-- q2-planning-2026.md
+└── q2-planning-2026.md
 ```
 
-The transcript can be a raw conversation dump, meeting notes, or an AI-generated summary. Participant names and roles help the agent produce better spec attribution, but are not required.
+The transcript can be a raw conversation dump, meeting notes, or an AI-generated summary. The agent extracts *decisions, requirements, and constraints* only — speaker names and personal attribution are never reproduced in generated spec files.
 
 **Example transcript excerpt**:
 ```
@@ -39,7 +39,7 @@ Carol: We have a GDPR audit coming in Q3. All data at rest must be encrypted
 
 ---
 
-### Step 2 - Invoke the agent in Copilot Chat
+### Step 2 — Invoke the agent in Copilot Chat
 
 Open Copilot Chat in VS Code and type:
 
@@ -47,20 +47,31 @@ Open Copilot Chat in VS Code and type:
 @transcripttospecs Please process this transcript: meetings/q2-planning-2026.md
 ```
 
-The agent reads the file, loads the live category catalog, and analyzes the transcript using the tier signal vocabulary.
+**Phase 1 begins immediately.** The agent issues all file reads in a single parallel batch and posts a context banner when complete:
+
+```
+✅ Context loaded
+└─ Transcript:   q2-planning-2026.md (847 words)
+└─ Tiers:        6 tiers in catalog
+└─ Categories:   14 categories registered
+└─ Existing specs loaded: 14
+└─ UPDATE candidates: business/cost, business/governance
+```
+
+This banner confirms the agent has loaded all existing specs before proposing anything.
 
 ---
 
-### Step 3 - Confirm the grouping plan
+### Step 3 — Confirm the grouping plan
 
-The agent presents a proposed grouping plan in chat before writing any files:
+**Phase 2 begins.** The agent presents a proposed grouping plan in chat before writing any files:
 
 ```
 Here is my proposed grouping plan for the transcript:
 
-1. business/cost -- Monthly cloud spend cap $50k, two-quarter target
-2. infrastructure/compute -- VM SKU policy: DS3_v2 max without platform approval
-3. business/compliance-framework -- GDPR Q3 audit: encryption at rest + 90-day log retention
+1. UPDATE business/cost — close match: adds monthly spend cap $50k + two-quarter target
+2. infrastructure/compute — NEW: VM SKU policy: DS3_v2 max without platform approval
+3. business/compliance-framework — UPDATE: GDPR Q3 audit: encryption at rest + 90-day log retention
 
 Shall I proceed with this grouping? Reply yes to confirm, or describe any changes.
 ```
@@ -69,12 +80,12 @@ Reply **yes** (or request adjustments) to proceed.
 
 ---
 
-### Step 4 - Answer clarifying questions (if any)
+### Step 4 — Answer clarifying questions (if any)
 
 If the agent cannot fully resolve a topic from the transcript alone, it asks up to 5 clarifying questions, one at a time:
 
 ```
-The transcript mentions "VM SKU policy" -- should this apply to all workloads
+The transcript mentions "VM SKU policy" — should this apply to all workloads
 or only production environments?
 ```
 
@@ -82,17 +93,17 @@ Answer briefly and the agent continues.
 
 ---
 
-### Step 5 - Resolve conflicts (if any)
+### Step 5 — Resolve conflicts (if any)
 
 If a proposed spec conflicts with an existing higher-tiered spec, the agent pauses:
 
 ```
-WARNING Conflict detected: Proposed `devops/ci-cd-orchestration` spec conflicts
+⚠️ Conflict detected: Proposed `devops/ci-cd-orchestration` spec conflicts
 with `security/access-control` v1.0.0 (REQ-AC-007: production deployments require
 change-board approval).
 
 Choose:
-(1) Block -- skip this spec until the security spec is amended
+(1) Block — skip this spec until the security spec is amended
 (2) Write with conflict flag
 (3) Propose upstream amendment to security/access-control
 ```
@@ -101,7 +112,26 @@ Reply with 1, 2, or 3 for each conflict. The agent handles each conflict indepen
 
 ---
 
-### Step 6 - Review the session summary
+### Step 6 — Watch Phase 3 progress
+
+**Phase 3 begins** after conflicts are resolved. The agent posts a progress header then writes all groups — independent groups are batched in parallel:
+
+```
+▶ Processing 3 groups
+
+▶ business/cost — update
+▶ business/compliance-framework — update
+✓ business/cost — updated (specs/business/cost/spec.md)
+✓ business/compliance-framework — updated
+▶ infrastructure/compute — create
+✓ infrastructure/compute — created (specs/infrastructure/compute/spec.md)
+```
+
+If a write fails, you see a ✗ marker with the reason, and the agent continues with remaining groups.
+
+---
+
+### Step 7 — Review the session summary
 
 After all writes, the agent posts a summary:
 
@@ -110,19 +140,23 @@ Session complete
 
 Path                                         Action   Conflict flag
 ----                                         ------   -------------
-specs/business/cost/spec.md                  created  --
+specs/business/cost/spec.md                  updated  --
 specs/infrastructure/compute/spec.md         created  --
-specs/business/compliance-framework/spec.md  created  --
+specs/business/compliance-framework/spec.md  updated  --
 
 New categories registered: none
 Conflicts handled: none
 Topics skipped: none
+Errors: none
+
+📝 All output specs are status: draft and require human review before promotion.
 ```
 
 Open any generated spec to review. Each has:
 - Correct YAML frontmatter (tier, category, spec-id, version, `status: draft`)
 - `role-context.requested-by: "transcripttospecs"` and `decision-mode: autonomous`
 - Executive Summary, Requirements, and Constraints derived from the meeting
+- No raw transcript text, speaker names, or personal attribution
 
 Edit and refine as needed before committing.
 
@@ -133,7 +167,7 @@ Edit and refine as needed before committing.
 If the transcript mentions a topic not covered by any existing category:
 
 ```
-Bob: We should define our disaster recovery strategy -- RPO 4 hours, RTO 8 hours.
+Bob: We should define our disaster recovery strategy — RPO 4 hours, RTO 8 hours.
 ```
 
 The agent detects no matching category and proposes a new one:
@@ -143,14 +177,16 @@ No existing category matches the disaster-recovery topic.
 
 Proposed new category:
 - Tier: business
-- Category name: Disaster Recovery
+- Category name: disaster-recovery
 - Spec-id: dr
 - Description: Business continuity objectives: RPO, RTO, failover strategy
+- Closest evaluated: business/governance — rejected: distinct lifecycle phase (incident response)
+- Hysteresis condition met: (a) distinct lifecycle phase
 
-Confirm this new category? Reply yes to register it and create the spec.
+Confirm? (yes / no / merge-into governance)
 ```
 
-Reply yes. The agent calls `register-category.ps1` and then `write-spec.ps1` to create the spec.
+Reply **yes**. The agent calls `register-category.ps1` then `write-spec.ps1` and posts the ▶ / ✓ markers.
 
 ---
 
@@ -162,7 +198,7 @@ If the transcript adds new requirements to an existing `business/cost/spec.md`:
 Alice: Also add a quarterly reserved-instance review to the cost process.
 ```
 
-The agent reads the existing spec, determines the transcript is additive, and proposes the addition:
+The agent reads the existing spec (during Phase 1, since it was flagged as an UPDATE candidate), determines the transcript is additive, and proposes the addition in Phase 2:
 
 ```
 business/cost/spec.md already exists. The transcript adds 1 new requirement
@@ -173,7 +209,7 @@ not currently captured:
 Add this to the existing spec? Reply yes to confirm, or no to skip.
 ```
 
-Reply yes. The agent appends the addition via `write-spec.ps1 -Force`.
+Reply **yes**. In Phase 3 the agent calls `write-spec.ps1 -Force` and posts the ▶ / ✓ markers.
 
 ---
 
@@ -185,4 +221,4 @@ If you are starting a new platform project with no existing specs, invoke the ag
 @transcripttospecs Please process this transcript: docs/founding-vision.md
 ```
 
-The agent creates all referenced `_categories.yaml` files and spec stubs from scratch. Confirm each grouping and new-category proposal in chat. You will have a complete initial spec tree in a single Copilot Chat session.
+Phase 1 will load very quickly (no existing specs to read). The grouping plan will propose all new categories. Confirm each one in Phase 2, then watch Phase 3 create all `_categories.yaml` entries and spec stubs in parallel. You will have a complete initial spec tree in a single Copilot Chat session.

@@ -17,6 +17,20 @@ This template is **spec-interpreted** — it provides structure, vocabulary, and
 
 ---
 
+## Execution Model Overview
+
+The `transcripttospecs` agent operates in three sequential phases. No phase may be skipped.
+
+| Phase | Steps | Activity | File Writes? |
+|---|---|---|---|
+| **Phase 1 — Context Build** | 1–2 | Parallel read of transcript + catalog + existing specs; post ✅ Context loaded banner | ❌ None |
+| **Phase 2 — Plan & Clarification** | 3–6b | Tier extraction, semantic matching, conflict detection, grouping plan, user confirmation | ❌ None |
+| **Phase 3 — Parallel Write Execution** | 6c–7 | Execute confirmed writes with ▶ / ✓ / ✗ progress markers; post session summary | ✅ Yes |
+
+**Phase 3 gate**: the agent MUST NOT begin Phase 3 until the user explicitly confirms the grouping plan presented at the end of Phase 2.
+
+---
+
 ## 1. Tier Signal Vocabulary
 
 Use these signals to map each extracted statement to exactly one tier + category pair. When multiple signals apply, use context to disambiguate (see "Disambiguation Rules" below).

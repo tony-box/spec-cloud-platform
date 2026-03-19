@@ -176,16 +176,67 @@ Evaluation:
 
 ---
 
-## Summary of Resolved Unknowns
-
 | Unknown | Resolution |
-|---|---|
-| How does AI get invoked? | Human-in-the-loop: template rendered as context, AI returns JSON manifest |
-| What format does AI return? | Fenced JSON block (`IngestionManifest`) |
+|---|---------|
+| How does AI get invoked? | Human-in-the-loop: agent mode, no API calls in scripts |
+| What format does AI return? | The agent writes specs directly via toolkit scripts — no manifest export required |
 | How are tiers mapped? | Signal vocabulary in template anchors AI classification |
-| How are new categories handled? | Script validates name/spec-id, updates `_categories.yaml` + `specs.yaml` idempotently |
+| How are new categories handled? | `register-category.ps1` validates name/spec-id, updates `_categories.yaml` + `specs.yaml` idempotently |
 | How is idempotency enforced? | Existence check on spec file path; spec-id dedup in category registry |
-| Where does the script live? | `.specify/scripts/powershell/ingest-transcript.ps1` (per toolkit conventions) |
-| Where does the template live? | `.specify/templates/transcript-analysis-template.md` (per execution-mode policy) |
+| Where do scripts live? | `.specify/scripts/powershell/register-category.ps1`, `write-spec.ps1` |
+| Where does the template live? | `.specify/templates/transcript-analysis-template.md` |
 | What's the platform category? | `transcript-ingestion`, spec-id `txin`, registered in `specs/platform/_categories.yaml` |
-| What is "close enough" for category reuse? | CLOSE MATCH (≥60% concept overlap) → UPDATE; AMBIGUOUS → user choice (default: extend existing); NO MATCH → NEW CATEGORY with hysteresis conditions check |
+| What is "close enough" for category reuse? | CLOSE MATCH (≥60% concept overlap) → UPDATE; AMBIGUOUS → user choice (default: extend existing); NO MATCH → NEW CATEGORY with hysteresis check |
+| How does the agent give progress feedback? | Three-phase model (Phase 1: parallel context build, Phase 2: plan/clarify, Phase 3: parallel write with per-group ▶/✓/✗ markers) |
+| How is PII/privacy handled in spec outputs? | Agent MUST NOT reproduce raw transcript text, speaker names, or attribution — see Decision 9 |
+| What happens on unreadable/corrupt/empty transcript? | Abort with chat error, no writes — see Decision 10 |
+| What happens on zero tier-signal extraction? | Warn user and ask for explicit confirmation before ending session — see Decision 10 |
+
+---
+
+## Decision 8: Phased Execution Model & Parallel Tool Call Batching
+
+**Decision**: The agent processes every transcript in exactly three phases that cannot be reordered:
+- **Phase 1 — Context Build**: All file reads (transcript, specs.yaml, every `_categories.yaml`, all UPDATE-candidate spec.md files) are issued as a single parallel tool call batch. Upon completion the agent posts a "Context loaded" banner.
+- **Phase 2 — Plan & Clarification**: Extraction, grouping plan proposal, clarifying Q&A (max 5), conflict resolution. No file writes.
+- **Phase 3 — Parallel Write Execution**: Each confirmed group gets a ▶ start marker before its first tool call and a ✓/✗ completion marker after. Independent groups (non-overlapping file paths and registry targets) are batched as parallel tool calls.
+
+**Rationale**: Without the context-build phase, the agent may begin writing before it has read all relevant existing specs, causing missed UPDATE candidates and false-new-category proposals. Batching reads in Phase 1 provides a concrete, visible "loaded" checkpoint the user can see before analysis begins. Phase 3 parallelism is the largest performance opportunity — a 5-group transcript involves at least 10 I/O operations that can mostly overlap. The per-group progress markers give the user immediate feedback without waiting for the full session to complete.
+
+**Alternatives considered**:
+- Lazy reads (read only specs needed as groups are confirmed): Defers reads to Phase 3, eliminating the context banner and making conflict detection incomplete (agent hasn't read all upstream specs upfront). Rejected.
+- Sequential Phase 3 writes (one group at a time): Guaranteed safe but 3–5× slower. Rejected in favor of parallelism with path-overlap check.
+- Progress via agent "thinking" dots only: No structured markers, user cannot distinguish between slow reasoning and slow I/O. Rejected in favor of explicit ▶/✓/✗ markers.
+
+**Constraint on parallelism**: Phase 3 groups sharing a `_categories.yaml` write target MUST be serialized (the `register-category.ps1` call for tier A's new categories must complete before another new-category registration for the same tier begins, to avoid double-increment of `category-count`). Groups writing to different tiers are always safe to parallelize.
+
+---
+
+## Decision 9: Privacy Guardrail — No Raw Transcript Content in Spec Files
+
+**Decision**: The agent MUST NOT reproduce raw transcript excerpts, speaker names, or personal attribution in any generated spec file. All spec content MUST be expressed as requirements, constraints, and decisions only — no narrative, no attributed quotation.
+
+**Rationale**: Meeting transcripts may contain personal names, off-the-record remarks, sensitive business information discussed informally, and PII (participant names, roles, contact information). Spec files are committed to version-controlled repositories and may be shared broadly. Leaking transcript source text into specs would (a) violate reasonable speaker privacy expectations, (b) create a corporate record of informal remarks that were not intended as policy, and (c) potentially include PII in public repositories.
+
+**Scope of the guardrail**:
+- Prohibited: Direct quotes, paraphrased sentences attributing a decision to a named speaker, meeting summary prose
+- Required: Requirements phrased as "The system MUST...", constraints phrased as "X MUST NOT exceed Y", decisions phrased as "Decision: [what was decided]"
+- The `requested-by: "transcripttospecs"` field records provenance at the system level without attributing to individuals
+
+**Alternatives considered**:
+- Allow paraphrased attribution only: Still creates a discoverable link from a named person to a decision. Rejected.
+- Allow attribution with an opt-in flag: Adds complexity, easy to misuse. Rejected for v1.
+
+---
+
+## Decision 10: Failure Mode Differentiation
+
+**Decision**: The agent applies differentiated handling based on failure type:
+1. **Unreadable, empty, or corrupt transcript file**: Abort immediately with a clear error message in chat. MUST NOT attempt any spec writes, registry updates, or Phase 2/3 processing.
+2. **Zero tier-signal content extracted** (file is readable but contains no classifiable decisions, requirements, or constraints): MUST NOT silently exit. Warn the user with a brief explanation (e.g., "No tier-relevant content found in this transcript") and ask for explicit confirmation before ending the session — giving the user a chance to clarify or re-point to a different file.
+
+**Rationale**: These two failure modes require different responses. An unreadable file is a hard precondition failure — no further processing is meaningful. A zero-signal result is a soft outcome — the file may be a valid transcript of a non-architectural meeting, or the user may have pointed to the wrong file, or the tier vocabulary may need expanding. Silent exit on zero-signal would leave the user with no feedback and no recourse.
+
+**Exit behavior in each case**:
+- Unreadable/empty/corrupt: Agent ends Phase 1 with error banner; session terminates; no writes
+- Zero signal: Agent ends Phase 2 with warning; prompts user; if user confirms, session ends without writes; if user provides correction, agent re-runs Phase 1 from scratch with the corrected input

@@ -4,18 +4,20 @@ tier: platform
 category: transcript-ingestion
 spec-id: txin
 artifact-type: tasks
-version: "1.1.0-draft"
-description: "Task list for AI Transcript Ingestion — transcripttospecs agent + hysteresis category matching (plan v1.2.0-draft)"
+version: "2.0.0-draft"
+description: "Task list for AI Transcript Ingestion — transcripttospecs agent, toolkit scripts, hysteresis matching, and three-phase execution model (REQ-021-024, NFR-005-006)"
 created: 2026-03-17
-last-updated: 2026-03-18
+last-updated: 2026-03-19
 
 # Role Context (per governance v2.0.0)
 role-context:
   declared-role: platform
   authority-scope: platform-meta-governance
-  change-intent: "Implement transcripttospecs agent, toolkit scripts, analysis template, and hysteresis category matching (REQ-018/019/020)"
+  change-intent: "Phase 0-9 (v1.1.0-draft): initial agent, toolkit scripts, analysis template, hysteresis matching — all complete. Phase 10-17 (v2.0.0-draft): implement REQ-021-024 three-phase execution model (context banner, per-group markers, error resilience), NFR-005-006 parallel batching, Decision 9 privacy guardrail, Decision 10 failure-mode differentiation; update governing spec to v1.2.0-draft"
   upstream-snapshot:
     - spec-id: txin
+      version: "1.1.0-draft"
+    - spec-id: 003-transcript-to-spec
       version: "1.0.0-draft"
     - spec-id: spec
       version: "1.0.0-draft"
@@ -241,3 +243,96 @@ role-context:
 - **AMBIGUOUS default bias** (T028/T032): A (extend existing) is always the default — agent must require explicit B to split; this is the primary guard against category proliferation
 - **merge-into shortcut** (T029/T034): any `merge-into <category>` response reclassifies as UPDATE and routes through Phase 5 existing-spec handling — no new script required
 - **Phase 6 completion gate**: T033 all 7 items + T034 merge-into verified + T035 cleanup → T026–T035 markable `[X]`
+
+---
+
+## Phase 10: Three-Phase Execution Model — Agent Restructure (US1, P1) 🎯 NEW
+
+**Context**: Phases 0–9 delivered the Steps 1–7 agent using a sequential per-step loop without explicit phase structure. REQ-021–024 and NFR-005–006 (added 2026-03-18) require a strict three-phase model: Phase 1 issues all reads as one parallel batch and posts a context banner; Phase 2 is plan + clarification with no writes; Phase 3 writes with per-group progress markers, parallel batching, and error resilience. All tasks in this phase modify `.github/agents/transcripttospecs.agent.md`.
+
+**Independent Test**: Invoke `@transcripttospecs meetings/q2-planning-2026.md` in Copilot Chat. Verify: (1) "✅ Context loaded" banner with word count, tier/category/spec counts, and UPDATE candidates appears before any grouping plan; (2) grouping plan presented and agent **waits** for confirmation; (3) `▶ Processing N groups` header starts Phase 3; (4) each group has a `▶` start marker before tool calls and a `✓` or `✗` completion marker after; (5) a failing group posts `✗` and the remaining groups still execute; (6) session summary ends with the "📝 All output specs are status: draft" reminder.
+
+- [X] T046 [US1] Restructure `.github/agents/transcripttospecs.agent.md` Steps 1–2 into an explicit **"Phase 1 — Context Build"** section; replace the sequential read loop with a single instruction block stating all reads — transcript file, `specs/specs.yaml`, all tier `_categories.yaml` files, and all `spec.md` files for UPDATE-candidate categories — MUST be issued as one parallel tool call batch per NFR-005; retain post-read metadata extraction (date, participants, purpose) as an in-phase analysis step
+- [X] T047 [US1] Add "Context loaded" banner posting instruction immediately after Phase 1 parallel reads complete in `.github/agents/transcripttospecs.agent.md`; use the exact five-line block from `contracts/ingest-transcript-cli.md` (✅ header, `└─ Transcript`, `└─ Tiers`, `└─ Categories`, `└─ Existing specs loaded`, `└─ UPDATE candidates` lines); banner MUST appear in chat before any extraction or grouping work begins per REQ-022
+- [X] T048 [US1] Add Phase 1 abort handling in `.github/agents/transcripttospecs.agent.md` for file-not-found, unreadable, and empty transcript conditions; use the exact `❌ Phase 1 error: <reason>. No specs will be written.` format from `contracts/ingest-transcript-cli.md`; after posting the error the agent MUST stop — no extraction, no registry updates, no spec writes per Decision 10
+- [X] T049 [US1] Add zero-signal early-exit handling at the start of Phase 2 in `.github/agents/transcripttospecs.agent.md`; if extraction yields zero items mappable to the six-tier hierarchy using the tier signal vocabulary, post the `⚠️ No tier-relevant content found` block from `contracts/ingest-transcript-cli.md` and ask for confirmation before ending the session; do NOT silently exit per Decision 10
+- [X] T050 [US1] Restructure `.github/agents/transcripttospecs.agent.md` Step 6 into an explicit **"Phase 3 — Parallel Write Execution"** section; add gate instruction that Phase 3 MUST NOT begin until the user has confirmed the grouping plan from Phase 2; add `▶ Processing N groups` header instruction (N = confirmed group count) that MUST be posted immediately before the first group is processed per REQ-021 and REQ-023
+- [X] T051 [US1] Add per-group **▶ start marker** instruction in the Phase 3 section of `.github/agents/transcripttospecs.agent.md`; the agent MUST post `▶ [tier/category] — new | update | skip` to chat before invoking any file tool or script call for that group per REQ-023
+- [X] T052 [US1] Add per-group **✓/✗ completion marker** instruction in the Phase 3 section of `.github/agents/transcripttospecs.agent.md`; after a group completes post `✓ [tier/category] — created | updated | skipped` on success, or `✗ [tier/category] — error: <reason>` on failure; use the exact formats from `contracts/ingest-transcript-cli.md` per REQ-023
+- [X] T053 [US1] Add Phase 3 error-resilience instruction in `.github/agents/transcripttospecs.agent.md`; exit code 1 from `write-spec.ps1` MUST produce a `✗` marker for that group and the agent MUST continue to the next group without aborting the session; exit code 2 (unexpected skip) MUST also produce a `✗` marker; all `✗` entries MUST be consolidated in the Step 7 session summary per REQ-024
+- [X] T054 [US1] Add Phase 3 parallel write-batching instruction in `.github/agents/transcripttospecs.agent.md`; groups whose `spec.md` output paths do not overlap AND whose `_categories.yaml` registry targets do not overlap MUST be batched as parallel tool calls per NFR-006; add same-tier NEW CATEGORY serialization caveat: multiple `register-category.ps1` calls for the SAME tier MUST be issued sequentially to prevent double-increment of `category-count` in `specs.yaml`
+- [X] T055 [US1] Add **Privacy Guardrail** constraint block in `.github/agents/transcripttospecs.agent.md` (include in Constraints section); the agent MUST NOT reproduce raw transcript excerpts, speaker names, or personal attribution in any generated spec file; all generated spec content MUST be expressed as requirements, constraints, and decisions only — no narrative, no attributed quotation per Decision 9
+- [X] T056 [P] [US1] Add a **Phase 1 / Phase 2 / Phase 3 execution model overview** section at the top of `.specify/templates/transcript-analysis-template.md` (before Section 1 — Tier Signal Vocabulary) with a compact three-row table summarising Phase 1 (parallel reads → context banner), Phase 2 (plan + Q&A + conflict resolution, no writes), and Phase 3 (per-group ▶/✓/✗ markers, parallel write batching); makes the template self-contained as an agent reference document
+
+---
+
+## Phase 11: Three-Phase — US2 Conflict Phase 3 Integration (P1)
+
+**Goal**: Block / Write-with-flag / Propose-amendment outcomes are wired into Phase 3 marker flow. Blocked groups post `✗` and proceed to next group; successful writes post `✓`; amendment proposals are annotated in the `✓` marker.
+
+**Independent Test**: Process a transcript that conflicts with an existing higher-authority spec. Verify: Block choice → `✗ [tier/category] — error: blocked, conflict with <upstream-spec-id>` and remaining groups continue; Write-with-flag → `✓` marker + `conflict-flags:` in frontmatter; Propose amendment → `✓` marker with `(amendment: specs/<path>.md)` annotation.
+
+- [X] T057 [US2] Update the **Conflict Resolution** section in `.github/agents/transcripttospecs.agent.md` to wire each resolution outcome into the Phase 3 marker system: (1) Block → post `✗ [tier/category] — error: blocked, conflict with <upstream-spec-id>` and continue to next group (replacing the old "log to session summary" instruction); (2) Write-with-flag → call `write-spec.ps1` with populated `conflict-flags` JSON, then post the standard `✓`/`✗` marker based on exit code; (3) Propose amendment → call `write-spec.ps1` for the new spec, write the amendment file directly, then post `✓` marker
+- [X] T058 [US2] Add amendment proposal path annotation to the Phase 3 `✓` marker in `.github/agents/transcripttospecs.agent.md`; when option 3 is chosen the `✓` MUST include `(amendment: specs/<upstream-tier>/<upstream-category>/spec-amendment-<spec-id>.md)` so the amendment file location is visible in the chat session summary
+
+---
+
+## Phase 12: Three-Phase — US3 Additive Update Phase 3 Integration (P2)
+
+**Goal**: UPDATE groups post `▶ — update` start markers and `✓ — updated` completion markers. SKIP groups (fully covered) post `✓ — skipped` without calling `write-spec.ps1`. Merged body must be complete.
+
+**Independent Test**: Process a transcript that adds 2 requirements to an existing spec. Verify: (1) `▶ [tier/category] — update` start marker before write call; (2) `write-spec.ps1 -Force` called with complete merged body; (3) for fully-covered content, `✓ [tier/category] — skipped (already covered)` with no write; (4) skipped count increments in session summary.
+
+- [X] T059 [US3] Update the **Existing Spec Handling** section in `.github/agents/transcripttospecs.agent.md` to use Phase 3 markers: add instruction that before calling `write-spec.ps1 -Force` the agent MUST post `▶ [tier/category] — update` start marker; after the write call post `✓ [tier/category] — updated` or `✗` on error; reinforce that `-BodyMarkdown` MUST receive the COMPLETE merged body (original + additions), not a partial or diff body
+- [X] T060 [US3] Add SKIP group handling in the Phase 3 section of `.github/agents/transcripttospecs.agent.md`; when an UPDATE group has no additive items the agent MUST post `✓ [tier/category] — skipped (already covered)` without invoking `write-spec.ps1`; this outcome MUST increment the "skipped" counter in the Step 7 session summary, not the "created" or "updated" counter
+
+---
+
+## Phase 13: Three-Phase — US4 New Category Phase 3 Integration (P2)
+
+**Goal**: NEW CATEGORY groups display `[new category]` in the `▶` start marker. `register-category.ps1` is confirmed before `write-spec.ps1`. Same-tier registrations are never parallelized in Phase 3 batching.
+
+**Independent Test**: Process a transcript introducing a concept with no existing same-tier match. Verify: `▶ [tier/category] — create [new category]` start marker; `register-category.ps1` invoked and exit 0 confirmed before `write-spec.ps1`; exit 1 from `register-category.ps1` → `✗` marker, `write-spec.ps1` skipped; two NEW CATEGORY groups for the same tier are processed sequentially despite NFR-006.
+
+- [X] T061 [US4] Add `[new category]` annotation to Phase 3 `▶` start marker for NEW CATEGORY groups in `.github/agents/transcripttospecs.agent.md`; format: `▶ [tier/category] — create [new category]`; add instruction that `register-category.ps1` MUST be called and exit 0 confirmed before `write-spec.ps1`; exit 1 from `register-category.ps1` MUST produce a `✗` marker and skip `write-spec.ps1` for that group
+- [X] T062 [US4] Add same-tier parallel serialization caveat to the Phase 3 batching section of `.github/agents/transcripttospecs.agent.md`; NEW CATEGORY groups for the SAME tier MUST be processed sequentially (never batched in parallel) to prevent double-increment of `category-count` in `specs.yaml`; groups for DIFFERENT tiers that have non-overlapping file paths and registry targets MAY still be batched per NFR-006
+
+---
+
+## Phase 14: Three-Phase — US5 Bootstrap Phase 1 Integration (P3)
+
+**Goal**: Phase 1 handles absent `_categories.yaml` files gracefully (treat as 0 categories, no abort). Session summary distinguishes newly registered categories from pre-existing ones.
+
+**Independent Test**: Run `transcripttospecs` on a branch where all `_categories.yaml` files are absent. Verify: Phase 1 completes; context banner shows 0 categories, no Phase 1 abort; after Phase 3, `register-category.ps1` creates bootstrap skeletons; session summary shows "N new categories registered" with tier/category labels.
+
+- [X] T063 [US5] When merging Steps 1–2 into the Phase 1 section of `.github/agents/transcripttospecs.agent.md` (via T046), confirm that the existing "do NOT pre-create the file" behavior is preserved: if a tier `_categories.yaml` file is absent the agent MUST treat that tier as having 0 registered categories and continue Phase 1 without aborting; only the absence of `specs/specs.yaml` warrants a Phase 1 abort; `_categories.yaml` skeletons are created by `register-category.ps1` in Phase 3, never by the agent in Phase 1 — verify this is still correct after T046's restructure
+- [X] T064 [US5] Confirm the Step 7 session summary instruction in `.github/agents/transcripttospecs.agent.md` includes a "new categories registered: N" count that explicitly lists newly created tier/category pairs and distinguishes them from pre-existing ones; add this distinction if absent
+
+---
+
+## Phase 15: Governing Spec Promotion and Final Compliance Pass
+
+**Purpose**: Incorporate all new phase-model requirements into the authoritative governing spec; add missing session-summary reminder; validate full requirement coverage in the agent.
+
+- [X] T065 [P] Update `specs/platform/transcript-ingestion/spec.md` — add REQ-021 (three-phase sequential model, write-gate before Phase 3), REQ-022 (Phase 1 parallel reads + context banner with exact format), REQ-023 (Phase 3 `▶ Processing N groups` header, per-group `▶` start and `✓`/`✗` completion markers), REQ-024 (Phase 3 per-group error resilience — one failing group must not halt others); update NFR-005 to read "Phase 1 file reads MUST be issued as a single parallel tool call batch" (supersedes the v1.1.0-draft NFR-005 cross-tier consistency requirement); add NFR-006 "Phase 3 write operations targeting non-overlapping file paths and registry entries MUST be batched as parallel tool calls"; add Decision 9 (privacy guardrail) and Decision 10 (failure-mode differentiation) to Constraints; bump `version` to `"1.2.0-draft"` with a `version-history` entry dated `2026-03-19` summarising all additions
+- [X] T066 [P] Confirm the Step 7 session summary section in `.github/agents/transcripttospecs.agent.md` ends with `📝 All output specs are status: draft and require human review before promotion`; add the line verbatim if absent per REQ-014 (added in 2026-03-18 clarification session)
+- [X] T067 Cross-check `.github/agents/transcripttospecs.agent.md` against `specs/platform/003-transcript-to-spec/spec.md` REQ-001 through REQ-024 and NFR-001 through NFR-006; for each requirement confirm at least one explicit agent instruction covers it; mark any unaddressed requirements as inline `<!-- GAP: REQ-XXX — <brief note> -->` comments in the file for follow-up
+
+---
+
+## Phase 10–15 Task Summary
+
+| Phase | User Story | Tasks | Parallelizable |
+|---|---|---|---|
+| 10 | US1 (P1) | T046–T056 (11 tasks) | T056 [P] — different file (template.md) |
+| 11 | US2 (P1) | T057–T058 (2 tasks) | — |
+| 12 | US3 (P2) | T059–T060 (2 tasks) | — |
+| 13 | US4 (P2) | T061–T062 (2 tasks) | — |
+| 14 | US5 (P3) | T063–T064 (2 tasks) | — |
+| 15 | — (Polish) | T065–T067 (3 tasks) | T065+T066 [P] — different files |
+
+**New task count**: 22 (T046–T067)  
+**Total task count (all phases)**: 67  
+**Dependency**: Phase 10 (T046–T055) is a prerequisite for Phases 11–14; all Phase 3 marker wiring in US2–US5 depends on the Phase 3 infrastructure added in T050–T054.
+
+**MVP scope for new requirements**: Complete Phase 10 (T046–T056) to deliver US1 three-phase execution end-to-end before integrating US2–US5 Phase 3 markers.
