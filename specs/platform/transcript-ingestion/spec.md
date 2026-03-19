@@ -2,7 +2,7 @@
 tier: platform
 category: transcript-ingestion
 spec-id: txin
-version: "1.0.0-draft"
+version: "1.1.0-draft"
 status: draft
 compliance-state: current
 created: "2026-03-17"
@@ -33,6 +33,10 @@ precedence:
   note: "Platform-meta-governance scope. As a framework addition to .specify/, this supersedes all content tiers."
 
 version-history:
+  - version: "1.1.0-draft"
+    date: "2026-03-18"
+    git-tag: null
+    summary: "Add REQ-015 cross-tier consistency check: after all writes, validate every new/updated spec from lowest tier upward against all higher-authority tier specs. Renumber toolkit reqs to REQ-016/017/018. Add NFR-005 and two new guardrails."
   - version: "1.0.0-draft"
     date: "2026-03-17"
     git-tag: spec/txin/1.0.0-draft
@@ -86,13 +90,14 @@ This category governs the `transcripttospecs` platform capability: a VS Code Cop
 - **REQ-011**: When updating an existing spec, the agent MUST build the full merged body (original + additions) and pass it to `write-spec.ps1 -Force`; the script replaces wholesale
 - **REQ-012**: Write-with-flag specs MUST include a `conflict-flags:` frontmatter array and a `## ⚠️ Conflict Flags` body section
 - **REQ-013**: Registry updates MUST be idempotent — repeating on the same transcript MUST NOT create duplicates
-- **REQ-014**: The agent MUST post a session summary after all writes: specs created, updated, skipped, conflicts, amendments, new categories
+- **REQ-014**: The agent MUST post a session summary after all writes: specs created, updated, skipped, conflicts, amendments, new categories, and the results of the cross-tier consistency check (REQ-015)
+- **REQ-015**: After all spec writes are complete and before posting the session summary, the agent MUST perform a cross-tier consistency check across every spec created or updated in the session. The check proceeds from lowest-authority tier to highest-authority tier (application → devops → infrastructure → security → business); for each new/updated spec at tier N, the agent MUST read all specs in every tier with a lower priority number (higher authority) and verify that no MUST, MUST NOT, SHALL, or SHALL NOT statement in the new spec contradicts any requirement in a higher-authority spec. Each contradiction found MUST be surfaced to the user using the same interactive resolution flow as REQ-007 (Block / Write-with-flag / Propose-amendment), and the affected spec file updated accordingly before the session summary is posted. If no contradictions are found the agent MUST note "Cross-tier check: no conflicts detected" in the summary.
 
 ### Functional Requirements — Toolkit Scripts
 
-- **REQ-015**: Both scripts MUST pass PSScriptAnalyzer with zero errors (`PSUseApprovedVerbs`, `PSUseDeclaredVarsMoreThanAssignments`)
-- **REQ-016**: Both scripts MUST exit non-zero when required inputs are missing or output validation fails
-- **REQ-017**: Each script operation MUST complete within 10 seconds
+- **REQ-016**: Both scripts MUST pass PSScriptAnalyzer with zero errors (`PSUseApprovedVerbs`, `PSUseDeclaredVarsMoreThanAssignments`)
+- **REQ-017**: Both scripts MUST exit non-zero when required inputs are missing or output validation fails
+- **REQ-018**: Each script operation MUST complete within 10 seconds
 
 ### Non-Functional Requirements
 
@@ -100,6 +105,7 @@ This category governs the `transcripttospecs` platform capability: a VS Code Cop
 - **NFR-002**: File operations MUST complete within 10 seconds each (excluding agent reasoning time)
 - **NFR-003**: Generated spec files MUST be human-readable and immediately editable without tooling
 - **NFR-004**: The agent interaction MUST complete a full single-transcript session without requiring the user to leave Copilot Chat
+- **NFR-005**: The cross-tier consistency check (REQ-015) MUST cover all tiers that contain specs which were written or updated in the session; tiers with no session output may be skipped
 
 ---
 
@@ -110,4 +116,6 @@ This category governs the `transcripttospecs` platform capability: a VS Code Cop
 - The agent MUST NOT modify an existing spec file without explicit user confirmation of proposed additions
 - New categories MUST follow: `lowercase-kebab-case` directory, spec-id matching `^[a-z][a-z0-9-]{1,7}$`, globally unique spec-id
 - Conflict resolution MUST be per-conflict and interactive — silent skip or silent block is not permitted
+- The cross-tier consistency check MUST run against the final committed state of each spec file on disk, not an in-memory draft; if a spec was written then subsequently blocked/updated in conflict resolution, the check reads the updated file
+- Platform-tier specs are authoritative but are NOT modified by transcript ingestion sessions; they inform the cross-tier check as read-only higher-authority sources
 - The `transcripttospecs` agent MUST NOT embed API keys or make direct LLM API calls from toolkit scripts
