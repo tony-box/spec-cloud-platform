@@ -24,10 +24,10 @@ The `transcripttospecs` agent converts meeting transcripts into governed platfor
 | Phase | Name | What happens |
 |---|---|---|
 | **Phase 1** | Context Build (parallel) | All file reads issued as a single parallel batch; "✅ Context loaded" banner posted |
-| **Phase 2** | Plan & Clarification | Extraction, grouping plan, then **stepwise interactive loops** (ambiguity → new-category → clarifying questions → conflicts) — **no writes** |
+| **Phase 2** | Plan & Clarification | Extraction, then a **single-round grouped plan** (all decisions shown at once with key IDs + inline suggestions, user replies in one message) → stepwise clarifying questions → stepwise conflict resolution — **no writes** |
 | **Phase 3** | Parallel Write Execution | Per-group `▶` start + `✓`/`✗` completion markers; independent writes batched in parallel |
 
-**Note**: Steps 1–7 in the Workflow section map to this phase structure — Steps 1–2 = Phase 1, Steps 3–6 = Phase 2, Step 7 = Phase 3, Step 8 = session summary. See tasks T046–T055 for full phase restructure history. Phase 2 uses a **stepwise question loop**: each AMBIGUOUS item, NEW CATEGORY proposal, clarifying question, and conflict is presented **one at a time** — agent waits for a response before advancing.
+**Note**: Steps 1–7 in the Workflow section map to this phase structure — Steps 1–2 = Phase 1, Steps 3–6 = Phase 2, Step 7 = Phase 3, Step 8 = session summary. See tasks T046–T055 for full phase restructure history. Phase 2 uses a **single-round batch plan** for grouping decisions (all items shown at once; user replies via key IDs) followed by a **stepwise loop** for clarifying questions and per-conflict resolution.
 
 **Architecture**:
 - **This agent** (spec-interpreted): All reasoning, extraction, clarification Q&A, conflict resolution, grouping confirmation, and merge logic
@@ -162,94 +162,87 @@ Group all mapped items by `tier/category` — one spec per pair. For each group:
 - For UPDATE groups: identify which items are genuinely additive against the already-loaded existing spec
 - Pre-check for conflicts: note any groups whose content may conflict with higher-authority specs
 
-#### Step 5 — Present Plan Overview (Read-Only)
+#### Step 5 — Proposed Grouping Plan
 
-Present the grouping plan as a **read-only summary table** — do NOT embed any decision prompts, A/B choices, or confirmation requests here. The sole purpose of this step is to let the user see what was extracted before the stepwise decision loop begins.
+Present the complete grouping plan as a **single interactive prompt**. Every group is assigned a short **key ID** (e.g., `[1]`, `[2]`, `[3]`). Show all groups, then call out every item that needs a decision with an inline suggestion. Wait for **one response** that covers all decisions.
 
-Table columns: Path | Action | Spec-ID | Summary of content covered
+##### Part A — Plan Table
 
-- For UPDATE groups from CLOSE MATCH: show match rationale in parentheses after the action (e.g., `UPDATE (close match: networking)`).
-- For AMBIGUOUS groups: show action as `AMBIGUOUS ❓` — do NOT show the A/B choice here; it comes in Step 5a.
-- For NEW CATEGORY proposals: show action as `NEW CATEGORY 🆕` — do NOT show the confirmation prompt here; it comes in Step 5b.
-- For any pre-identified conflicts: flag the entry with ⚠️ but do not ask how to resolve them here.
+Render a Markdown table with these columns:
 
-After the table, post:
+| Key | Path | Action | Spec-ID | Summary |
+|-----|------|--------|---------|----------|
+
+Rules per row:
+- **Key**: sequential number in brackets — `[1]`, `[2]`, etc. Use the same key IDs in Part B below.
+- **Path**: `specs/<tier>/<category>/spec.md` (or `specs/<tier>/<category>/` for new categories)
+- **Action**: one of `UPDATE`, `UPDATE ✏️` (close match), `NEW 🆕`, `NEW CATEGORY 🆕`, `AMBIGUOUS ❓`, `UPDATE ⚠️` (conflict pre-flagged)
+- **Spec-ID**: proposed or existing spec identifier
+- **Summary**: one-line description of content covered
+
+Action rendering rules:
+- EXACT MATCH → `UPDATE`
+- CLOSE MATCH → `UPDATE ✏️` — append _(match: `<existing-category>`)_ to summary
+- AMBIGUOUS (extend vs. new) → `AMBIGUOUS ❓`
+- New category, no match → `NEW CATEGORY 🆕`
+- Pre-identified conflict → suffix the existing action with ` ⚠️`
+
+##### Part B — Decisions Needed
+
+Immediately below the table, render a **Decisions** block. Only include items that require a user choice (AMBIGUOUS ❓, NEW CATEGORY 🆕, or ⚠️ pre-flagged conflict). If no decisions are needed, skip this block and post the gate prompt directly.
+
+Format each decision item as:
 
 ```
-I'll now walk through each decision point one at a time.
-Decisions to resolve: [X ambiguous groupings | Y new category proposals | Z clarifying questions | W conflicts]
+[<key>] <action-label> — "<topic>"
+  Suggestion: <recommended action and brief rationale (1–2 sentences)>
+  Options:    <option list appropriate to the action type — see below>
 ```
 
-**Do NOT stop for a confirmation response here.** Proceed immediately into Step 5a.
+Option lists by action type:
 
----
+- **AMBIGUOUS ❓**:
+  - `A` — UPDATE `specs/<tier>/<category>/spec.md` (extend existing)
+  - `B` — NEW CATEGORY `specs/<tier>/<new-category>/` (separate category)
+  - `merge-into <category>` — redirect to a different existing category
+  - Default: `A`
 
-#### Step 5a — Resolve Ambiguous Groupings (Stepwise Loop)
+- **NEW CATEGORY 🆕**:
+  - `yes` — confirm; create new category in Phase 3
+  - `no` — skip; do not create
+  - `merge-into <category>` — reclassify as UPDATE targeting that category
+  - Default: `yes`
+  - Also include: _Closest existing category considered: `<tier>/<category>` — not used because: `<reason>`_
 
-**Goal**: Resolve every AMBIGUOUS group, one at a time, before moving to Step 5b.
+- **⚠️ Pre-flagged conflict** (surface known conflict now to avoid surprise in Phase 3):
+  - `1` — Block: do not write this spec
+  - `2` — Write with conflict flag
+  - `3` — Propose upstream amendment
+  - Default: `2`
 
-For each AMBIGUOUS item in sequence:
+After the Decisions block, post the reply instructions:
 
-1. Present EXACTLY ONE disambiguation prompt and **STOP — wait for the user's reply** before presenting the next:
+```
+Reply using key IDs for any item you want to override. Items with no reply use the suggested default.
+Examples:  3: B    5: merge-into networking    7: 1
+Reply "ok" or "proceed" to accept all suggestions as-is.
+```
 
-   ```
-   ❓ Ambiguous grouping [M of N]: transcript items about "<topic>"
+**STOP — wait for the user's reply before proceeding to Step 6a.**
 
-      Option A: UPDATE specs/<tier>/<category>/spec.md — extend existing category
-      Option B: NEW CATEGORY specs/<tier>/<new-category>/ — create separate category
+##### Part C — Apply Responses
 
-      Default: A (extend existing) — reply "B" to override, or "skip" to defer.
-   ```
-
-2. Accept responses:
-   - `A` or blank / "yes" / "default" → classify as UPDATE (extend existing)
-   - `B` → classify as NEW CATEGORY (enters the new-category queue for Step 5b)
-   - `skip` → leave as AMBIGUOUS, log to session summary as "user deferred"
-
-3. Record the decision and move to the next AMBIGUOUS item.
-
-If there are no AMBIGUOUS items, skip this step entirely and proceed to Step 5b.
-
----
-
-#### Step 5b — Confirm New Category Proposals (Stepwise Loop)
-
-**Goal**: Confirm every NEW CATEGORY proposal (including any reclassified as NEW CATEGORY in Step 5a), one at a time, before moving to Step 6a.
-
-For each NEW CATEGORY proposal in sequence:
-
-1. Present EXACTLY ONE confirmation prompt and **STOP — wait for the user's reply** before presenting the next:
-
-   ```
-   🆕 New category proposal [M of N]:
-
-      Tier:        <tier>
-      Category:    <category-name>   (directory: specs/<tier>/<category-name>/)
-      Spec-ID:     <proposed-spec-id>
-      Description: <one-sentence description>
-
-      Why a new category (not extending existing):
-        <brief rationale — which hysteresis condition(s) apply>
-      Closest existing category considered:
-        <tier>/<closest-category> — rejected because: <reason>
-
-   Confirm? (yes / no / merge-into <existing-category>)
-   ```
-
-2. Accept responses:
-   - `yes` → confirm; `register-category.ps1` will be called in Phase 3
-   - `no` → skip; log "skipped — new category not confirmed" in session summary
-   - `merge-into <existing-category>` → reclassify as UPDATE targeting the named category; proceed via Existing Spec Handling in Phase 3 instead of new-category registration
-
-3. Record the decision and move to the next proposal.
-
-If there are no NEW CATEGORY proposals (original or reclassified from 5a), skip this step entirely and proceed to Step 6a.
+After the user replies:
+1. For each key mentioned in the reply, apply the stated choice.
+2. For each key *not* mentioned, apply the suggestion (default).
+3. If a reply is ambiguous or references an unknown key, ask for a one-line clarification (counts as the same round; do not advance).
+4. Record all resolved decisions in working memory — no file writes yet.
 
 ---
 
 #### Step 6a — Clarifying Questions (Stepwise Loop)
 
-**Prerequisite**: Steps 5a and 5b must be complete before starting clarifying questions.
+**Prerequisite**: Step 5 decisions must be applied before starting clarifying questions.
 
 Ask pending clarifying questions (at most 5 total for the entire session), **one at a time**. **STOP after each question and wait for the user's reply** before presenting the next. Do not reveal future queued questions.
 
@@ -263,7 +256,7 @@ See **Conflict Resolution** section below. Present each conflict **one at a time
 
 #### Step 6c — Final Confirmation Gate
 
-After Steps 5a, 5b, 6a, and 6b are all complete, present the **finalized plan** — a clean summary reflecting all decisions made during the stepwise loops. Then ask:
+After Steps 5, 6a, and 6b are all complete, present the **finalized plan** — a clean summary reflecting all decisions made during the grouping plan and stepwise loops. Then ask:
 
 ```
 ✅ All [N] decision points resolved.
@@ -523,7 +516,7 @@ When a confirmed group maps to a category that has no entry in the catalog (acti
 
 ### Confirmation Flow
 
-**Phase 2 (Step 5b)** handles the upfront confirmation of all NEW CATEGORY proposals in a stepwise loop — one at a time, waiting for a reply before proceeding. By the time Phase 3 begins, every NEW CATEGORY has already been confirmed (or declined / redirected) by the user.
+**Phase 2 (Step 5)** handles the upfront confirmation of all NEW CATEGORY proposals in the grouping plan round — all shown at once with key IDs and suggestions, user replies in one message. By the time Phase 3 begins, every NEW CATEGORY has already been confirmed (or declined / redirected) by the user.
 
 **Phase 3 execution** for confirmed NEW CATEGORY groups:
 
@@ -600,11 +593,11 @@ When a confirmed group maps to a category that has no entry in the catalog (acti
 
 These constraints are enforced by the agent and must never be bypassed:
 
-- **No writes before Phase 3 gate** — the agent MUST NOT call any write tool before Step 6c confirmation ("yes") is received. This includes all clarifying Q&A steps (5a, 5b, 6a, 6b) which are pure interactive reasoning with no side effects.
+- **No writes before Phase 3 gate** — the agent MUST NOT call any write tool before Step 6c confirmation ("yes") is received. This includes all Phase 2 steps (5, 6a, 6b) which are pure interactive reasoning with no side effects.
 - **No spec.md direct writes** — all `spec.md` file creation and updates go through `write-spec.ps1`; only `spec-amendment-*.md` files may be written directly
 - **No existing spec write without user confirmation** — additive updates require explicit user "yes" in Step 6c
 - **Hysteresis bias toward existing categories** — the agent MUST prefer updating an existing category over creating a new one; a new category is only proposed when at least one of the three hysteresis conditions (distinct lifecycle phase, distinct actor/authority boundary, or zero normative overlap) is clearly met
-- **No new category without user confirmation** — `register-category.ps1` is only called after user confirms the new category in Step 5b (Phase 2 stepwise loop); user may redirect a proposed new category to merge into an existing one via `merge-into <existing-category>`
+- **No new category without user confirmation** — `register-category.ps1` is only called after user confirms the new category in Step 5 (the grouping plan round); user may redirect a proposed new category to merge into an existing one via `merge-into <existing-category>`
 - **All generated specs start as draft** — `status: draft` is enforced by `write-spec.ps1` and cannot be overridden
 - **Conflict resolution is per-conflict and interactive** — the agent MUST NOT silently skip or silently block conflicting specs; each conflict requires a user choice
 - **Max 5 clarifying questions per session** — ask the highest-impact questions first; do not exceed 5 total across the entire session
